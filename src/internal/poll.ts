@@ -1,0 +1,113 @@
+import { IntegrationConstants } from "../constants";
+import { handleChatMessageSent } from "../events/chat-message";
+import { handleFollower } from "../events/follower";
+import { handleLivestreamStatusUpdated } from "../events/livestream-status-updated";
+import { integration } from "../integration";
+import { logger } from "../main";
+import { httpCallWithTimeout } from "./http";
+import { InboundWebhook, parseWebhook } from "./parser/parser";
+
+export class Poller {
+    private pollAborter = new AbortController();
+    private proxyPollKey = "";
+
+    connect(proxyPollKey: string): void {
+        this.proxyPollKey = proxyPollKey;
+        this.pollAborter = new AbortController();
+        this.startPoller();
+        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Poller connected with proxy poll key: ${this.proxyPollKey}`);
+    }
+
+    disconnect(proxyPollKey = ''): void {
+        // This is to let the proxy know the poller is no longer active. It will
+        // help make things cleaner on the server side in case of a reconnect.
+        if (proxyPollKey || this.proxyPollKey) {
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Disconnecting proxy poller with key: ${proxyPollKey || this.proxyPollKey}`);
+            const url = `${integration.getSettings().connectivity.webhookProxyUrl}/poll/${proxyPollKey || this.proxyPollKey}`;
+            httpCallWithTimeout(url, "DELETE")
+                .then(() => {
+                    logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Successfully disconnected proxy poller.`);
+                })
+                .catch((error) => {
+                    logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error disconnecting proxy poller: ${error}`);
+                });
+        }
+
+        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Aborting any in-progress pollers...`);
+        this.pollAborter.abort();
+    }
+
+    private startPoller(): void {
+        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Starting proxy poller...`);
+
+        setTimeout(async () => {
+            try {
+                await this.poll();
+                setTimeout(() => {
+                    this.startPoller(); // Restart the poller after a successful poll
+                }, 0);
+            } catch (error) {
+                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error occurred while polling: ${error}`);
+                if (this.pollAborter.signal.aborted) {
+                    return;
+                }
+                setTimeout(() => {
+                    this.startPoller(); // Restart the poller after an error
+                }, 5000); // Retry after 5 seconds
+            }
+        }, 0);
+    }
+
+    private async poll(): Promise<void> {
+        const url = `${integration.getSettings().connectivity.webhookProxyUrl}/poll/${this.proxyPollKey}`;
+        return new Promise((resolve, reject) => {
+            httpCallWithTimeout(url, "GET", '', '', this.pollAborter.signal, 0)
+                .then((response): InboundWebhook[] => {
+                    if (!response || !response.webhooks) {
+                        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] No webhooks received from proxy poll.`);
+                        resolve();
+                    }
+                    return response.webhooks as InboundWebhook[];
+                })
+                .then((webhooks: InboundWebhook[]) => {
+                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Received ${webhooks.length} webhooks from proxy poll.`);
+                    webhooks.forEach((webhook) => {
+                        this.handleResponse(webhook);
+                    });
+                    resolve();
+                })
+                .catch((error) => {
+                    logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error during polling: ${error}`);
+                    reject(error);
+                });
+        });
+    }
+
+    private handleResponse(response: InboundWebhook): void {
+        let webhook;
+        try {
+            webhook = parseWebhook(response);
+        } catch (error) {
+            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error parsing webhook: ${error}`);
+            return;
+        }
+
+        try {
+            switch (webhook.eventType) {
+                case "chat.message.sent":
+                    handleChatMessageSent(webhook);
+                    break;
+                case "channel.followed":
+                    handleFollower(webhook);
+                    break;
+                case "livestream.status.updated":
+                    handleLivestreamStatusUpdated(webhook);
+                    break;
+                default:
+                    throw new Error("Unsupported event type");
+            }
+        } catch (error) {
+            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error handling webhook event: id=${webhook.eventMessageID}, type=${webhook.eventType}: ${error}`);
+        }
+    }
+}

@@ -1,0 +1,87 @@
+export interface Webhook {
+    eventMessageID: string;
+    eventSubscriptionID: string;
+    eventMessageTimestamp: string;
+    eventType: string;
+    eventVersion: string;
+    payload?: ChatMessage | KickFollower | LivestreamStatusUpdated;
+}
+
+export interface KickBadge {
+    text: string;
+    type: string;
+    count?: number;
+}
+
+export interface ChatMessage {
+    messageId: string;
+    broadcaster: KickUser;
+    sender: KickUser;
+    content: string;
+    createdAt: Date | undefined;
+}
+
+export interface KickFollower {
+    broadcaster: KickUser;
+    follower: KickUser;
+}
+
+export interface KickIdentity {
+    usernameColor: string;
+    badges: KickBadge[];
+}
+
+export interface KickUser {
+    isAnonymous?: boolean;
+    userId: string;
+    username: string;
+    displayName: string;
+    isVerified: boolean;
+    profilePicture: string;
+    channelSlug: string;
+    identity?: KickIdentity;
+}
+
+export interface BasicKickUser {
+    email?: string;
+    name: string;
+    profilePicture: string;
+    userId: number;
+}
+
+export interface LivestreamStatusUpdated {
+    broadcaster: KickUser;
+    isLive: boolean;
+    title: string;
+    startedAt?: Date;
+    endedAt?: Date;
+}
+
+export interface Channel {
+    bannerPicture: string;
+    broadcasterUserId: number;
+    category: {
+        id: number;
+        name: string;
+        thumbnail: string;
+    };
+    channelDescription: string;
+    slug: string;
+    stream: {
+        isLive: boolean;
+        isMature: boolean;
+        key: string;
+        language: string;
+        startTime?: Date;
+        thumbnail: string;
+        url: string;
+        viewerCount: number;
+    };
+    streamTitle: string;
+}
+
+export interface CategoryInfo {
+    id: number;
+    name: string;
+    thumbnail: string;
+}
