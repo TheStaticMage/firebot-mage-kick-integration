@@ -1,4 +1,4 @@
-import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, LivestreamStatusUpdated, Webhook } from "../../shared/types";
+import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata, Webhook } from "../../shared/types";
 
 export interface InboundWebhook {
     kick_event_message_id: string;
@@ -34,6 +34,10 @@ export function parseWebhook(webhook: InboundWebhook): Webhook {
         }
         case "livestream.status.updated": {
             result.payload = parseLivestreamStatusUpdatedEvent(webhook.raw_data);
+            break;
+        }
+        case "moderation.banned": {
+            result.payload = parseModerationBannedEvent(webhook.raw_data);
             break;
         }
         default: {
@@ -173,6 +177,25 @@ function parseLivestreamStatusUpdatedEvent(rawData: string): LivestreamStatusUpd
         title: data.title,
         startedAt: parseDate(data.started_at),
         endedAt: parseDate(data.ended_at)
+    };
+
+    return result;
+}
+
+function parseModerationBannedEvent(rawData: string): ModerationBannedEvent {
+    const data: InboundModerationBannedEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+
+    const metadata: ModerationBannedMetadata = {
+        reason: data.metadata.reason,
+        createdAt: parseDate(data.metadata.created_at) || new Date(),
+        expiresAt: parseDate(data.metadata.expires_at)
+    };
+
+    const result: ModerationBannedEvent = {
+        broadcaster: parseKickUser(data.broadcaster),
+        moderator: parseKickUser(data.moderator),
+        bannedUser: parseKickUser(data.banned_user),
+        metadata: metadata
     };
 
     return result;

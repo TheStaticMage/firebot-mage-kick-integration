@@ -6,7 +6,7 @@ export const eventSource: EventSource = {
     events: [
         {
             id: "chat-message",
-            name: "Chat Message",
+            name: "Chat Message (Kick)",
             description: "When someone chats in your channel on Kick",
             cached: false,
             manualMetadata: {
@@ -85,6 +85,38 @@ export const eventSource: EventSource = {
                     return `**${eventData.userDisplayName}${
                         showUserIdName ? ` (${eventData.username})` : ""
                     }** arrived`;
+                }
+            }
+        },
+        {
+            id: "banned",
+            name: "Viewer Banned (Kick)",
+            description: "When someone is banned in your channel",
+            cached: false,
+            manualMetadata: {
+                username: "cavemobster",
+                userDisplayName: "CaveMobster",
+                userId: "",
+                moderator: "Firebot",
+                modReason: "They were extra naughty"
+            },
+            activityFeed: {
+                icon: "fad fa-gavel",
+                getMessage: (eventData) => {
+                    const username = typeof eventData.username === "string" ? eventData.username : "";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : "";
+                    const showUserIdName = username.toLowerCase() !== userDisplayName.toLowerCase();
+                    const moderator = typeof eventData.moderator === "string" ? eventData.moderator : "Unknown Moderator";
+                    const modReason = typeof eventData.modReason === "string" ? eventData.modReason : "";
+
+                    let message = `**${userDisplayName}${
+                        showUserIdName ? ` (${username})` : ""
+                    }** was banned by **${moderator}**.`;
+
+                    if (modReason) {
+                        message = `${message} Reason: **${modReason}**`;
+                    }
+                    return message;
                 }
             }
         }

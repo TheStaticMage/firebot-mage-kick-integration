@@ -36,6 +36,7 @@ Currently supported:
   - Stream started
   - Stream ended
   - Viewer arrived
+  - Viewer banned
 - Effects
   - Chat message (Kick)
   - Chat message (Platform aware)
@@ -47,6 +48,9 @@ Currently supported:
   - `$kickCategoryImageUrl` for your channel or another channel
   - `$kickChatMessage`
   - `$kickCurrentViewerCount` for your channel or another channel
+  - `$kickBanDuration` (in seconds)
+  - `$kickModerator` (for bans)
+  - `$kickModReason` (for bans)
   - `$kickStreamer`
   - `$kickStreamerId`
   - `$kickStreamIsLive` for your channel or another channel
@@ -58,27 +62,32 @@ Things that are not supported now but should be possible:
 
 - Events for subs (renewal, gift, first time)
 - Event for livestream metadata updated
-- Event for user banned
 - Ban user, unban user actions
 - Some chat roles
 
-Limitations, or things that will be difficult to support or will never be supported:
+Limitations due to Kick:
+
+- Many actions on Kick do not generate webhooks and therefore cannot generate Firebot events. Common things that you might expect to be supported but that currently aren't include channel rewards, hosts (raids), and users being unbanned, timed out, or un-timed out.
+
+- Kick user profile images are broken. This is because the Kick API returns URLs that cannot be accessed from anywhere other than the kick.com website. (Kick needs to fix this. Once they do, this integration can work properly.)
+
+- Kick does not have an API endpoint to get the current viewer list or any other similar functionality to determine when users are present in your stream. That means there can be no accural of currency or tracking of watch time for Kick users.
+
+Limitations due to Firebot:
+
+- Firebot's viewer database uses the user id from the Purple site as its primary key, and has assumptions throughout the entire program that any user in the viewer database is a user on the Purple site. Until there is a fundamental design change in Firebot to support multiple platforms, this will always limit the functionality of this integration and may cause strange ripple effects throughout the program.
 
 - Kick user data is not stored between Firebot sessions, making it rather pointless to track currency, chat messages, and the like. (It is possible to enable the "dangerous" option to store Kick user data in the user database, but this causes various incompatibilities throughout Firebot and as such it is strongly discouraged.)
 
 - The user experience for getting the Kick authorization URL is not great because there's not a feasible way (that I found) to present a modal with a clickable URL or have Firebot open a browser window from a script. (Kick's authentication uses a mechanism that Firebot's built in oauth provider does not currently support and I do not want to distribute my bot's client secret to anyone running Firebot who wants to connect to it.)
 
-- Kick user profile images are broken. This is because the Kick API returns URLs that cannot be accessed from anywhere other than the kick.com website. (Kick needs to fix this. Once they do, this integration can work properly.)
-
 - Actions on chat feed messages (e.g. delete, ban user, etc.) will either do nothing or possibly error out when used on Kick messages. These are hard-coded within Firebot to assume the user or message is on the Purple site.
 
 - Cooldowns on commands do not work because Firebot does not expose the "cooldown manager" to scripts.
 
+- Effects and variables defined by Firebot that pertain to events from the Purple site are often hard-coded for only those events. This means, for example, that the `$moderator` variable is not available to the Kick integration, even though the event metadata is the same. For this reason, this integration adds variables like `$kickModerator`. However, you'll need to have separate handlers for all of these.
+
 - Firebot deletes all configuration data for an integration when the integration is unlinked. If you unlink the integration and then exit Firebot without relinking, you'll lose your configuration (webhook URL and preferences). You'll need to reconfigure this under Settings &gt; Integrations. (This integration includes a fix to re-write the current settings to the database upon re-linking to try to minimize the impact.)
-
-- Kick does not have an API endpoint to get the current viewer list or any other similar functionality to determine when users are present in your stream. That means there can be no accural of currency or tracking of watch time for Kick users.
-
-- Many actions on Kick do not generate webhooks and therefore cannot generate Firebot events. Common things that you might expect to be supported but that currently aren't include channel rewards, hosts (raids), and users being unbanned, timed out, or un-timed out.
 
 ## Installation
 
