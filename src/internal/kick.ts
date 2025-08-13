@@ -1,4 +1,5 @@
 import { IntegrationConstants } from "../constants";
+import { integration } from "../integration";
 import { logger } from "../main";
 import { BasicKickUser } from "../shared/types";
 import { KickChannelManager } from "./channel-manager";
@@ -84,7 +85,7 @@ export class Kick {
         return new Promise((resolve, reject) => {
             this.httpCallWithTimeout('/public/v1/events/subscriptions', "POST", JSON.stringify(payload))
                 .then((response) => {
-                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Successfully subscribed to Kick events: ${JSON.stringify(response)}`);
+                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Successfully subscribed to Kick events.`);
                     resolve(response);
                 })
                 .catch((error) => {
@@ -94,13 +95,30 @@ export class Kick {
     }
 
     async httpCallWithTimeout(uri: string, method: string, body = '', signal: AbortSignal | null = null, timeout = 10000): Promise<any> {
-        return httpCallWithTimeout(
-            `${IntegrationConstants.KICK_API_SERVER}${uri}`,
-            method,
-            this.authToken,
-            body,
-            AbortSignal.any([this.apiAborter.signal, ...(signal ? [signal] : [])]),
-            timeout
-        );
+        const requestId = crypto.randomUUID();
+        if (integration.getSettings().advanced.logApiResponses) {
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] Making API call to ${uri} with method ${method} and body: ${JSON.stringify(body)}`);
+        }
+
+        try {
+            const response = await httpCallWithTimeout(
+                `${IntegrationConstants.KICK_API_SERVER}${uri}`,
+                method,
+                this.authToken,
+                body,
+                AbortSignal.any([this.apiAborter.signal, ...(signal ? [signal] : [])]),
+                timeout
+            );
+
+            if (integration.getSettings().advanced.logApiResponses) {
+                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] API call to ${uri} successful. Response: ${JSON.stringify(response)}`);
+            }
+            return response;
+        } catch (error) {
+            if (integration.getSettings().advanced.logApiResponses) {
+                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] API call to ${uri} failed: ${error}`);
+            }
+            throw error;
+        }
     }
 }
