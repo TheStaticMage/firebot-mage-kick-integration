@@ -1,6 +1,6 @@
 import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { KickUsers } from "../internal/user";
+import { unkickifyUsername } from "../internal/util";
 
 export const kickUserDisplayNameVariable: ReplaceVariable = {
     definition: {
@@ -30,6 +30,6 @@ export const kickUserDisplayNameVariable: ReplaceVariable = {
             }
         }
 
-        return KickUsers.unkickifyUsername(username);
+        return unkickifyUsername(username);
     }
 };

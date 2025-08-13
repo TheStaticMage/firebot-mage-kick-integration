@@ -1,12 +1,8 @@
 import { IntegrationConstants } from "../constants";
-import { handleChatMessageSent } from "../events/chat-message";
-import { handleFollower } from "../events/follower";
-import { handleLivestreamStatusUpdated } from "../events/livestream-status-updated";
-import { handleModerationBanned } from "../events/moderation-banned";
 import { integration } from "../integration";
 import { logger } from "../main";
 import { httpCallWithTimeout } from "./http";
-import { InboundWebhook, parseWebhook } from "./parser/parser";
+import { handleWebhook } from "./webhook-handler/webhook-handler";
 
 export class Poller {
     private pollAborter = new AbortController();
@@ -70,11 +66,11 @@ export class Poller {
                     }
                     return response.webhooks as InboundWebhook[];
                 })
-                .then((webhooks: InboundWebhook[]) => {
+                .then(async (webhooks: InboundWebhook[]) => {
                     logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Received ${webhooks.length} webhooks from proxy poll.`);
-                    webhooks.forEach((webhook) => {
-                        this.handleResponse(webhook);
-                    });
+                    for (const webhook of webhooks) {
+                        await this.handleResponse(webhook);
+                    }
                     resolve();
                 })
                 .catch((error) => {
@@ -84,34 +80,12 @@ export class Poller {
         });
     }
 
-    private handleResponse(response: InboundWebhook): void {
-        let webhook;
+    private async handleResponse(response: InboundWebhook): Promise<void> {
         try {
-            webhook = parseWebhook(response);
+            await handleWebhook(response);
         } catch (error) {
             logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error parsing webhook: ${error}`);
             return;
-        }
-
-        try {
-            switch (webhook.eventType) {
-                case "chat.message.sent":
-                    handleChatMessageSent(webhook);
-                    break;
-                case "channel.followed":
-                    handleFollower(webhook);
-                    break;
-                case "livestream.status.updated":
-                    handleLivestreamStatusUpdated(webhook);
-                    break;
-                case "moderation.banned":
-                    handleModerationBanned(webhook);
-                    break;
-                default:
-                    throw new Error("Unsupported event type");
-            }
-        } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error handling webhook event: id=${webhook.eventMessageID}, type=${webhook.eventType}: ${error}`);
         }
     }
 }

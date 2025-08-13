@@ -1,19 +1,11 @@
-import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
-import { KickUsers } from "../internal/user";
-import { firebot, logger } from "../main";
-import { ModerationBannedEvent, Webhook } from "../shared/types";
+import { kickifyUserId, kickifyUsername } from "../internal/util";
+import { firebot } from "../main";
+import { ModerationBannedEvent } from "../shared/types";
 
-export async function handleModerationBanned(webhook: Webhook): Promise<void> {
-    if (!webhook.payload) {
-        logger.error(`[${IntegrationConstants.INTEGRATION_ID}] No payload found in webhook for event: id=${webhook.eventMessageID}, type=${webhook.eventType}`);
-        return;
-    }
-    const payload = webhook.payload as ModerationBannedEvent;
-    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Handling moderation banned event: id=${webhook.eventMessageID}, bannedUser=${payload.bannedUser.username}`);
-
+export async function handleModerationBannedEvent(payload: ModerationBannedEvent): Promise<void> {
     const { frontendCommunicator } = firebot.modules;
-    frontendCommunicator.send("twitch:chat:user:delete-messages", KickUsers.kickifyUsername(payload.bannedUser.username));
+    frontendCommunicator.send("twitch:chat:user:delete-messages", kickifyUsername(payload.bannedUser.username));
 
     triggerBanned(
         payload.bannedUser.username,
@@ -40,11 +32,11 @@ function triggerBanned(
     const { eventManager } = firebot.modules;
     for (const source of integration.getEventSources()) {
         eventManager.triggerEvent(source, "banned", {
-            username: KickUsers.kickifyUsername(username),
-            userId: KickUsers.kickifyUserId(userId),
+            username: kickifyUsername(username),
+            userId: kickifyUserId(userId),
             userDisplayName,
-            moderatorUsername: KickUsers.kickifyUsername(moderatorUsername),
-            moderatorId: KickUsers.kickifyUserId(moderatorId),
+            moderatorUsername: kickifyUsername(moderatorUsername),
+            moderatorId: kickifyUserId(moderatorId),
             moderatorDisplayName,
             modReason,
             expiresAt, // Note: Twitch event handler does not set this metadata

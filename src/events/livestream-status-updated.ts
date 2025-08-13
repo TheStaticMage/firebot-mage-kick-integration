@@ -1,20 +1,12 @@
-import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
-import { firebot, logger } from "../main";
-import { LivestreamStatusUpdated, Webhook } from "../shared/types";
-import { KickUsers } from "../internal/user";
+import { kickifyUserId, kickifyUsername } from "../internal/util";
+import { firebot } from "../main";
+import { LivestreamStatusUpdated } from "../shared/types";
 
-export async function handleLivestreamStatusUpdated(webhook: Webhook): Promise<void> {
-    if (!webhook.payload) {
-        logger.error(`[${IntegrationConstants.INTEGRATION_ID}] No payload found in webhook for event: id=${webhook.eventMessageID}, type=${webhook.eventType}`);
-        return;
-    }
-    const payload = webhook.payload as LivestreamStatusUpdated;
-    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Handling livestream status updated event: id=${webhook.eventMessageID}, isLive=${payload.isLive}, title=${payload.title}`);
-
+export async function handleLivestreamStatusUpdatedEvent(payload: LivestreamStatusUpdated): Promise<void> {
     const update = integration.kick.channelManager.updateLiveStatus(payload.isLive);
-    const userId = KickUsers.kickifyUserId(payload.broadcaster.userId.toString());
-    const username = KickUsers.kickifyUsername(payload.broadcaster.username);
+    const userId = kickifyUserId(payload.broadcaster.userId.toString());
+    const username = kickifyUsername(payload.broadcaster.username);
     const displayName = payload.broadcaster.username; // Kick does not have display names
     if (update) {
         if (payload.isLive) {

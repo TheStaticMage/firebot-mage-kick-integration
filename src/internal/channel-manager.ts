@@ -3,7 +3,7 @@ import { IntegrationConstants } from "../constants";
 import { logger } from "../main";
 import { CategoryInfo, Channel } from "../shared/types";
 import { Kick } from "./kick";
-import { parseChannel } from "./parser/parser";
+import { parseChannel } from "./webhook-handler/webhook-handler";
 
 export class KickChannelManager {
     private kick: Kick;
