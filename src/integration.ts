@@ -28,7 +28,7 @@ import { kickBanDuration } from "./variables/banDuration";
 import { kickModReason } from "./variables/mod-reason";
 import { kickModerator } from "./variables/moderator";
 
-type integrationParameters = {
+export type IntegrationParameters = {
     connectivity: {
         webhookProxyUrl: string;
         firebotUrl: string;
@@ -38,6 +38,8 @@ type integrationParameters = {
     };
     advanced: {
         sendTwitchEvents: boolean;
+        logWebhooks: boolean;
+        logApiResponses: boolean;
         dangerousOperations: boolean;
     };
 };
@@ -69,7 +71,7 @@ export class KickIntegration extends EventEmitter {
     // Can be toggled to true to enable dangerous operations that can create
     // and modify users in the Firebot database. THIS COULD BREAK FIREBOT!
     // READ DOCUMENTATION CAREFULLY BEFORE ENABLING!
-    private settings: integrationParameters = {
+    private settings: IntegrationParameters = {
         connectivity: {
             webhookProxyUrl: "",
             firebotUrl: "http://localhost:7472"
@@ -79,6 +81,8 @@ export class KickIntegration extends EventEmitter {
         },
         advanced: {
             sendTwitchEvents: false,
+            logWebhooks: false,
+            logApiResponses: false,
             dangerousOperations: false
         }
     };
@@ -86,7 +90,7 @@ export class KickIntegration extends EventEmitter {
     // Whether to insert Kick chat messages into the Firebot chat dashboard.
     private chatFeed = true;
 
-    init(linked: boolean, integrationData: IntegrationData<integrationParameters>) {
+    init(linked: boolean, integrationData: IntegrationData<IntegrationParameters>) {
         if (integrationData.userSettings) {
             this.settings = integrationData.userSettings;
         }
@@ -226,7 +230,7 @@ export class KickIntegration extends EventEmitter {
         logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration disconnected.`);
     }
 
-    onUserSettingsUpdate(integrationData: IntegrationData<integrationParameters>) {
+    onUserSettingsUpdate(integrationData: IntegrationData<IntegrationParameters>) {
         if (integrationData.userSettings) {
             this.settings = integrationData.userSettings;
 
@@ -253,7 +257,7 @@ export class KickIntegration extends EventEmitter {
         return sources;
     }
 
-    getSettings(): integrationParameters {
+    getSettings(): IntegrationParameters {
         return this.settings;
     }
 
@@ -345,6 +349,20 @@ export const definition: IntegrationDefinition = {
                     type: "boolean",
                     default: false,
                     sortRank: 1
+                },
+                logWebhooks: {
+                    title: "Log Webhooks",
+                    tip: "Log all webhooks received from Kick to the Firebot log. Useful for debugging.",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 2
+                },
+                logApiResponses: {
+                    title: "Log API Calls and Responses",
+                    tip: "Log all API calls and responses to/from Kick to the Firebot log. Useful for debugging.",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 3
                 },
                 dangerousOperations: {
                     title: "Allow Dangerous Operations -- THIS COULD BREAK FIREBOT!",

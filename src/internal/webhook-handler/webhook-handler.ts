@@ -1,10 +1,17 @@
+import { IntegrationConstants } from "../../constants";
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleFollowerEvent } from "../../events/follower";
 import { handleLivestreamStatusUpdatedEvent } from "../../events/livestream-status-updated";
 import { handleModerationBannedEvent } from "../../events/moderation-banned";
+import { integration } from "../../integration";
+import { logger } from "../../main";
 import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata } from "../../shared/types";
 
 export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
+    if (integration.getSettings().advanced.logWebhooks) {
+        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Received webhook: ${JSON.stringify(webhook)}`);
+    }
+
     if (!webhook.kick_event_message_id || !webhook.kick_event_subscription_id || !webhook.kick_event_message_timestamp ||
         !webhook.kick_event_type || !webhook.kick_event_version || !webhook.raw_data) {
         throw new Error("Invalid webhook data");
