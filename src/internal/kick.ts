@@ -27,7 +27,7 @@ export class Kick {
         this.apiAborter = new AbortController();
 
         try {
-            this.broadcaster = await this.userManager.getUser();
+            this.broadcaster = await this.userManager.getBasicKickUser();
         } catch (error) {
             logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to get broadcaster ID: ${error}`);
             this.disconnect();

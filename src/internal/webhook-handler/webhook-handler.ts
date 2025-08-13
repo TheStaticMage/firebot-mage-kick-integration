@@ -1,51 +1,40 @@
-import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata, Webhook } from "../../shared/types";
+import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
+import { handleFollowerEvent } from "../../events/follower";
+import { handleLivestreamStatusUpdatedEvent } from "../../events/livestream-status-updated";
+import { handleModerationBannedEvent } from "../../events/moderation-banned";
+import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata } from "../../shared/types";
 
-export interface InboundWebhook {
-    kick_event_message_id: string;
-    kick_event_subscription_id: string;
-    kick_event_message_timestamp: string;
-    kick_event_type: string;
-    kick_event_version: string;
-    raw_data: string; // Assuming rawData is a base64 encoded JSON string
-}
-
-export function parseWebhook(webhook: InboundWebhook): Webhook {
+export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
     if (!webhook.kick_event_message_id || !webhook.kick_event_subscription_id || !webhook.kick_event_message_timestamp ||
         !webhook.kick_event_type || !webhook.kick_event_version || !webhook.raw_data) {
         throw new Error("Invalid webhook data");
     }
 
-    const result: Webhook = {
-        eventMessageID: webhook.kick_event_message_id,
-        eventSubscriptionID: webhook.kick_event_subscription_id,
-        eventMessageTimestamp: webhook.kick_event_message_timestamp,
-        eventType: webhook.kick_event_type,
-        eventVersion: webhook.kick_event_version
-    };
-
     switch (webhook.kick_event_type) {
         case "chat.message.sent": {
-            result.payload = parseChatMessageEvent(webhook.raw_data);
+            const event = parseChatMessageEvent(webhook.raw_data);
+            handleChatMessageSentEvent(event);
             break;
         }
         case "channel.followed": {
-            result.payload = parseFollowEvent(webhook.raw_data);
+            const event = parseFollowEvent(webhook.raw_data);
+            handleFollowerEvent(event);
             break;
         }
         case "livestream.status.updated": {
-            result.payload = parseLivestreamStatusUpdatedEvent(webhook.raw_data);
+            const event = parseLivestreamStatusUpdatedEvent(webhook.raw_data);
+            handleLivestreamStatusUpdatedEvent(event);
             break;
         }
         case "moderation.banned": {
-            result.payload = parseModerationBannedEvent(webhook.raw_data);
+            const event = parseModerationBannedEvent(webhook.raw_data);
+            handleModerationBannedEvent(event);
             break;
         }
         default: {
             throw new Error(`Unsupported event type: ${webhook.kick_event_type}`);
         }
     }
-
-    return result;
 }
 
 function parseDate(dateString: string | undefined): Date | undefined {

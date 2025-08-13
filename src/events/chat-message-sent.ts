@@ -1,19 +1,11 @@
 import { FirebotChatMessage, FirebotParsedMessagePart } from "@crowbartools/firebot-custom-scripts-types/types/chat";
 import { IntegrationConstants } from "../constants";
-import { commandHandler } from "../internal/command";
-import { kickUsers } from "../internal/user";
-import { firebot, logger } from "../main";
-import { ChatMessage, Webhook } from "../shared/types";
 import { integration } from "../integration";
+import { commandHandler } from "../internal/command";
+import { firebot, logger } from "../main";
+import { ChatMessage } from "../shared/types";
 
-export async function handleChatMessageSent(webhook: Webhook): Promise<void> {
-    if (!webhook.payload) {
-        logger.error(`[${IntegrationConstants.INTEGRATION_ID}] No payload found in webhook for event: id=${webhook.eventMessageID}, type=${webhook.eventType}`);
-        return;
-    }
-    const payload = webhook.payload as ChatMessage;
-    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Handling chat message sent event: id=${webhook.eventMessageID}, messageId=${payload.messageId}`);
-
+export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<void> {
     // Basic message parsing
     const helpers = new FirebotChatHelpers();
     const firebotChatMessage = await helpers.buildFirebotChatMessage(payload, payload.content);
@@ -35,8 +27,8 @@ export async function handleChatMessageSent(webhook: Webhook): Promise<void> {
     }
 
     // Increment message count for user
-    const viewer = await kickUsers.getViewerById(payload.sender.userId);
-    await kickUsers.countChatMessage(viewer._id, 1);
+    const viewer = await integration.kick.userManager.getViewerById(payload.sender.userId);
+    await integration.kick.userManager.countChatMessage(viewer._id, 1);
 
     // Command checking.
     await commandHandler.handleChatMessage(firebotChatMessage);

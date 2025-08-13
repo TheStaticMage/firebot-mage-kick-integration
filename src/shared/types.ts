@@ -1,12 +1,3 @@
-export interface Webhook {
-    eventMessageID: string;
-    eventSubscriptionID: string;
-    eventMessageTimestamp: string;
-    eventType: string;
-    eventVersion: string;
-    payload?: ChatMessage | KickFollower | LivestreamStatusUpdated | ModerationBannedEvent;
-}
-
 export interface KickBadge {
     text: string;
     type: string;
