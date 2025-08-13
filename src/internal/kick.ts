@@ -72,6 +72,10 @@ export class Kick {
                 {
                     name: "livestream.status.updated",
                     version: 1
+                },
+                {
+                    name: "moderation.banned",
+                    version: 1
                 }
             ],
             method: "webhook"

@@ -4,7 +4,7 @@ export interface Webhook {
     eventMessageTimestamp: string;
     eventType: string;
     eventVersion: string;
-    payload?: ChatMessage | KickFollower | LivestreamStatusUpdated;
+    payload?: ChatMessage | KickFollower | LivestreamStatusUpdated | ModerationBannedEvent;
 }
 
 export interface KickBadge {
@@ -84,4 +84,17 @@ export interface CategoryInfo {
     id: number;
     name: string;
     thumbnail: string;
+}
+
+export interface ModerationBannedMetadata {
+    reason: string;
+    createdAt: Date;
+    expiresAt?: Date; // null for permanent bans
+}
+
+export interface ModerationBannedEvent {
+    broadcaster: KickUser;
+    moderator: KickUser;
+    bannedUser: KickUser;
+    metadata: ModerationBannedMetadata;
 }

@@ -2,6 +2,7 @@ import { IntegrationConstants } from "../constants";
 import { handleChatMessageSent } from "../events/chat-message";
 import { handleFollower } from "../events/follower";
 import { handleLivestreamStatusUpdated } from "../events/livestream-status-updated";
+import { handleModerationBanned } from "../events/moderation-banned";
 import { integration } from "../integration";
 import { logger } from "../main";
 import { httpCallWithTimeout } from "./http";
@@ -102,6 +103,9 @@ export class Poller {
                     break;
                 case "livestream.status.updated":
                     handleLivestreamStatusUpdated(webhook);
+                    break;
+                case "moderation.banned":
+                    handleModerationBanned(webhook);
                     break;
                 default:
                     throw new Error("Unsupported event type");

@@ -24,6 +24,9 @@ import { kickStreamerVariable } from "./variables/streamer";
 import { kickStreamerIdVariable } from "./variables/streamer-id";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
+import { kickBanDuration } from "./variables/banDuration";
+import { kickModReason } from "./variables/mod-reason";
+import { kickModerator } from "./variables/moderator";
 
 type integrationParameters = {
     connectivity: {
@@ -128,6 +131,9 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.registerReplaceVariable(kickStreamTitleVariable);
         replaceVariableManager.registerReplaceVariable(kickUptimeVariable);
         replaceVariableManager.registerReplaceVariable(kickUserDisplayNameVariable);
+        replaceVariableManager.registerReplaceVariable(kickBanDuration);
+        replaceVariableManager.registerReplaceVariable(kickModReason);
+        replaceVariableManager.registerReplaceVariable(kickModerator);
 
         const { restrictionManager } = firebot.modules;
         restrictionManager.registerRestriction(platformRestriction);
