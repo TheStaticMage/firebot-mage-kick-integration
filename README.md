@@ -37,6 +37,7 @@ Currently supported:
   - Stream ended
   - Viewer arrived
   - Viewer banned
+  - Viewer timed out
 - Effects
   - Chat message (Kick)
   - Chat message (Platform aware)
@@ -48,26 +49,28 @@ Currently supported:
   - `$kickCategoryImageUrl` for your channel or another channel
   - `$kickChatMessage`
   - `$kickCurrentViewerCount` for your channel or another channel
-  - `$kickBanDuration` (in seconds)
   - `$kickModerator` (for bans)
   - `$kickModReason` (for bans)
   - `$kickStreamer`
   - `$kickStreamerId`
   - `$kickStreamIsLive` for your channel or another channel
   - `$kickStreamTitle` for your channel or another channel
+  - `$kickTimeoutDuration` (in seconds)
   - `$kickUptime` for your channel or another channel
   - `$kickUserDisplayName`
 
 Things that are not supported now but should be possible:
 
 - Events for subs (renewal, gift, first time)
-- Event for livestream metadata updated
-- Ban user, unban user actions
+- Event for livestream metadata updated (i.e. game or title change)
+- Events for unban and untimeout
+- Ban user, unban user, time out user, un-time out user actions
+- Channel point redeems (TBD)
 - Some chat roles
 
 Limitations due to Kick:
 
-- Many actions on Kick do not generate webhooks and therefore cannot generate Firebot events. Common things that you might expect to be supported but that currently aren't include channel rewards, hosts (raids), and users being unbanned, timed out, or un-timed out.
+- Many actions on Kick do not generate webhooks and therefore cannot generate Firebot events. Some of these events are available via the "pusher" websocket, but these are undocumented so we do not have a full list at this time. Common things that you might expect to be supported but that currently aren't available via web hooks include channel rewards, hosts (raids), and users being unbanned or un-timed out.
 
 - Kick user profile images are broken. This is because the Kick API returns URLs that cannot be accessed from anywhere other than the kick.com website. (Kick needs to fix this. Once they do, this integration can work properly.)
 

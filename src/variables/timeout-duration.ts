@@ -3,17 +3,17 @@ import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/type
 import { IntegrationConstants } from '../constants';
 
 const triggers: Effects.TriggersObject = {};
-triggers["event"] = [`${IntegrationConstants.INTEGRATION_ID}:banned`, `${IntegrationConstants.INTEGRATION_ID}:timeout`];
+triggers["event"] = [`${IntegrationConstants.INTEGRATION_ID}:timeout`];
 triggers["manual"] = true;
 
-export const kickModReason: ReplaceVariable = {
+export const kickTimeoutDurationVariable: ReplaceVariable = {
     definition: {
-        handle: "kickModReason",
-        description: "The reason given by the moderator for the action (ban).",
+        handle: "kickTimeoutDuration",
+        description: "The duration of the timeout imposed on the user in seconds.",
         triggers: triggers,
-        possibleDataOutput: ["text"]
+        possibleDataOutput: ["number"]
     },
     evaluator: (trigger) => {
-        return trigger.metadata.eventData?.modReason || "";
+        return trigger.metadata.eventData?.timeoutDuration || 0;
     }
 };

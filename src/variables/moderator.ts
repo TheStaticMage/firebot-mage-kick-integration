@@ -3,7 +3,7 @@ import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/type
 import { IntegrationConstants } from '../constants';
 
 const triggers: Effects.TriggersObject = {};
-triggers["event"] = [`${IntegrationConstants.INTEGRATION_ID}:banned`];
+triggers["event"] = [`${IntegrationConstants.INTEGRATION_ID}:banned`, `${IntegrationConstants.INTEGRATION_ID}:timeout`];
 triggers["manual"] = true;
 
 export const kickModerator: ReplaceVariable = {

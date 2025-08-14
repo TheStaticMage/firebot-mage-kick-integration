@@ -119,6 +119,39 @@ export const eventSource: EventSource = {
                     return message;
                 }
             }
+        },
+        {
+            id: "timeout",
+            name: "Viewer Timeout (Kick)",
+            description: "When someone is timed out in your channel",
+            cached: false,
+            manualMetadata: {
+                username: "alca",
+                userDisplayName: "Alca",
+                userId: "",
+                timeoutDuration: "60", // Kick reports this in minutes but we convert to seconds before calling the event
+                moderator: "Firebot",
+                modReason: "They were naughty"
+            },
+            activityFeed: {
+                icon: "fad fa-stopwatch",
+                getMessage: (eventData) => {
+                    const username = typeof eventData.username === "string" ? eventData.username : "";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : "";
+                    const showUserIdName = username.toLowerCase() !== userDisplayName.toLowerCase();
+                    const moderator = typeof eventData.moderator === "string" ? eventData.moderator : "Unknown Moderator";
+                    const modReason = typeof eventData.modReason === "string" ? eventData.modReason : "";
+
+                    let message = `**${userDisplayName}${
+                        showUserIdName ? ` (${username})` : ""
+                    }** was timed out for **${eventData.timeoutDuration} sec(s)** by **${moderator}**.`;
+
+                    if (modReason) {
+                        message = `${message} Reason: **${modReason}**`;
+                    }
+                    return message;
+                }
+            }
         }
     ]
 };
