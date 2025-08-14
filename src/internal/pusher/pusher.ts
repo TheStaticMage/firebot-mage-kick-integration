@@ -11,14 +11,20 @@ export class KickPusher {
     // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     private pusher: typeof Pusher | null = null;
 
-    connect(pusherAppKey: string, chatroomId: string): void {
-        if (!pusherAppKey || !chatroomId) {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Pusher cannot connect: App Key or Chatroom ID is missing.`);
+    connect(pusherAppKey: string, chatroomId: string, channelId: string): void {
+        if (!pusherAppKey) {
+            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Pusher cannot connect: App Key is missing.`);
             this.pusher = null;
             return;
         }
 
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher connecting (app key: ${pusherAppKey}, chatroom ID: ${chatroomId})...`);
+        if (!channelId && !chatroomId) {
+            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Pusher will not connect: No subscriptions available (Channel ID and Chatroom ID are both missing).`);
+            this.pusher = null;
+            return;
+        }
+
+        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher connecting (app key: ${pusherAppKey}...`);
 
         Pusher.log = (message: any) => {
             if (integration.getSettings().advanced.logWebsocketEvents) {
@@ -33,14 +39,17 @@ export class KickPusher {
             this.disconnect();
         });
 
-        const channel = this.pusher.subscribe(`chatrooms.${chatroomId}.v2`);
-        channel.bind_global(async (event: string, data: any) => {
-            try {
-                await this.dispatchEvent(event, data);
-            } catch (error) {
-                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Pusher event dispatch error: event=${event}, error=${error}`);
-            }
-        });
+        if (chatroomId) {
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to chatroom: ${chatroomId}`);
+            const chatroom = this.pusher.subscribe(`chatrooms.${chatroomId}.v2`);
+            chatroom.bind_global(this.dispatchChatroomEvent.bind(this));
+        }
+
+        if (channelId) {
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to channel: ${channelId}`);
+            const channel = this.pusher.subscribe(`channel.${channelId}`);
+            channel.bind_global(this.dispatchChannelEvent.bind(this));
+        }
     }
 
     disconnect(): void {
@@ -52,16 +61,36 @@ export class KickPusher {
         }
     }
 
-    private async dispatchEvent(event: string, data: any): Promise<void> {
-        switch (event) {
-            case 'App\\Events\\ChatMessageEvent':
-                await handleChatMessageSentEvent(this.parseChatMessageEvent(data));
-                break;
-            case 'pusher:subscription_succeeded':
-                logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribed successfully.`);
-                break;
-            default:
-                throw new Error(`Unhandled event type: ${event}`);
+    private async dispatchChannelEvent(event: string, data: any): Promise<void> {
+        try {
+            switch (event) {
+                case 'pusher:subscription_succeeded':
+                    logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribed successfully to channel events.`);
+                    break;
+                default:
+                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Unhandled channel event: ${event}, data: ${JSON.stringify(data)}`);
+                    throw new Error(`Unhandled event type: ${event}`);
+            }
+        } catch (error) {
+            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error handling Pusher channel event: ${event}, error: ${error}`);
+        }
+    }
+
+    private async dispatchChatroomEvent(event: string, data: any): Promise<void> {
+        try {
+            switch (event) {
+                case 'App\\Events\\ChatMessageEvent':
+                    await handleChatMessageSentEvent(this.parseChatMessageEvent(data));
+                    break;
+                case 'pusher:subscription_succeeded':
+                    logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribed successfully to chatroom events.`);
+                    break;
+                default:
+                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Unhandled chatroom event: ${event}, data: ${JSON.stringify(data)}`);
+                    throw new Error(`Unhandled event type: ${event}`);
+            }
+        } catch (error) {
+            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error handling Pusher chatroom event: ${event}, error: ${error}`);
         }
     }
 
