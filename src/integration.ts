@@ -13,7 +13,7 @@ import { KickPusher } from "./internal/pusher/pusher";
 import { firebot, logger } from "./main";
 import { platformRestriction } from "./restrictions/platform";
 import { getDataFilePath } from "./util/datafile";
-import { kickBanDuration } from "./variables/banDuration";
+import { kickTimeoutDurationVariable } from "./variables/timeout-duration";
 import { kickCategoryVariable } from "./variables/category";
 import { kickCategoryIdVariable } from "./variables/category-id";
 import { kickCategoryImageUrlVariable } from "./variables/category-image-url";
@@ -148,7 +148,7 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.registerReplaceVariable(kickStreamTitleVariable);
         replaceVariableManager.registerReplaceVariable(kickUptimeVariable);
         replaceVariableManager.registerReplaceVariable(kickUserDisplayNameVariable);
-        replaceVariableManager.registerReplaceVariable(kickBanDuration);
+        replaceVariableManager.registerReplaceVariable(kickTimeoutDurationVariable);
         replaceVariableManager.registerReplaceVariable(kickModReason);
         replaceVariableManager.registerReplaceVariable(kickModerator);
 
