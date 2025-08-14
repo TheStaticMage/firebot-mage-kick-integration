@@ -9,29 +9,34 @@ import { eventSource } from './event-source';
 import { AuthManager } from "./internal/auth";
 import { Kick } from "./internal/kick";
 import { Poller } from "./internal/poll";
+import { KickPusher } from "./internal/pusher/pusher";
 import { firebot, logger } from "./main";
 import { platformRestriction } from "./restrictions/platform";
 import { getDataFilePath } from "./util/datafile";
+import { kickBanDuration } from "./variables/banDuration";
 import { kickCategoryVariable } from "./variables/category";
 import { kickCategoryIdVariable } from "./variables/category-id";
 import { kickCategoryImageUrlVariable } from "./variables/category-image-url";
 import { kickChannelIdVariable } from "./variables/channel-id";
 import { kickChatMessageVariable } from "./variables/chat-message";
 import { kickCurrentViewerCountVariable } from "./variables/current-viewer-count";
+import { kickModReason } from "./variables/mod-reason";
+import { kickModerator } from "./variables/moderator";
 import { kickStreamIsLiveVariable } from "./variables/stream-is-live";
 import { kickStreamTitleVariable } from "./variables/stream-title";
 import { kickStreamerVariable } from "./variables/streamer";
 import { kickStreamerIdVariable } from "./variables/streamer-id";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
-import { kickBanDuration } from "./variables/banDuration";
-import { kickModReason } from "./variables/mod-reason";
-import { kickModerator } from "./variables/moderator";
+
+const pusherAppKey = "32cbd69e4b950bf97679";
 
 export type IntegrationParameters = {
     connectivity: {
         webhookProxyUrl: string;
         firebotUrl: string;
+        pusherAppKey: string;
+        chatroomId: string;
     };
     general: {
         chatFeed: boolean;
@@ -40,6 +45,7 @@ export type IntegrationParameters = {
         sendTwitchEvents: boolean;
         logWebhooks: boolean;
         logApiResponses: boolean;
+        logWebsocketEvents: boolean;
         dangerousOperations: boolean;
     };
 };
@@ -58,6 +64,10 @@ export class KickIntegration extends EventEmitter {
     // kick is an instance of the Kick class, which handles HTTP calls to the Kick API.
     kick = new Kick();
 
+    // pusher is an instance of the KickPusher class, which handles websocket
+    // connections to Kick for real-time events.
+    pusher = new KickPusher();
+
     // poller is an instance of the Poller class, which handles polling for events.
     private poller = new Poller();
 
@@ -74,7 +84,9 @@ export class KickIntegration extends EventEmitter {
     private settings: IntegrationParameters = {
         connectivity: {
             webhookProxyUrl: "",
-            firebotUrl: "http://localhost:7472"
+            firebotUrl: "http://localhost:7472",
+            pusherAppKey: pusherAppKey,
+            chatroomId: ""
         },
         general: {
             chatFeed: true
@@ -83,6 +95,7 @@ export class KickIntegration extends EventEmitter {
             sendTwitchEvents: false,
             logWebhooks: false,
             logApiResponses: false,
+            logWebsocketEvents: false,
             dangerousOperations: false
         }
     };
@@ -92,7 +105,7 @@ export class KickIntegration extends EventEmitter {
 
     init(linked: boolean, integrationData: IntegrationData<IntegrationParameters>) {
         if (integrationData.userSettings) {
-            this.settings = integrationData.userSettings;
+            this.settings = JSON.parse(JSON.stringify(integrationData.userSettings));
         }
 
         this.dataFilePath = getDataFilePath("integration-data.json");
@@ -215,6 +228,9 @@ export class KickIntegration extends EventEmitter {
         // Start the poller
         this.poller.connect(this.proxyPollKey);
 
+        // Websocket (pusher) connection setup
+        this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId);
+
         // Mark the integration as connected
         this.connected = true;
         this.emit("connected", IntegrationConstants.INTEGRATION_ID);
@@ -226,17 +242,27 @@ export class KickIntegration extends EventEmitter {
         this.authManager.disconnect();
         this.kick.disconnect();
         this.poller.disconnect(this.proxyPollKey);
+        this.pusher.disconnect();
         this.emit("disconnected", IntegrationConstants.INTEGRATION_ID);
         logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration disconnected.`);
     }
 
     onUserSettingsUpdate(integrationData: IntegrationData<IntegrationParameters>) {
         if (integrationData.userSettings) {
-            this.settings = integrationData.userSettings;
+            const oldSettings = JSON.parse(JSON.stringify(this.settings));
+            this.settings = JSON.parse(JSON.stringify(integrationData.userSettings));
 
-            if (integrationData.userSettings.connectivity.webhookProxyUrl !== this.settings.connectivity.webhookProxyUrl) {
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration user settings updated.`);
+
+            if (integrationData.userSettings.connectivity.webhookProxyUrl !== oldSettings.connectivity.webhookProxyUrl) {
                 logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration webhook proxy URL changed. You may need to re-link the integration.`);
-                return;
+            }
+
+            if (integrationData.userSettings.connectivity.pusherAppKey !== oldSettings.connectivity.pusherAppKey ||
+                integrationData.userSettings.connectivity.chatroomId !== oldSettings.connectivity.chatroomId) {
+                logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher App ID or Chatroom ID changed. Reconnecting...`);
+                this.pusher.disconnect();
+                this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId);
             }
         }
     }
@@ -323,6 +349,20 @@ export const definition: IntegrationDefinition = {
                     type: "string",
                     default: "http://localhost:7472",
                     sortRank: 2
+                },
+                pusherAppKey: {
+                    title: "Pusher App Key",
+                    tip: "The Pusher App Key to use for Kick websocket events. See documentation.",
+                    type: "string",
+                    default: pusherAppKey,
+                    sortRank: 3
+                },
+                chatroomId: {
+                    title: "Chatroom ID",
+                    tip: "The ID of the your chatroom for Kick websocket events. See documentation.",
+                    type: "string",
+                    default: "",
+                    sortRank: 4
                 }
             }
         },
@@ -363,6 +403,13 @@ export const definition: IntegrationDefinition = {
                     type: "boolean",
                     default: false,
                     sortRank: 3
+                },
+                logWebsocketEvents: {
+                    title: "Log Websocket Events",
+                    tip: "Log all Pusher (websocket) events to the Firebot log. Useful for debugging.",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 4
                 },
                 dangerousOperations: {
                     title: "Allow Dangerous Operations -- THIS COULD BREAK FIREBOT!",

@@ -5,7 +5,16 @@ import { commandHandler } from "../internal/command";
 import { firebot, logger } from "../main";
 import { ChatMessage } from "../shared/types";
 
+const messageCache = new Set<string>();
+
 export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<void> {
+    // Deduplication -- we can get messages via Pusher and webhook but they have the same ID
+    if (messageCache.has(payload.messageId)) {
+        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Duplicate chat message ignored: id=${payload.messageId}`);
+        return;
+    }
+    messageCache.add(payload.messageId);
+
     // Basic message parsing
     const helpers = new FirebotChatHelpers();
     const firebotChatMessage = await helpers.buildFirebotChatMessage(payload, payload.content);
