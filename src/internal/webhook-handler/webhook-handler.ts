@@ -6,6 +6,7 @@ import { handleModerationBannedEvent } from "../../events/moderation-banned";
 import { integration } from "../../integration";
 import { logger } from "../../main";
 import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata } from "../../shared/types";
+import { parseDate } from "../util";
 
 export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
     if (integration.getSettings().advanced.logWebhooks) {
@@ -42,19 +43,6 @@ export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
             throw new Error(`Unsupported event type: ${webhook.kick_event_type}`);
         }
     }
-}
-
-function parseDate(dateString: string | undefined): Date | undefined {
-    if (!dateString) {
-        return undefined;
-    }
-
-    if (dateString === "0001-01-01T00:00:00Z") {
-        return undefined;
-    }
-
-    const date = new Date(dateString);
-    return isNaN(date.getTime()) ? undefined : date;
 }
 
 export function parseKickUser(user: InboundKickUser): KickUser {

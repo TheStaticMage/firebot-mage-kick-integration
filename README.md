@@ -12,9 +12,9 @@ Seriously though:
 
 - By default, this integration does not store user data between sessions (e.g. currency, chat message counts). If you enable the "dangerous" option to store Kick users in the user database, this will almost certainly not be compatible with Firebot's eventual implementation of multi-platform support. At best this data will not be importable -- at worst, it will do enough damage that you won't be able to upgrade at all.
 
-- The current state of Kick's public API is ... incomplete (and that's putting it charitably). Their public API supports [only a small set of events](https://docs.kick.com/events/event-types) and is missing basic functionality. Some bots that integrate Kick now rely on their "private API" or websocket implementation "pusher" -- these work by pretending they are legitimate web browsers to sneak around Kick's web application firewall. I do not intend to use these "private" APIs in this project.
+- The current state of Kick's public API is ... incomplete (and that's putting it charitably). Their public API supports [only a small set of events](https://docs.kick.com/events/event-types) and is missing basic functionality. Some bots that integrate Kick now rely on a "private API" that only work by pretending they are legitimate web browsers to sneak around Kick's web application firewall. I do not intend to use these "private" APIs in this project.
 
-- This requires an [external server](/server) because Kick sends webhooks to a server on the internet. It does not support websockets like the Purple site does, which is necessary to let your Firebot instance connect to receive events. I have written a server and provide instructions to deploy my "webhook proxy" on Render.
+- This currently requires an [external server](/server) to receive webhooks that must be sent to a server on the internet. I have written a server and provide instructions to deploy my "webhook proxy" on Render. This server also supports more seamless authentication for the public API. (I may make this optional in the future by allowing each user to register their own Kick app and providing the client ID and secret in the configuration.)
 
 ## Introduction
 
@@ -105,7 +105,7 @@ As for support, there is none. In fact, you are risking current and future stabi
 
 ## Contributions
 
-I will not accept contributions that add functionality via Kick's "private API" or "pusher". I am the guy that wants to eat dinner at a steakhouse, finds the restaurant's online reservation system to be broken, and orders pizza instead out of principle. Kick is inexplicably making scant investments in their developer community despite being in catch-up mode. I would rather advise you to continue streaming on the Purple site than to help enable Kick's lack of investment via fragile workarounds.
+I will not accept contributions that add functionality via Kick's "private API". I am the guy that wants to eat dinner at a steakhouse, finds the restaurant's online reservation system to be broken, and orders pizza instead out of principle. Kick is inexplicably making scant investments in their developer community despite being in catch-up mode. I would rather advise you to continue streaming on the Purple site than to help enable Kick's lack of investment via fragile workarounds.
 
 I am also not interested in contributions that require modifications to Firebot that have not been accepted by their developers. I run Firebot on the [v5 branch](https://github.com/crowbartools/Firebot/tree/v5) so anything that is merged there, or in a Dev-approved pull request, is fair game.
 

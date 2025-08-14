@@ -1,6 +1,7 @@
 interface InboundBadge {
     text: string;
     type: string;
+    count?: number;
 }
 
 interface InboundChatMessage {
