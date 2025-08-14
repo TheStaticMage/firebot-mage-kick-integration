@@ -36,6 +36,7 @@ export type IntegrationParameters = {
         webhookProxyUrl: string;
         firebotUrl: string;
         pusherAppKey: string;
+        channelId: string;
         chatroomId: string;
     };
     general: {
@@ -86,6 +87,7 @@ export class KickIntegration extends EventEmitter {
             webhookProxyUrl: "",
             firebotUrl: "http://localhost:7472",
             pusherAppKey: pusherAppKey,
+            channelId: "",
             chatroomId: ""
         },
         general: {
@@ -229,7 +231,7 @@ export class KickIntegration extends EventEmitter {
         this.poller.connect(this.proxyPollKey);
 
         // Websocket (pusher) connection setup
-        this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId);
+        this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
 
         // Mark the integration as connected
         this.connected = true;
@@ -259,10 +261,11 @@ export class KickIntegration extends EventEmitter {
             }
 
             if (integrationData.userSettings.connectivity.pusherAppKey !== oldSettings.connectivity.pusherAppKey ||
-                integrationData.userSettings.connectivity.chatroomId !== oldSettings.connectivity.chatroomId) {
-                logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher App ID or Chatroom ID changed. Reconnecting...`);
+                integrationData.userSettings.connectivity.chatroomId !== oldSettings.connectivity.chatroomId ||
+                integrationData.userSettings.connectivity.channelId !== oldSettings.connectivity.channelId) {
+                logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher settings changed. Reconnecting...`);
                 this.pusher.disconnect();
-                this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId);
+                this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
             }
         }
     }
@@ -357,12 +360,19 @@ export const definition: IntegrationDefinition = {
                     default: pusherAppKey,
                     sortRank: 3
                 },
+                channelId: {
+                    title: "Channel ID",
+                    tip: "The ID of your Kick channel for Kick websocket events. See documentation.",
+                    type: "string",
+                    default: "",
+                    sortRank: 4
+                },
                 chatroomId: {
                     title: "Chatroom ID",
                     tip: "The ID of the your chatroom for Kick websocket events. See documentation.",
                     type: "string",
                     default: "",
-                    sortRank: 4
+                    sortRank: 5
                 }
             }
         },
