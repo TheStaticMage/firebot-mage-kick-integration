@@ -30,6 +30,7 @@
     },
     "dependencies": {
         "node-cache": "^5.1.2",
+        "node-json-db": "^1.6.0",
         "pusher-js": "^8.4.0"
     }
 }

@@ -89,3 +89,12 @@ export interface ModerationBannedEvent {
     bannedUser: KickUser;
     metadata: ModerationBannedMetadata;
 }
+
+export interface RewardRedeemedEvent {
+    rewardTitle: string;
+    userId: number;
+    channelId: number;
+    username: string;
+    userInput: string;
+    rewardBackgroundColor: string;
+}
