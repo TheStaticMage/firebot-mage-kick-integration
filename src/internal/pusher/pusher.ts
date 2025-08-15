@@ -1,8 +1,9 @@
 import { IntegrationConstants } from "../../constants";
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
+import { handleRewardRedeemedEvent } from "../../events/reward-redeemed-event";
 import { integration } from "../../integration";
 import { logger } from "../../main";
-import { ChatMessage, KickUser } from "../../shared/types";
+import { ChatMessage, KickUser, RewardRedeemedEvent } from "../../shared/types";
 import { parseDate } from "../util";
 
 const Pusher = require('pusher-js');
@@ -40,15 +41,27 @@ export class KickPusher {
         });
 
         if (chatroomId) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to chatroom: ${chatroomId}`);
-            const chatroom = this.pusher.subscribe(`chatrooms.${chatroomId}.v2`);
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to chatroom.${chatroomId}.v2`);
+            const chatroomv2 = this.pusher.subscribe(`chatrooms.${chatroomId}.v2`);
+            chatroomv2.bind_global(this.dispatchChatroomEvent.bind(this));
+
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to chatrooms.${chatroomId}`);
+            const chatrooms = this.pusher.subscribe(`chatrooms.${chatroomId}`);
+            chatrooms.bind_global(this.dispatchChatroomEvent.bind(this));
+
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to chatroom_${chatroomId}`);
+            const chatroom = this.pusher.subscribe(`chatroom_${chatroomId}`);
             chatroom.bind_global(this.dispatchChatroomEvent.bind(this));
         }
 
         if (channelId) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to channel: ${channelId}`);
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to channel.${channelId}`);
             const channel = this.pusher.subscribe(`channel.${channelId}`);
             channel.bind_global(this.dispatchChannelEvent.bind(this));
+
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to channel_${channelId}`);
+            const channelOld = this.pusher.subscribe(`channel_${channelId}`);
+            channelOld.bind_global(this.dispatchChannelEvent.bind(this));
         }
     }
 
@@ -81,6 +94,9 @@ export class KickPusher {
             switch (event) {
                 case 'App\\Events\\ChatMessageEvent':
                     await handleChatMessageSentEvent(this.parseChatMessageEvent(data));
+                    break;
+                case 'RewardRedeemedEvent':
+                    await handleRewardRedeemedEvent(this.parseRewardRedeemedEvent(data));
                     break;
                 case 'pusher:subscription_succeeded':
                     logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribed successfully to chatroom events.`);
@@ -117,6 +133,18 @@ export class KickPusher {
             },
             content: d.content,
             createdAt: parseDate(d.created_at)
+        };
+    }
+
+    private parseRewardRedeemedEvent(data: any): RewardRedeemedEvent {
+        const d = data as RewardRedeemedEventData;
+        return {
+            rewardTitle: d.reward_title,
+            userId: d.user_id,
+            channelId: d.channel_id,
+            username: d.username,
+            userInput: d.user_input,
+            rewardBackgroundColor: d.reward_background_color
         };
     }
 

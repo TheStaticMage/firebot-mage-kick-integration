@@ -1,9 +1,9 @@
-export function kickifyUserId(userId: string): string {
-    return userId.startsWith("k") ? userId : `k${userId}`;
+export function kickifyUserId(userId: string | number): string {
+    return String(userId).startsWith("k") ? String(userId) : `k${userId}`;
 }
 
-export function unkickifyUserId(userId: string): string {
-    return userId.startsWith("k") ? userId.substring(1) : userId;
+export function unkickifyUserId(userId: string | number): string {
+    return String(userId).startsWith("k") ? String(userId).substring(1) : String(userId);
 }
 
 export function kickifyUsername(username: string): string {

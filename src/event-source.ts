@@ -152,6 +152,32 @@ export const eventSource: EventSource = {
                     return message;
                 }
             }
+        },
+        {
+            id: "channel-reward-redemption",
+            name: "Channel Reward Redemption (Kick)",
+            description: "When someone redeems a channel reward on Kick",
+            cached: false,
+            manualMetadata: {
+                username: "firebot",
+                userDisplayName: "Firebot",
+                userId: "",
+                rewardName: "Test Reward",
+                messageText: "Test message"
+            },
+            activityFeed: {
+                icon: "fad fa-circle",
+                getMessage: (eventData) => {
+                    const username = typeof eventData.username === "string" ? eventData.username : "";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : "";
+                    const showUserIdName = username.toLowerCase() !== userDisplayName.toLowerCase();
+                    return `**${userDisplayName}${
+                        showUserIdName ? ` (${username})` : ""
+                    }** redeemed **${eventData.rewardName}**${
+                        typeof eventData.messageText === "string" && eventData.messageText.length > 0 ? `: *${eventData.messageText}*` : ""
+                    }`;
+                }
+            }
         }
     ]
 };

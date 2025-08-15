@@ -31,6 +31,7 @@ Currently supported:
   - Restrictions for commands generally work
   - A custom restriction is shipped with this integration (trigger platform)
 - Events
+  - Channel points redeemed
   - Chat message
   - Follow
   - Stream started
@@ -43,6 +44,7 @@ Currently supported:
   - Chat message (Platform aware)
   - Set stream game
   - Set stream title
+  - Trigger Custom Channel Reward Handler
 - Variables
   - `$kickCategory` (`$kickCategory`) for your channel or another channel
   - `$kickCategoryId` (`$kickGameId`) for your channel or another channel
@@ -51,6 +53,9 @@ Currently supported:
   - `$kickCurrentViewerCount` for your channel or another channel
   - `$kickModerator` (for bans)
   - `$kickModReason` (for bans)
+  - `$kickRewardId` (for redeems)
+  - `$kickRewardMessage` (for redeems)
+  - `$kickRewardName` (for redeems)
   - `$kickStreamer`
   - `$kickStreamerId`
   - `$kickStreamIsLive` for your channel or another channel
@@ -65,7 +70,6 @@ Things that are not supported now but should be possible:
 - Event for livestream metadata updated (i.e. game or title change)
 - Events for unban and untimeout
 - Ban user, unban user, time out user, un-time out user actions
-- Channel point redeems (TBD)
 - Some chat roles
 
 Limitations due to Kick:
@@ -75,6 +79,8 @@ Limitations due to Kick:
 - Kick user profile images are broken. This is because the Kick API returns URLs that cannot be accessed from anywhere other than the kick.com website. (Kick needs to fix this. Once they do, this integration can work properly.)
 
 - Kick does not have an API endpoint to get the current viewer list or any other similar functionality to determine when users are present in your stream. That means there can be no accural of currency or tracking of watch time for Kick users.
+
+- Kick channel point redeems cannot be created, deleted, approved, or rejected via the API. Therefore, it's not possible to have Firebot approve or reject awards via its API, to push existing custom rewards to Kick, or the like. In addition, Kick channel point redeems cannot be disabled or paused at all.
 
 Limitations due to Firebot:
 
@@ -86,7 +92,7 @@ Limitations due to Firebot:
 
 - Actions on chat feed messages (e.g. delete, ban user, etc.) will either do nothing or possibly error out when used on Kick messages. These are hard-coded within Firebot to assume the user or message is on the Purple site.
 
-- Cooldowns on commands do not work because Firebot does not expose the "cooldown manager" to scripts.
+- Cooldowns do not work because Firebot does not expose the "cooldown manager" to scripts. This means there are no cooldowns on channel point redeems, commands, etc. (You could use my [Firebot rate limiter](https://github.com/TheStaticMage/firebot-rate-limiter) instead.)
 
 - Effects and variables defined by Firebot that pertain to events from the Purple site are often hard-coded for only those events. This means, for example, that the `$moderator` variable is not available to the Kick integration, even though the event metadata is the same. For this reason, this integration adds variables like `$kickModerator`. However, you'll need to have separate handlers for all of these.
 

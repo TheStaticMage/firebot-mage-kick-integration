@@ -5,7 +5,9 @@ import { chatEffect } from "./effects/chat";
 import { chatPlatformEffect } from "./effects/chat-platform";
 import { streamGameEffect } from "./effects/stream-game";
 import { streamTitleEffect } from "./effects/stream-title";
+import { triggerCustomChannelRewardEffect } from "./effects/trigger-custom-channel-reward";
 import { eventSource } from './event-source';
+import { rewardTitleFilter } from "./filters/reward-title";
 import { AuthManager } from "./internal/auth";
 import { Kick } from "./internal/kick";
 import { Poller } from "./internal/poll";
@@ -13,7 +15,6 @@ import { KickPusher } from "./internal/pusher/pusher";
 import { firebot, logger } from "./main";
 import { platformRestriction } from "./restrictions/platform";
 import { getDataFilePath } from "./util/datafile";
-import { kickTimeoutDurationVariable } from "./variables/timeout-duration";
 import { kickCategoryVariable } from "./variables/category";
 import { kickCategoryIdVariable } from "./variables/category-id";
 import { kickCategoryImageUrlVariable } from "./variables/category-image-url";
@@ -22,10 +23,14 @@ import { kickChatMessageVariable } from "./variables/chat-message";
 import { kickCurrentViewerCountVariable } from "./variables/current-viewer-count";
 import { kickModReason } from "./variables/mod-reason";
 import { kickModerator } from "./variables/moderator";
+import { kickRewardIdVariable } from "./variables/reward-id";
+import { kickRewardMessageVariable } from "./variables/reward-message";
+import { kickRewardNameVariable } from "./variables/reward-name";
 import { kickStreamIsLiveVariable } from "./variables/stream-is-live";
 import { kickStreamTitleVariable } from "./variables/stream-title";
 import { kickStreamerVariable } from "./variables/streamer";
 import { kickStreamerIdVariable } from "./variables/streamer-id";
+import { kickTimeoutDurationVariable } from "./variables/timeout-duration";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
 
@@ -133,26 +138,49 @@ export class KickIntegration extends EventEmitter {
         effectManager.registerEffect(chatPlatformEffect);
         effectManager.registerEffect(streamGameEffect);
         effectManager.registerEffect(streamTitleEffect);
+        effectManager.registerEffect(triggerCustomChannelRewardEffect);
 
         const { eventManager } = firebot.modules;
         eventManager.registerEventSource(eventSource);
 
+        const { eventFilterManager } = firebot.modules;
+        eventFilterManager.registerFilter(rewardTitleFilter);
+
         const { replaceVariableManager } = firebot.modules;
+
+        // Category variables
         replaceVariableManager.registerReplaceVariable(kickCategoryIdVariable);
         replaceVariableManager.registerReplaceVariable(kickCategoryImageUrlVariable);
         replaceVariableManager.registerReplaceVariable(kickCategoryVariable);
+
+        // Channel variables
         replaceVariableManager.registerReplaceVariable(kickChannelIdVariable);
+
+        // Chat variables
         replaceVariableManager.registerReplaceVariable(kickChatMessageVariable);
-        replaceVariableManager.registerReplaceVariable(kickCurrentViewerCountVariable);
+
+        // Streamer variables
         replaceVariableManager.registerReplaceVariable(kickStreamerIdVariable);
         replaceVariableManager.registerReplaceVariable(kickStreamerVariable);
+
+        // Stream variables
+        replaceVariableManager.registerReplaceVariable(kickCurrentViewerCountVariable);
         replaceVariableManager.registerReplaceVariable(kickStreamIsLiveVariable);
         replaceVariableManager.registerReplaceVariable(kickStreamTitleVariable);
         replaceVariableManager.registerReplaceVariable(kickUptimeVariable);
+
+        // User variables
         replaceVariableManager.registerReplaceVariable(kickUserDisplayNameVariable);
-        replaceVariableManager.registerReplaceVariable(kickTimeoutDurationVariable);
+
+        // Ban and timeout variables
         replaceVariableManager.registerReplaceVariable(kickModReason);
         replaceVariableManager.registerReplaceVariable(kickModerator);
+        replaceVariableManager.registerReplaceVariable(kickTimeoutDurationVariable);
+
+        // Reward variables
+        replaceVariableManager.registerReplaceVariable(kickRewardIdVariable);
+        replaceVariableManager.registerReplaceVariable(kickRewardNameVariable);
+        replaceVariableManager.registerReplaceVariable(kickRewardMessageVariable);
 
         const { restrictionManager } = firebot.modules;
         restrictionManager.registerRestriction(platformRestriction);
