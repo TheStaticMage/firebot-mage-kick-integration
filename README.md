@@ -31,6 +31,7 @@ Currently supported:
   - Restrictions for commands generally work
   - A custom restriction is shipped with this integration (trigger platform)
 - Events
+  - Channel data updated
   - Channel points redeemed
   - Chat message
   - Follow

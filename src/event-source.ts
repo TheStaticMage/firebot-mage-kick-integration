@@ -178,6 +178,17 @@ export const eventSource: EventSource = {
                     }`;
                 }
             }
+        },
+        {
+            id: "channel-data-updated",
+            name: "Channel Data Updated (Kick)",
+            description: "When the channel data is updated on Kick (this happens periodically)",
+            cached: false,
+            manualMetadata: {
+                username: "firebot",
+                userDisplayName: "Firebot",
+                userId: ""
+            }
         }
     ]
 };
