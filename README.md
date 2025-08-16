@@ -14,7 +14,7 @@ Seriously though:
 
 - The current state of Kick's public API is ... incomplete (and that's putting it charitably). Their public API supports [only a small set of events](https://docs.kick.com/events/event-types) and is missing basic functionality. Some bots that integrate Kick now rely on a "private API" that only work by pretending they are legitimate web browsers to sneak around Kick's web application firewall. I do not intend to use these "private" APIs in this project.
 
-- This currently requires an [external server](/server) to receive webhooks that must be sent to a server on the internet. I have written a server and provide instructions to deploy my "webhook proxy" on Render. This server also supports more seamless authentication for the public API. (I may make this optional in the future by allowing each user to register their own Kick app and providing the client ID and secret in the configuration.)
+- For full functionality, this requires an [external server](/server) to receive webhooks that must be sent to a server on the internet. I have written a server and provide instructions to deploy my "webhook proxy" on Render. There is also an option to create a Kick app and enter its ID and secret into Firebot to handle all authentication locally, but this will miss certain events (e.g. follows) that are not sent through the "pusher" websocket.
 
 ## Introduction
 
@@ -101,9 +101,9 @@ Limitations due to Firebot:
 
 ## Installation
 
-This integration is not yet ready for general consumption and is intended for people who are technically familiar with Firebot. I am not supplying user-friendly installation instructions at this time because of the complicated dependencies (notably, the [webhook proxy](/server)) and the numerous risks and limitations of this integration. I will reconsider this decision when and if (a) Kick provides publicly available websocket access, and (b) changes in Firebot allow a cleaner integration. Spoiler: I think this will be a while.
+This integration is not yet ready for general consumption and is intended for people who are technically familiar with Firebot. I will reconsider this decision when and if (a) Kick provides publicly available websocket access, and (b) changes in Firebot allow a cleaner integration. Spoiler: I think this will be a while.
 
-For those who know what they're doing: this works like any other Firebot startup script. (If you don't know what that means, you should definitely NOT be installing this.)
+If you are particularly brave: [Installation instructions](/doc/installation.md).
 
 ## Support
 
