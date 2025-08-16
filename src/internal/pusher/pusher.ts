@@ -16,19 +16,19 @@ export class KickPusher {
         if (!pusherAppKey) {
             logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Pusher cannot connect: App Key is missing.`);
             this.pusher = null;
-            return;
+            throw new Error("Pusher App Key is required");
         }
 
         if (!channelId && !chatroomId) {
             logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Pusher will not connect: No subscriptions available (Channel ID and Chatroom ID are both missing).`);
             this.pusher = null;
-            return;
+            throw new Error("Pusher Channel ID and Chatroom ID are required");
         }
 
         logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher connecting (app key: ${pusherAppKey}...`);
 
         Pusher.log = (message: any) => {
-            if (integration.getSettings().advanced.logWebsocketEvents) {
+            if (integration.getSettings().logging.logWebsocketEvents) {
                 logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher log: ${message}`);
             }
         };

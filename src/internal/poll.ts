@@ -7,10 +7,18 @@ import { handleWebhook } from "./webhook-handler/webhook-handler";
 export class Poller {
     private pollAborter = new AbortController();
     private proxyPollKey = "";
+    private proxyPollUrl = "";
 
     connect(proxyPollKey: string): void {
         this.proxyPollKey = proxyPollKey;
+        this.proxyPollUrl = `${integration.getSettings().webhookProxy.webhookProxyUrl}/poll`;
         this.pollAborter = new AbortController();
+
+        if (!this.proxyPollKey || !this.proxyPollUrl) {
+            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Cannot start poller: Missing proxy poll key or URL.`);
+            return;
+        }
+
         this.startPoller();
         logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Poller connected with proxy poll key: ${this.proxyPollKey}`);
     }
@@ -18,9 +26,9 @@ export class Poller {
     disconnect(proxyPollKey = ''): void {
         // This is to let the proxy know the poller is no longer active. It will
         // help make things cleaner on the server side in case of a reconnect.
-        if (proxyPollKey || this.proxyPollKey) {
+        if (this.proxyPollUrl && (proxyPollKey || this.proxyPollKey)) {
             logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Disconnecting proxy poller with key: ${proxyPollKey || this.proxyPollKey}`);
-            const url = `${integration.getSettings().connectivity.webhookProxyUrl}/poll/${proxyPollKey || this.proxyPollKey}`;
+            const url = `${this.proxyPollUrl}/${proxyPollKey || this.proxyPollKey}`;
             httpCallWithTimeout(url, "DELETE")
                 .then(() => {
                     logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Successfully disconnected proxy poller.`);
@@ -56,7 +64,7 @@ export class Poller {
     }
 
     private async poll(): Promise<void> {
-        const url = `${integration.getSettings().connectivity.webhookProxyUrl}/poll/${this.proxyPollKey}`;
+        const url = `${this.proxyPollUrl}/${this.proxyPollKey}`;
         return new Promise((resolve, reject) => {
             httpCallWithTimeout(url, "GET", '', '', this.pollAborter.signal, 0)
                 .then((response): InboundWebhook[] => {
