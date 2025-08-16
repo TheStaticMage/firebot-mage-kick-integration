@@ -9,7 +9,7 @@ import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, Livestream
 import { parseDate } from "../util";
 
 export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
-    if (integration.getSettings().advanced.logWebhooks) {
+    if (integration.getSettings().logging.logWebhooks) {
         logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Received webhook: ${JSON.stringify(webhook)}`);
     }
 

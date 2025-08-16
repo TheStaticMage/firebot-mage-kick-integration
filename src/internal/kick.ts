@@ -60,6 +60,11 @@ export class Kick {
     }
 
     async subscribeToEvents(): Promise<void> {
+        if (!integration.getSettings().webhookProxy.webhookProxyUrl) {
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Webhook proxy URL not set, skipping event subscription.`);
+            return;
+        }
+
         const payload = {
             events: [
                 {
@@ -96,7 +101,7 @@ export class Kick {
 
     async httpCallWithTimeout(uri: string, method: string, body = '', signal: AbortSignal | null = null, timeout = 10000): Promise<any> {
         const requestId = crypto.randomUUID();
-        if (integration.getSettings().advanced.logApiResponses) {
+        if (integration.getSettings().logging.logApiResponses) {
             logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] Making API call to ${uri} with method ${method} and body: ${JSON.stringify(body)}`);
         }
 
@@ -110,12 +115,12 @@ export class Kick {
                 timeout
             );
 
-            if (integration.getSettings().advanced.logApiResponses) {
+            if (integration.getSettings().logging.logApiResponses) {
                 logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] API call to ${uri} successful. Response: ${JSON.stringify(response)}`);
             }
             return response;
         } catch (error) {
-            if (integration.getSettings().advanced.logApiResponses) {
+            if (integration.getSettings().logging.logApiResponses) {
                 logger.error(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] API call to ${uri} failed: ${error}`);
             }
             throw error;

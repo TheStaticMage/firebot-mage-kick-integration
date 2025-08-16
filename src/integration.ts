@@ -38,20 +38,28 @@ const pusherAppKey = "32cbd69e4b950bf97679";
 
 export type IntegrationParameters = {
     connectivity: {
-        webhookProxyUrl: string;
         firebotUrl: string;
         pusherAppKey: string;
         channelId: string;
         chatroomId: string;
     };
+    webhookProxy: {
+        webhookProxyUrl: string;
+    };
+    kickApp: {
+        clientId: string;
+        clientSecret: string;
+    };
     general: {
         chatFeed: boolean;
     };
-    advanced: {
-        sendTwitchEvents: boolean;
+    logging: {
         logWebhooks: boolean;
         logApiResponses: boolean;
         logWebsocketEvents: boolean;
+    };
+    advanced: {
+        sendTwitchEvents: boolean;
         dangerousOperations: boolean;
     };
 };
@@ -89,20 +97,28 @@ export class KickIntegration extends EventEmitter {
     // READ DOCUMENTATION CAREFULLY BEFORE ENABLING!
     private settings: IntegrationParameters = {
         connectivity: {
-            webhookProxyUrl: "",
             firebotUrl: "http://localhost:7472",
             pusherAppKey: pusherAppKey,
             channelId: "",
             chatroomId: ""
         },
+        webhookProxy: {
+            webhookProxyUrl: ""
+        },
+        kickApp: {
+            clientId: "",
+            clientSecret: ""
+        },
         general: {
             chatFeed: true
         },
-        advanced: {
-            sendTwitchEvents: false,
+        logging: {
             logWebhooks: false,
             logApiResponses: false,
-            logWebsocketEvents: false,
+            logWebsocketEvents: false
+        },
+        advanced: {
+            sendTwitchEvents: false,
             dangerousOperations: false
         }
     };
@@ -118,11 +134,11 @@ export class KickIntegration extends EventEmitter {
         this.dataFilePath = getDataFilePath("integration-data.json");
         const fileData = this.loadIntegrationData();
         if (fileData) {
-            this.authManager.init(this, fileData.refreshToken);
+            this.authManager.init(fileData.refreshToken);
             this.proxyPollKey = fileData.proxyPollKey;
         } else {
             logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration data file not found or invalid. Please link the integration.`);
-            this.authManager.init(this, "");
+            this.authManager.init("");
         }
 
         const { httpServer } = firebot.modules;
@@ -227,7 +243,7 @@ export class KickIntegration extends EventEmitter {
 
     async connect() {
         // Make sure the necessary tokens and settings are available
-        if (!this.authManager.canConnect() || !this.proxyPollKey) {
+        if (!this.authManager.canConnect()) {
             const { frontendCommunicator } = firebot.modules;
             frontendCommunicator.send("error", "Kick Integration: You need to link the integration before you can connect it.");
             logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration is not properly linked. Please link the integration first.`);
@@ -242,6 +258,8 @@ export class KickIntegration extends EventEmitter {
         } catch (error) {
             logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to connect Kick authentication: ${error}`);
             this.disconnect();
+            const { frontendCommunicator } = firebot.modules;
+            frontendCommunicator.send("error", "Kick Integration: Failed to authenticate to Kick. You may need to re-link the integration.");
             return;
         }
 
@@ -252,6 +270,8 @@ export class KickIntegration extends EventEmitter {
         } catch (error) {
             logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to connect Kick API integration: ${error}`);
             this.disconnect();
+            const { frontendCommunicator } = firebot.modules;
+            frontendCommunicator.send("error", "Kick Integration: Failed to connect to the Kick API. You may need to re-link the integration.");
             return;
         }
 
@@ -259,7 +279,15 @@ export class KickIntegration extends EventEmitter {
         this.poller.connect(this.proxyPollKey);
 
         // Websocket (pusher) connection setup
-        this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
+        try {
+            this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
+        } catch (error) {
+            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to connect Kick websocket (Pusher) integration: ${error}`);
+            this.disconnect();
+            const { frontendCommunicator } = firebot.modules;
+            frontendCommunicator.send("error", "Kick Integration: Failed to connect to the Kick websocket (Pusher) integration. You may need to re-link the integration or configure your channel and chatroom IDs.");
+            return;
+        }
 
         // Mark the integration as connected
         this.connected = true;
@@ -283,9 +311,13 @@ export class KickIntegration extends EventEmitter {
             this.settings = JSON.parse(JSON.stringify(integrationData.userSettings));
 
             logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration user settings updated.`);
+            logger.debug(JSON.stringify(this.settings));
 
-            if (integrationData.userSettings.connectivity.webhookProxyUrl !== oldSettings.connectivity.webhookProxyUrl) {
-                logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration webhook proxy URL changed. You may need to re-link the integration.`);
+            if (integrationData.userSettings.webhookProxy.webhookProxyUrl !== oldSettings.webhookProxy.webhookProxyUrl
+                || integrationData.userSettings.kickApp.clientId !== oldSettings.kickApp.clientId
+                || integrationData.userSettings.kickApp.clientSecret !== oldSettings.kickApp.clientSecret
+            ) {
+                logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration webhook proxy URL or client credentials changed. You may need to re-link the integration.`);
             }
 
             if (integrationData.userSettings.connectivity.pusherAppKey !== oldSettings.connectivity.pusherAppKey ||
@@ -367,46 +399,72 @@ export const definition: IntegrationDefinition = {
             title: "Connectivity Settings",
             sortRank: 1,
             settings: {
-                webhookProxyUrl: {
-                    title: "Webhook Proxy URL",
-                    tip: "The URL of the webhook proxy server to use for Kick events.",
-                    type: "string",
-                    default: "",
-                    sortRank: 1
-                },
                 firebotUrl: {
                     title: "Firebot URL",
-                    tip: "The URL of the Firebot instance to connect to for the authentication callback.",
+                    tip: "The base URL of your firebot installation.",
                     type: "string",
                     default: "http://localhost:7472",
-                    sortRank: 2
+                    sortRank: 1
                 },
                 pusherAppKey: {
                     title: "Pusher App Key",
                     tip: "The Pusher App Key to use for Kick websocket events. See documentation.",
                     type: "string",
                     default: pusherAppKey,
-                    sortRank: 3
+                    sortRank: 2
                 },
                 channelId: {
                     title: "Channel ID",
                     tip: "The ID of your Kick channel for Kick websocket events. See documentation.",
                     type: "string",
                     default: "",
-                    sortRank: 4
+                    sortRank: 3
                 },
                 chatroomId: {
                     title: "Chatroom ID",
                     tip: "The ID of the your chatroom for Kick websocket events. See documentation.",
                     type: "string",
                     default: "",
-                    sortRank: 5
+                    sortRank: 4
+                }
+            }
+        },
+        webhookProxy: {
+            title: "Webhook Proxy Settings",
+            sortRank: 2,
+            settings: {
+                webhookProxyUrl: {
+                    title: "Webhook Proxy URL",
+                    tip: "The URL of the webhook proxy server to use for Kick events. Leave blank if you want to use your own Kick app. See documentation.",
+                    type: "string",
+                    default: "",
+                    sortRank: 1
+                }
+            }
+        },
+        kickApp: {
+            title: "Kick App Settings",
+            sortRank: 3,
+            settings: {
+                clientId: {
+                    title: "Client ID",
+                    tip: "The Client ID for your Kick app. Ignored when using webhook proxy. See documentation.",
+                    type: "string",
+                    default: "",
+                    sortRank: 1
+                },
+                clientSecret: {
+                    title: "Client Secret",
+                    tip: "The Client Secret for your Kick app. Ignored when using webhook proxy. See documentation.",
+                    type: "string",
+                    default: "",
+                    sortRank: 2
                 }
             }
         },
         general: {
             title: "General Settings",
-            sortRank: 2,
+            sortRank: 4,
             settings: {
                 chatFeed: {
                     title: "Chat Feed",
@@ -414,6 +472,33 @@ export const definition: IntegrationDefinition = {
                     type: "boolean",
                     default: true,
                     sortRank: 1
+                }
+            }
+        },
+        logging: {
+            title: "Logging Settings",
+            sortRank: 98,
+            settings: {
+                logWebhooks: {
+                    title: "Log Webhooks",
+                    tip: "Log all webhooks received from Kick to the Firebot log. Useful for debugging.",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 1
+                },
+                logApiResponses: {
+                    title: "Log API Calls and Responses",
+                    tip: "Log all API calls and responses to/from Kick to the Firebot log. Useful for debugging.",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 2
+                },
+                logWebsocketEvents: {
+                    title: "Log Websocket Events",
+                    tip: "Log all Pusher (websocket) events to the Firebot log. Useful for debugging.",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 3
                 }
             }
         },
@@ -427,27 +512,6 @@ export const definition: IntegrationDefinition = {
                     type: "boolean",
                     default: false,
                     sortRank: 1
-                },
-                logWebhooks: {
-                    title: "Log Webhooks",
-                    tip: "Log all webhooks received from Kick to the Firebot log. Useful for debugging.",
-                    type: "boolean",
-                    default: false,
-                    sortRank: 2
-                },
-                logApiResponses: {
-                    title: "Log API Calls and Responses",
-                    tip: "Log all API calls and responses to/from Kick to the Firebot log. Useful for debugging.",
-                    type: "boolean",
-                    default: false,
-                    sortRank: 3
-                },
-                logWebsocketEvents: {
-                    title: "Log Websocket Events",
-                    tip: "Log all Pusher (websocket) events to the Firebot log. Useful for debugging.",
-                    type: "boolean",
-                    default: false,
-                    sortRank: 4
                 },
                 dangerousOperations: {
                     title: "Allow Dangerous Operations -- THIS COULD BREAK FIREBOT!",

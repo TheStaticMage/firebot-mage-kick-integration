@@ -1,7 +1,7 @@
 
 import { createHash, randomBytes, randomUUID } from "crypto";
 import { IntegrationConstants } from "../constants";
-import { KickIntegration } from "../integration";
+import { integration } from "../integration";
 import { firebot, logger } from "../main";
 import { httpCallWithTimeout } from "./http";
 
@@ -10,12 +10,10 @@ export class AuthManager {
     private authRenewer: NodeJS.Timeout | null = null;
     private codeChallenges: Record<string, string> = {};
     private authToken = "";
-    private integration: KickIntegration | null = null;
     private refreshToken = "";
     private tokenExpiresAt = 0;
 
-    init(that: KickIntegration, refreshToken: string) {
-        this.integration = that;
+    init(refreshToken: string) {
         this.refreshToken = refreshToken;
     }
 
@@ -76,10 +74,25 @@ export class AuthManager {
         const { challenge: codeChallengeSha256, verifier: randomVerifier } = this.generatePKCEPair();
         this.codeChallenges[state] = randomVerifier;
 
+        // Depending on configuration, use either the webhook proxy or direct authorization
+        if (integration.getSettings().webhookProxy.webhookProxyUrl) {
+            return this.getAuthorizationRequestUrlWebhookProxy(state, codeChallengeSha256);
+        }
+        if (integration.getSettings().kickApp.clientId && integration.getSettings().kickApp.clientSecret) {
+            return this.getAuthorizationRequestUrlDirect(state, codeChallengeSha256);
+        }
+        throw new Error("Cannot generate authorization URL: Missing webhook proxy URL or client credentials.");
+    }
+
+    private getLocalRedirectUri(): string {
+        return `${integration.getSettings().connectivity.firebotUrl}/integrations/${IntegrationConstants.INTEGRATION_URI}/callback`;
+    }
+
+    private getAuthorizationRequestUrlWebhookProxy(state: string, codeChallengeSha256: string): string {
         // Upstream webhook proxy adds the client ID
         const params = new URLSearchParams({
             // eslint-disable-next-line camelcase
-            redirect_uri: `${this.integration?.getSettings().connectivity.firebotUrl}/integrations/${IntegrationConstants.INTEGRATION_URI}/callback`,
+            redirect_uri: this.getLocalRedirectUri(),
             scope: IntegrationConstants.SCOPES.join(" "),
             // eslint-disable-next-line camelcase
             code_challenge: codeChallengeSha256,
@@ -88,7 +101,32 @@ export class AuthManager {
             state
         });
         const queryString = params.toString();
-        const authUrl = `${this.integration?.getSettings().connectivity.webhookProxyUrl}/auth/authorize?${queryString}`;
+        const authUrl = `${integration.getSettings().webhookProxy.webhookProxyUrl}/auth/authorize?${queryString}`;
+        return authUrl;
+    }
+
+    private getAuthorizationRequestUrlDirect(state: string, codeChallengeSha256: string): string {
+        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Generating authorization URL for Kick app...`);
+        if (!integration.getSettings().kickApp.clientId || !integration.getSettings().kickApp.clientSecret) {
+            throw new Error("Kick app client ID or secret is not set in settings.");
+        }
+
+        const params = new URLSearchParams({
+            // eslint-disable-next-line camelcase
+            redirect_uri: this.getLocalRedirectUri(),
+            scope: IntegrationConstants.SCOPES.join(" "),
+            // eslint-disable-next-line camelcase
+            code_challenge: codeChallengeSha256,
+            // eslint-disable-next-line camelcase
+            code_challenge_method: "S256",
+            // eslint-disable-next-line camelcase
+            client_id: integration.getSettings().kickApp.clientId || "",
+            // eslint-disable-next-line camelcase
+            response_type: "code",
+            state
+        });
+        const queryString = params.toString();
+        const authUrl = `${IntegrationConstants.KICK_AUTH_SERVER}/oauth/authorize?${queryString}`;
         return authUrl;
     }
 
@@ -130,15 +168,32 @@ export class AuthManager {
             code_verifier: this.codeChallenges[state]
         };
 
+        let url = "";
+        let payloadString = "";
+
+        if (integration.getSettings().webhookProxy.webhookProxyUrl) {
+            url = `${integration.getSettings().webhookProxy.webhookProxyUrl}/auth/token`;
+            payloadString = JSON.stringify(payload);
+        } else {
+            url = `${IntegrationConstants.KICK_AUTH_SERVER}/oauth/token`;
+            // eslint-disable-next-line camelcase
+            Object.assign(payload, { client_id: integration.getSettings().kickApp.clientId || "" });
+            // eslint-disable-next-line camelcase
+            Object.assign(payload, { client_secret: integration.getSettings().kickApp.clientSecret || "" });
+            // eslint-disable-next-line camelcase
+            Object.assign(payload, { redirect_uri: this.getLocalRedirectUri() });
+            payloadString = new URLSearchParams(payload).toString();
+        }
+
         try {
-            const response = await httpCallWithTimeout(`${this.integration?.getSettings().connectivity.webhookProxyUrl}/auth/token`, 'POST', '', JSON.stringify(payload));
+            const response = await httpCallWithTimeout(url, 'POST', '', payloadString);
             this.authToken = response.access_token;
             this.refreshToken = response.refresh_token;
-            const proxyPollKey = response.proxy_poll_key;
+            const proxyPollKey = response.proxy_poll_key || "";
             this.tokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
-            this.integration?.kick.setAuthToken(this.authToken);
-            this.integration?.saveIntegrationTokenData(this.refreshToken, proxyPollKey);
-            this.integration?.connect();
+            integration.kick.setAuthToken(this.authToken);
+            integration.saveIntegrationTokenData(this.refreshToken, proxyPollKey);
+            integration.connect();
 
             logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration connected successfully!`);
             res.status(200).send("Kick integration connected successfully! You can close this tab.");
@@ -149,7 +204,14 @@ export class AuthManager {
     }
 
     async handleLinkCallback(req: any, res: any) {
-        res.redirect(this.getAuthorizationRequestUrl());
+        try {
+            const authUrl = this.getAuthorizationRequestUrl();
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Redirecting user to authorization URL: ${authUrl}`);
+            res.redirect(authUrl);
+        } catch (error) {
+            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error handling link callback: ${error}`);
+            res.status(500).send(`Error handling link callback: ${error}`);
+        }
     }
 
     private async refreshAuthToken(): Promise<boolean> {
@@ -181,12 +243,29 @@ export class AuthManager {
             refresh_token: this.refreshToken
         };
 
-        const response = await httpCallWithTimeout(`${this.integration?.getSettings().connectivity.webhookProxyUrl}/auth/token`, 'POST', '', JSON.stringify(payload));
+        let url = "";
+        let payloadString = "";
+
+        if (integration.getSettings().webhookProxy.webhookProxyUrl) {
+            url = `${integration.getSettings().webhookProxy.webhookProxyUrl}/auth/token`;
+            payloadString = JSON.stringify(payload);
+        } else {
+            url = `${IntegrationConstants.KICK_AUTH_SERVER}/oauth/token`;
+            // eslint-disable-next-line camelcase
+            Object.assign(payload, { client_id: integration.getSettings().kickApp.clientId || "" });
+            // eslint-disable-next-line camelcase
+            Object.assign(payload, { client_secret: integration.getSettings().kickApp.clientSecret || "" });
+            // eslint-disable-next-line camelcase
+            Object.assign(payload, { redirect_uri: this.getLocalRedirectUri() });
+            payloadString = new URLSearchParams(payload).toString();
+        }
+
+        const response = await httpCallWithTimeout(url, 'POST', '', payloadString);
         this.authToken = response.access_token;
         this.tokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
         this.refreshToken = response.refresh_token;
-        this.integration?.kick.setAuthToken(this.authToken);
-        this.integration?.saveIntegrationTokenData(this.refreshToken);
+        integration.kick.setAuthToken(this.authToken);
+        integration.saveIntegrationTokenData(this.refreshToken);
         logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration tokens refreshed successfully. Valid until: ${new Date(this.tokenExpiresAt).toISOString()}`);
     }
 

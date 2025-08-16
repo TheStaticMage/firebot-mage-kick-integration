@@ -27,7 +27,11 @@ export async function httpCallWithTimeout(
             headers["Authorization"] = `Bearer ${authToken}`;
         }
         if (body) {
-            headers["Content-Type"] = "application/json";
+            if (/^[^=]+=[^=]+(&[^=]+=[^=]+)*$/.test(body)) {
+                headers["Content-Type"] = "application/x-www-form-urlencoded";
+            } else {
+                headers["Content-Type"] = "application/json";
+            }
         }
         headers["Accept"] = "application/json";
 
