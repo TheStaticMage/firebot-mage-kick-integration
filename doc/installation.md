@@ -99,9 +99,31 @@ Here's how to do it:
         >
         > Yes, you are free to use tools that are for your personal use. The prohibition on third-party tools only applies to content presented to viewers either on or off Twitch.
 
+    - **Trigger Twitch Events**
+
+        In short: with great power comes great responsibility. **If you do not know exactly what you are doing, or you are not careful about validating your effect lists for both platforms, then you should NOT use these options!**
+
+        Checking any of these boxes will trigger the Firebot Twitch event corresponding to the Kick event. For example, if you check the box for "Chat Message" in this section, then whenever a message is posted in your Kick chat, both the "Chat Message (Kick)" and the "Chat Message (Twitch)" events will be triggered in Firebot. You could then put all of the logic in the "Chat Message (Twitch)" event and not need to duplicate all of that logic in the "Chat Message (Kick)" event.
+
+        This can help reduce the amount of repetitive code if you are doing the same things in your Kick and Twitch handlers. In addition, you can check the `$platform` variable in any conditional effects: it will always be set to `kick` for events originating from Kick.
+
+        Note that another way to do this is to define a preset effect list. For example, you could add a preset effect list for "Handle Chat Message" and call that preset effect list from both the "Chat Message (Kick)" and the "Chat Message (Twitch)" events. If you set things up that way, then you do not need to check the boxes in this section.
+
+        :warning: **CAUTION**: If you intend to have a combined event handler, be sure that you have thoroughly reviewed the effects it triggers. For example:
+
+          - Are you using the default "Chat" effect built into Firebot to send a response? This will always send the message to Twitch, even to reply to a message posted on Kick! (You probably need to convert this to the "Chat (Platform Aware)" effect distributed with this integration.)
+
+          - Are you using the "Chat Message" event to route messages to a chat overlay, such as with the [Mage Onscreen Chat](https://github.com/TheStaticMage/firebot-mage-onscreen-chat) overlay? If so, you might be running afoul of the Twitch terms of service by merging chat messages from multiple platforms on your stream.
+
+          - Are you adding or removing VIP or moderator status from a user, banning a user, timing out a user, etc., as a result of an event? If the event comes in via Kick, this may have unexpected results when the API calls are sent to Twitch because the User IDs will be different.
+
+        Note: Triggering the equivalent Firebot Twitch events is _in addition to_ triggering the Kick events supplied by this integration. (The Kick variants of these events will always be triggered, whether or not you have the box checked to trigger the equivalent Twitch event.)
+
     - **Logging Settings**
 
         If you are developing or troubleshooting the integration, enabling additional logging events may help.
+
+        These messages are logged at the "debug" level. For this to be useful, you also need to have debug logging enabled in the global settings for Firebot (Settings &lt; Advanced &lt; Enable Debug Mode and then restart Firebot).
 
     - **Advanced Settings**
 

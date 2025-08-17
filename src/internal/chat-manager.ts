@@ -2,6 +2,7 @@ import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effect
 import { IntegrationConstants } from "../constants";
 import { logger } from "../main";
 import { Kick } from "./kick";
+import { platformVariable } from "../variables/platform";
 
 export class ChatManager {
     private kick: Kick;
@@ -63,31 +64,12 @@ export class ChatManager {
         return true;
     }
 
-    static getPlatformFromTrigger(trigger: Effects.Trigger): "kick" | "twitch" | "" {
-        if (trigger.metadata.chatMessage?.userId && trigger.metadata.chatMessage.userId.startsWith("k")) {
-            return "kick";
+    static getPlatformFromTrigger(trigger: Effects.Trigger): string {
+        try {
+            return platformVariable.evaluator(trigger) || "unknown";
+        } catch (error) {
+            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error determining platform from trigger: ${error}`);
+            return "unknown";
         }
-
-        if (trigger.metadata.chatMessage?.userId && /^\d+$/.test(trigger.metadata.chatMessage.userId)) {
-            return "twitch";
-        }
-
-        if (
-            trigger.metadata.eventData?.userId &&
-            typeof trigger.metadata.eventData.userId === "string" &&
-            trigger.metadata.eventData.userId.startsWith("k")
-        ) {
-            return "kick";
-        }
-
-        if (
-            trigger.metadata.eventData?.userId &&
-            typeof trigger.metadata.eventData.userId === "string" &&
-            /^\d+$/.test(trigger.metadata.eventData.userId)
-        ) {
-            return "twitch";
-        }
-
-        return "";
     }
 }

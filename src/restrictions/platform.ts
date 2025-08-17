@@ -1,6 +1,6 @@
 import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { IntegrationConstants } from "../constants";
-import { ChatManager } from "../internal/chat-manager";
+import { platformVariable } from "../variables/platform";
 
 export const platformRestriction = {
     definition: {
@@ -72,20 +72,20 @@ export const platformRestriction = {
     },
     predicate: (triggerData: Effects.Trigger, { comparison, platform }: { comparison: string, platform: string }): Promise<boolean> => {
         return new Promise((resolve, reject) => {
-            const currentPlatform = ChatManager.getPlatformFromTrigger(triggerData);
+            const currentPlatform = platformVariable.evaluator(triggerData);
             if (comparison === "is" && currentPlatform === platform) {
                 resolve(true);
             }
-            if (comparison === "is" && currentPlatform !== "" && platform === "any") {
+            if (comparison === "is" && currentPlatform !== "unknown" && platform === "any") {
                 resolve(true);
             }
-            if (comparison === "is" && currentPlatform === "" && platform === "unknown") {
+            if (comparison === "is" && currentPlatform === "unknown" && platform === "unknown") {
                 resolve(true);
             }
-            if (comparison === "isNot" && currentPlatform !== "" && platform === "unknown") {
+            if (comparison === "isNot" && currentPlatform !== "unknown" && platform === "unknown") {
                 resolve(true);
             }
-            if (comparison === "isNot" && currentPlatform === "" && platform === "any") {
+            if (comparison === "isNot" && currentPlatform === "unknown" && platform === "any") {
                 resolve(true);
             }
             if (comparison === "isNot" && currentPlatform !== platform) {

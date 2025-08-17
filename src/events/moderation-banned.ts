@@ -1,5 +1,6 @@
+import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
-import { kickifyUserId, kickifyUsername } from "../internal/util";
+import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot } from "../main";
 import { ModerationBannedEvent } from "../shared/types";
 
@@ -9,78 +10,24 @@ export async function handleModerationBannedEvent(payload: ModerationBannedEvent
     const { frontendCommunicator } = firebot.modules;
     frontendCommunicator.send("twitch:chat:user:delete-messages", kickifyUsername(payload.bannedUser.username));
 
-    if (payload.metadata.expiresAt) {
-        // If there is an expiration time, this is a timeout, not a ban.
-        triggerTimedOut(
-            payload.bannedUser.username,
-            payload.bannedUser.userId.toString(),
-            payload.bannedUser.username, // Kick does not have display names
-            payload.moderator.username,
-            payload.moderator.userId.toString(),
-            payload.moderator.username, // Kick does not have display names
-            payload.metadata.reason || "",
-            payload.metadata.expiresAt
-        );
-        return;
-    }
+    const eventName = payload.metadata.expiresAt ? "timeout" : "banned";
+    const metadata = {
+        username: kickifyUsername(payload.bannedUser.username),
+        userId: kickifyUserId(payload.bannedUser.userId.toString()),
+        userDisplayName: unkickifyUsername(payload.bannedUser.username),
+        moderatorUsername: kickifyUsername(payload.moderator.username),
+        moderatorId: kickifyUserId(payload.moderator.userId.toString()),
+        moderatorDisplayName: unkickifyUsername(payload.moderator.username),
+        modReason: payload.metadata.reason || "",
+        moderator: unkickifyUsername(payload.moderator.username),
+        timeoutDuration: payload.metadata.expiresAt ? Math.floor((payload.metadata.expiresAt.getTime() - Date.now()) / 1000) : undefined, // Convert to seconds
+        platform: "kick"
+    };
 
-    triggerBanned(
-        payload.bannedUser.username,
-        payload.bannedUser.userId.toString(),
-        payload.bannedUser.username, // Kick does not have display names
-        payload.moderator.username,
-        payload.moderator.userId.toString(),
-        payload.moderator.username, // Kick does not have display names
-        payload.metadata.reason || ""
-    );
-}
-
-function triggerBanned(
-    username: string,
-    userId: string,
-    userDisplayName: string,
-    moderatorUsername: string,
-    moderatorId: string,
-    moderatorDisplayName: string,
-    modReason: string
-): void {
     const { eventManager } = firebot.modules;
-    for (const source of integration.getEventSources()) {
-        eventManager.triggerEvent(source, "banned", {
-            username: kickifyUsername(username),
-            userId: kickifyUserId(userId),
-            userDisplayName,
-            moderatorUsername: kickifyUsername(moderatorUsername),
-            moderatorId: kickifyUserId(moderatorId),
-            moderatorDisplayName,
-            modReason,
-            moderator: moderatorDisplayName // For compatibility with Twitch `$moderator` variable
-        });
-    }
-}
+    eventManager.triggerEvent(IntegrationConstants.INTEGRATION_ID, eventName, metadata);
 
-function triggerTimedOut(
-    username: string,
-    userId: string,
-    userDisplayName: string,
-    moderatorUsername: string,
-    moderatorId: string,
-    moderatorDisplayName: string,
-    modReason: string,
-    expiresAt: Date
-): void {
-    const { eventManager } = firebot.modules;
-    for (const source of integration.getEventSources()) {
-        eventManager.triggerEvent(source, "timeout", {
-            username: kickifyUsername(username),
-            userId: kickifyUserId(userId),
-            userDisplayName,
-            moderatorUsername: kickifyUsername(moderatorUsername),
-            moderatorId: kickifyUserId(moderatorId),
-            moderatorDisplayName,
-            modReason,
-            timeoutDuration: Math.floor((expiresAt.getTime() - Date.now()) / 1000), // Convert to seconds
-            moderator: moderatorDisplayName // For compatibility with Twitch `$moderator` variable
-        });
+    if ((eventName === "timeout" && integration.getSettings().triggerTwitchEvents.viewerTimeout) || (eventName === "banned" && integration.getSettings().triggerTwitchEvents.viewerBanned)) {
+        eventManager.triggerEvent("twitch", eventName, metadata);
     }
 }
