@@ -8,13 +8,15 @@
 
 Seriously though:
 
-- The current design of Firebot is to support exactly one streaming platform (the Purple one) and there are assumptions in the deepest parts of the code that reflect this. (There are stated plans to support multiple platforms in their version 6 release, but no published timeframe for this release that I am aware of.)
+- The current design of Firebot is to support exactly one streaming platform (Twitch). There are assumptions in the deepest parts of the code that reflect this. There is a lot of Firebot functionality that can only be partially implemented or not implemented at all due to these limitations. (There are stated plans for Firebot to support multiple platforms in their version 6 release, but there's no published timeframe for this release that I am aware of.)
 
-- By default, this integration does not store user data between sessions (e.g. currency, chat message counts). If you enable the "dangerous" option to store Kick users in the user database, this will almost certainly not be compatible with Firebot's eventual implementation of multi-platform support. At best this data will not be importable -- at worst, it will do enough damage that you won't be able to upgrade at all.
+- Although I have done my best to keep the Kick user data distinguished from the built-in Firebot user databases, it's still possible that Kick user information could "leak" into Firebot's data structures. If this happens, it could cause Firebot to malfunction or stop working entirely. It may or may not be possible to clean up any such corruption. Therefore, you should make sure that your backups are working and that you're saving lots and lots of backups in case this kind of corruption were to occur.
 
-- The current state of Kick's public API is ... incomplete (and that's putting it charitably). Their public API supports [only a small set of events](https://docs.kick.com/events/event-types) and is missing basic functionality. Some bots that integrate Kick now rely on a "private API" that only work by pretending they are legitimate web browsers to sneak around Kick's web application firewall. I do not intend to use these "private" APIs in this project.
+- The current state of Kick's public API is ... incomplete (and that's putting it charitably). Their public API supports [only a small set of events](https://docs.kick.com/events/event-types) and is missing even the most basic functionality. This integration uses the "pusher" websocket to capture additional events, but this is not officially documented and could stop working at any time. (Note that some bots that integrate Kick now rely on a "private API" that only work by pretending they are legitimate web browsers to sneak around Kick's web application firewall. That's even more prone to breakage or removal, so I do not intend to use these "private" APIs in this project.)
 
-- For full functionality, this requires an [external server](/server) to receive webhooks that must be sent to a server on the internet. I have written a server and provide instructions to deploy my "webhook proxy" on Render. There is also an option to create a Kick app and enter its ID and secret into Firebot to handle all authentication locally, but this will miss certain events (e.g. follows) that are not sent through the "pusher" websocket.
+- For full functionality (including to receive "follow" events), this requires an [webhook proxy server](/server) to receive webhooks that must be sent to a server on the internet. I have written such a server and provide instructions to deploy it on Render. If you don't want to set up such a server yourself, there is also an option to create a Kick app and enter its ID and secret into Firebot, which will enable some events. However, certain events (notably follows) are only sent by webhook, and are therefore only available if you use a webhook proxy.
+
+- Firebot does not know that something happened until it receives a notification from Kick. Unfortunately, webhooks from Kick (especially for chat messages) tend to be delayed by seconds or minutes quite frequently. Until Kick improves the reliability of their webhooks, you (and every other user of any other bot or website) may experience this lag.
 
 ## Introduction
 
@@ -22,14 +24,22 @@ This [Firebot](https://firebot.app) integration provides events and effects for 
 
 Currently supported:
 
-- Kick messages added to Firebot chat feed (Dashboard)
-  - Emote display works
-  - Displays Kick username as author of message
-  - Displays Kick icon as the user's profile image in the dashboard
+- Kick messages are added to Firebot chat feed (Dashboard)
+  - Emote display work correctly
+  - It displays Kick username as author of message
+  - It displays Kick icon as the user's profile image
 - Commands
   - Commands generally work
   - Restrictions for commands generally work
-  - A custom restriction is shipped with this integration (trigger platform)
+  - A custom restriction is shipped with this integration (platform)
+- Conditions
+  - Platform
+- Effects
+  - Chat message (Kick)
+  - Chat message (Platform aware)
+  - Set stream game
+  - Set stream title
+  - Trigger Custom Channel Reward Handler
 - Events
   - Channel data updated
   - Channel points redeemed
@@ -40,20 +50,17 @@ Currently supported:
   - Viewer arrived
   - Viewer banned
   - Viewer timed out
-- Effects
-  - Chat message (Kick)
-  - Chat message (Platform aware)
-  - Set stream game
-  - Set stream title
-  - Trigger Custom Channel Reward Handler
+- Filters
+  - Platform filter
 - Variables
   - `$kickCategory` (`$kickCategory`) for your channel or another channel
   - `$kickCategoryId` (`$kickGameId`) for your channel or another channel
   - `$kickCategoryImageUrl` for your channel or another channel
   - `$kickChatMessage`
+  - `$kickChannelId` for your channel or another channel
   - `$kickCurrentViewerCount` for your channel or another channel
-  - `$kickModerator` (for bans)
-  - `$kickModReason` (for bans)
+  - `$kickModerator` (for bans/timeouts)
+  - `$kickModReason` (for bans/timeouts)
   - `$kickRewardId` (for redeems)
   - `$kickRewardMessage` (for redeems)
   - `$kickRewardName` (for redeems)
@@ -64,6 +71,7 @@ Currently supported:
   - `$kickTimeoutDuration` (in seconds)
   - `$kickUptime` for your channel or another channel
   - `$kickUserDisplayName`
+  - `$platform`
 
 Things that are not supported now but should be possible:
 
@@ -85,19 +93,17 @@ Limitations due to Kick:
 
 Limitations due to Firebot:
 
-- Firebot's viewer database uses the user id from the Purple site as its primary key, and has assumptions throughout the entire program that any user in the viewer database is a user on the Purple site. Until there is a fundamental design change in Firebot to support multiple platforms, this will always limit the functionality of this integration and may cause strange ripple effects throughout the program.
+- Firebot's main viewer database uses the user id from Twitch as its primary key, and has assumptions throughout the entire program that any user in the viewer database is a user on Twitch. Until there is a fundamental design change in Firebot to support multiple platforms, this will always limit the functionality of this integration and may cause strange ripple effects throughout the program.
 
-- Kick user data is not stored between Firebot sessions, making it rather pointless to track currency, chat messages, and the like. (It is possible to enable the "dangerous" option to store Kick user data in the user database, but this causes various incompatibilities throughout Firebot and as such it is strongly discouraged.)
-
-- The user experience for getting the Kick authorization URL is not great because there's not a feasible way (that I found) to present a modal with a clickable URL or have Firebot open a browser window from a script. (Kick's authentication uses a mechanism that Firebot's built in oauth provider does not currently support and I do not want to distribute my bot's client secret to anyone running Firebot who wants to connect to it.)
-
-- Actions on chat feed messages (e.g. delete, ban user, etc.) will either do nothing or possibly error out when used on Kick messages. These are hard-coded within Firebot to assume the user or message is on the Purple site.
+- Actions on chat feed messages (e.g. delete, ban user, etc.) will either do nothing or possibly error out when used on Kick messages. These are hard-coded within Firebot to assume the user or message is on Twitch.
 
 - Cooldowns do not work because Firebot does not expose the "cooldown manager" to scripts. This means there are no cooldowns on channel point redeems, commands, etc. (You could use my [Firebot rate limiter](https://github.com/TheStaticMage/firebot-rate-limiter) instead.)
 
-- Effects and variables defined by Firebot that pertain to events from the Purple site are often hard-coded for only those events. This means, for example, that the `$moderator` variable is not available to the Kick integration, even though the event metadata is the same. For this reason, this integration adds variables like `$kickModerator`. However, you'll need to have separate handlers for all of these.
+- Effects and variables defined by Firebot that pertain to events from Twitch are often hard-coded for only those events. This means, for example, that the `$moderator` variable is not available to the Kick integration, even though the event metadata is the same. For this reason, this integration adds variables like `$kickModerator` for your Kick event handlers. Alternatively, you can choose to trigger the equivalent Twitch events for each Kick event, provided that you update all of your effects to be platform-aware.
 
-- Firebot deletes all configuration data for an integration when the integration is unlinked. If you unlink the integration and then exit Firebot without relinking, you'll lose your configuration (webhook URL and preferences). You'll need to reconfigure this under Settings &gt; Integrations. (This integration includes a fix to re-write the current settings to the database upon re-linking to try to minimize the impact.)
+- The user experience for getting the Kick authorization URL is not great because there's not a feasible way (that I found) to present a modal with a clickable URL or have Firebot open a browser window from a script. Kick's authentication uses a mechanism that Firebot's built in oauth provider does not currently support and I do not want to distribute my bot's client secret to anyone running Firebot who wants to connect to it. Fortunately, you should only have to go through this once.
+
+- Firebot deletes all configuration data for an integration when the integration is unlinked. If you unlink the integration and then exit Firebot without relinking, you'll lose your configuration (webhook URL and preferences). You'll need to reconfigure this under Settings &gt; Integrations. This integration includes a fix to re-write the current settings to the database upon re-linking to try to minimize the impact, and hopefully you won't need to repeatedly link and unlink the integration.
 
 ## Installation
 
@@ -115,15 +121,17 @@ As for support, there is none. In fact, you are risking current and future stabi
 
 ## Contributions
 
-I will not accept contributions that add functionality via Kick's "private API". I am the guy that wants to eat dinner at a steakhouse, finds the restaurant's online reservation system to be broken, and orders pizza instead out of principle. Kick is inexplicably making scant investments in their developer community despite being in catch-up mode. I would rather advise you to continue streaming on the Purple site than to help enable Kick's lack of investment via fragile workarounds.
-
-I am also not interested in contributions that require modifications to Firebot that have not been accepted by their developers. I run Firebot on the [v5 branch](https://github.com/crowbartools/Firebot/tree/v5) so anything that is merged there, or in a Dev-approved pull request, is fair game.
-
-Feel free to fork the project and add either of the above to your own fork if you're so inclined. The [license](/LICENSE) lets you do that!
-
-If you'd like to submit other contributions, feel free to open a Pull Request.
+Contributions are welcome via [Pull Requests](https://github.com/TheStaticMage/firebot-mage-kick-integration/pulls). I _strongly suggest_ that you contact me before making significant changes, because I'd feel really bad if you spent a lot of time working on something that is not consistent with my vision for the project. Please refer to the [Contribution Guidelines](/.github/contributing.md) for specifics.
 
 If you would like to discuss this project with the author, join [The Static Family](https://discord.gg/hzDYKzG9Zp) Discord and head to the `#firebot-mage-kick-integration` channel.
+
+Please note:
+
+- I will not accept contributions that add functionality via Kick's "private API". I am the guy that wants to eat dinner at a steakhouse, finds the restaurant's online reservation system to be broken, and orders pizza instead out of principle. Kick is inexplicably making scant investments in their developer community despite being in catch-up mode. I will simply advise you to stream on Twitch rather than to help enable Kick's lack of investment via fragile workarounds.
+
+- I am also not interested in contributions that require modifications to Firebot that have not been accepted by their developers. (I run Firebot on the [v5 branch](https://github.com/crowbartools/Firebot/tree/v5) so anything that is merged there, or in a Dev-approved pull request, is fair game.)
+
+- The beauty of open source is that if you don't agree with my philosophy, you can create your own fork and develop it as you see fit.
 
 ## License
 
