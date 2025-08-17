@@ -1,11 +1,18 @@
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
-import { firebot } from "../main";
+import { firebot, logger } from "../main";
 import { KickFollower } from "../shared/types";
 
 export async function handleFollowerEvent(payload: KickFollower): Promise<void> {
     // Create the user if they don't exist
-    const viewer = await integration.kick.userManager.getOrCreateViewer(payload.follower);
+    let viewer = await integration.kick.userManager.getViewerById(payload.follower.userId);
+    if (!viewer) {
+        viewer = await integration.kick.userManager.createNewViewer(payload.follower, [], true);
+        if (!viewer) {
+            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to create new viewer for userId=${payload.follower.userId}`);
+            return;
+        }
+    }
 
     // Trigger the follow event
     const { eventManager } = firebot.modules;
