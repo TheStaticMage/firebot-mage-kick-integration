@@ -36,7 +36,7 @@ export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<
     }
 
     // Increment message count for user
-    const viewer = await integration.kick.userManager.getViewerById(payload.sender.userId);
+    const viewer = await integration.kick.userManager.getOrCreateViewer(payload.sender);
     await integration.kick.userManager.countChatMessage(viewer._id, 1);
 
     // Command checking.

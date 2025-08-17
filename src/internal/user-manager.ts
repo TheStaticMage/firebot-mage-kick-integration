@@ -4,8 +4,8 @@ import { integration } from "../integration";
 import { firebot, logger } from "../main";
 import { BasicKickUser, KickUser } from "../shared/types";
 import { Kick } from "./kick";
+import { kickifyUserId, kickifyUsername, unkickifyUsername } from "./util";
 import { parseBasicKickUser } from "./webhook-handler/webhook-handler";
-import { kickifyUserId, kickifyUsername, unkickifyUserId, unkickifyUsername } from "./util";
 
 export class KickUserManager {
     private kick: Kick;
@@ -45,7 +45,7 @@ export class KickUserManager {
         });
     }
 
-    async getViewer(viewerRequest: KickUser): Promise<FirebotViewer> {
+    private async getViewerInternal(viewerRequest: KickUser, createMissing = false): Promise<FirebotViewer | undefined> {
         const userId = kickifyUserId(viewerRequest.userId);
         const username = kickifyUsername(viewerRequest.username);
 
@@ -54,6 +54,9 @@ export class KickUserManager {
             let viewer = await viewerDatabase.getViewerById(userId);
             if (viewer) {
                 return viewer;
+            }
+            if (!createMissing) {
+                return;
             }
 
             // CAUTION: This creates viewers in the database. The IDs will not
@@ -76,6 +79,9 @@ export class KickUserManager {
         const userInMap = this._users.get(userId);
         if (userInMap) {
             return userInMap;
+        }
+        if (!createMissing) {
+            return;
         }
 
         const fakeViewer: FirebotViewer = {
@@ -102,18 +108,24 @@ export class KickUserManager {
         return fakeViewer;
     }
 
-    async getViewerById(userId: string): Promise<FirebotViewer> {
-        const rawUserId = unkickifyUserId(userId);
-        const viewerRequest: KickUser = {
-            userId: kickifyUserId(rawUserId),
-            username: kickifyUsername(rawUserId),
-            displayName: rawUserId,
-            profilePicture: "https://kick.com/favicon.ico", // Default profile picture
-            isVerified: false, // Default value, can be updated later
-            channelSlug: "" // No channel slug for generic viewers
-            // no identity for generic viewers
+    async getOrCreateViewer(kickUser: KickUser): Promise<FirebotViewer> {
+        const viewer = await this.getViewerInternal(kickUser, true);
+        if (viewer) {
+            return viewer;
+        }
+        throw new Error(`Failed to create viewer for Kick user: ${kickUser.userId}`);
+    }
+
+    async getViewerById(userId: string): Promise<FirebotViewer | undefined> {
+        const minimalKickUser: KickUser = {
+            userId: kickifyUserId(userId),
+            username: "",
+            displayName: "",
+            profilePicture: "",
+            isVerified: false,
+            channelSlug: ""
         };
-        return this.getViewer(viewerRequest);
+        return await this.getViewerInternal(minimalKickUser, false);
     }
 
     async countChatMessage(rawViewerId: string, increment = 1): Promise<void> {
