@@ -1,12 +1,18 @@
 # Contribution Guidelines
 
-## Welcome!
+## Welcome
 
 Thank you for your interest in contributing.
 
 This repository does not require you to create an issue or get prior approval. You may submit a Pull Request at any time. In fact, I encourage you to do this without filing an issue if it's just a minor change, e.g. fixing a typo in the documentation.
 
 However, if you're considering significant changes or something that would take you a considerable amount of time, I would _strongly encourage_ you to ask in advance. You can open a GitHub issue to do this. I would really feel bad if I had to reject a contribution that you spent a bunch of time on because it is not consistent with the vision or roadmap of this project.
+
+For this project in particular:
+
+- I will not accept contributions that add functionality via Kick's "private API". I am the guy that wants to eat dinner at a steakhouse, finds the restaurant's online reservation system to be broken, and orders pizza instead out of principle. Kick is inexplicably making scant investments in their developer community despite being in catch-up mode. I will simply advise you to stream on Twitch rather than to help enable Kick's lack of investment via fragile workarounds.
+
+- I am also not interested in contributions that require modifications to Firebot that have not been accepted by their developers. (I run Firebot on the [v5 branch](https://github.com/crowbartools/Firebot/tree/v5) so anything that is merged there, or in a Dev-approved pull request, is fair game.)
 
 ## Development Guide
 

@@ -111,11 +111,11 @@ Here's how to do it:
 
         :warning: **CAUTION**: If you intend to have a combined event handler, be sure that you have thoroughly reviewed the effects it triggers. For example:
 
-          - Are you using the default "Chat" effect built into Firebot to send a response? This will always send the message to Twitch, even to reply to a message posted on Kick! (You probably need to convert this to the "Chat (Platform Aware)" effect distributed with this integration.)
+        - Are you using the default "Chat" effect built into Firebot to send a response? This will always send the message to Twitch, even to reply to a message posted on Kick! (You probably need to convert this to the "Chat (Platform Aware)" effect distributed with this integration.)
 
-          - Are you using the "Chat Message" event to route messages to a chat overlay, such as with the [Mage Onscreen Chat](https://github.com/TheStaticMage/firebot-mage-onscreen-chat) overlay? If so, you might be running afoul of the Twitch terms of service by merging chat messages from multiple platforms on your stream.
+        - Are you using the "Chat Message" event to route messages to a chat overlay, such as with the [Mage Onscreen Chat](https://github.com/TheStaticMage/firebot-mage-onscreen-chat) overlay? If so, you might be running afoul of the Twitch terms of service by merging chat messages from multiple platforms on your stream.
 
-          - Are you adding or removing VIP or moderator status from a user, banning a user, timing out a user, etc., as a result of an event? If the event comes in via Kick, this may have unexpected results when the API calls are sent to Twitch because the User IDs will be different.
+        - Are you adding or removing VIP or moderator status from a user, banning a user, timing out a user, etc., as a result of an event? If the event comes in via Kick, this may have unexpected results when the API calls are sent to Twitch because the User IDs will be different.
 
         Note: Triggering the equivalent Firebot Twitch events is _in addition to_ triggering the Kick events supplied by this integration. (The Kick variants of these events will always be triggered, whether or not you have the box checked to trigger the equivalent Twitch event.)
 
