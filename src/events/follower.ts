@@ -4,7 +4,7 @@ import { KickFollower } from "../shared/types";
 
 export async function handleFollowerEvent(payload: KickFollower): Promise<void> {
     // Create the user if they don't exist
-    const viewer = await integration.kick.userManager.getViewer(payload.follower);
+    const viewer = await integration.kick.userManager.getOrCreateViewer(payload.follower);
 
     // Trigger the follow event
     const { eventManager } = firebot.modules;
