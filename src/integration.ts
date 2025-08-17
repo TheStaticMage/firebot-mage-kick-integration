@@ -1,5 +1,6 @@
 import { IntegrationData, IntegrationDefinition } from "@crowbartools/firebot-custom-scripts-types";
 import { EventEmitter } from "events";
+import { platformCondition } from "./conditions/platform";
 import { IntegrationConstants } from "./constants";
 import { chatEffect } from "./effects/chat";
 import { chatPlatformEffect } from "./effects/chat-platform";
@@ -7,6 +8,7 @@ import { streamGameEffect } from "./effects/stream-game";
 import { streamTitleEffect } from "./effects/stream-title";
 import { triggerCustomChannelRewardEffect } from "./effects/trigger-custom-channel-reward";
 import { eventSource } from './event-source';
+import { platformFilter } from "./filters/platform";
 import { rewardTitleFilter } from "./filters/reward-title";
 import { AuthManager } from "./internal/auth";
 import { Kick } from "./internal/kick";
@@ -23,6 +25,7 @@ import { kickChatMessageVariable } from "./variables/chat-message";
 import { kickCurrentViewerCountVariable } from "./variables/current-viewer-count";
 import { kickModReason } from "./variables/mod-reason";
 import { kickModerator } from "./variables/moderator";
+import { platformVariable } from "./variables/platform";
 import { kickRewardIdVariable } from "./variables/reward-id";
 import { kickRewardMessageVariable } from "./variables/reward-message";
 import { kickRewardNameVariable } from "./variables/reward-name";
@@ -53,13 +56,21 @@ export type IntegrationParameters = {
     general: {
         chatFeed: boolean;
     };
+    triggerTwitchEvents: {
+        chatMessage: boolean;
+        follower: boolean;
+        streamOnline: boolean;
+        streamOffline: boolean;
+        viewerArrived: boolean;
+        viewerBanned: boolean;
+        viewerTimeout: boolean;
+    };
     logging: {
         logWebhooks: boolean;
         logApiResponses: boolean;
         logWebsocketEvents: boolean;
     };
     advanced: {
-        sendTwitchEvents: boolean;
         dangerousOperations: boolean;
     };
 };
@@ -112,13 +123,21 @@ export class KickIntegration extends EventEmitter {
         general: {
             chatFeed: true
         },
+        triggerTwitchEvents: {
+            chatMessage: false,
+            follower: false,
+            streamOffline: false,
+            streamOnline: false,
+            viewerArrived: false,
+            viewerBanned: false,
+            viewerTimeout: false
+        },
         logging: {
             logWebhooks: false,
             logApiResponses: false,
             logWebsocketEvents: false
         },
         advanced: {
-            sendTwitchEvents: false,
             dangerousOperations: false
         }
     };
@@ -149,6 +168,9 @@ export class KickIntegration extends EventEmitter {
             this.authManager.handleAuthCallback(req, res);
         });
 
+        const { conditionManager } = firebot.modules;
+        conditionManager.registerConditionType(platformCondition);
+
         const { effectManager } = firebot.modules;
         effectManager.registerEffect(chatEffect);
         effectManager.registerEffect(chatPlatformEffect);
@@ -160,6 +182,7 @@ export class KickIntegration extends EventEmitter {
         eventManager.registerEventSource(eventSource);
 
         const { eventFilterManager } = firebot.modules;
+        eventFilterManager.registerFilter(platformFilter);
         eventFilterManager.registerFilter(rewardTitleFilter);
 
         const { replaceVariableManager } = firebot.modules;
@@ -197,6 +220,9 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.registerReplaceVariable(kickRewardIdVariable);
         replaceVariableManager.registerReplaceVariable(kickRewardNameVariable);
         replaceVariableManager.registerReplaceVariable(kickRewardMessageVariable);
+
+        // Miscellaneous variables
+        replaceVariableManager.registerReplaceVariable(platformVariable);
 
         const { restrictionManager } = firebot.modules;
         restrictionManager.registerRestriction(platformRestriction);
@@ -338,14 +364,6 @@ export class KickIntegration extends EventEmitter {
         return this.settings.general.chatFeed;
     }
 
-    getEventSources(): string[] {
-        const sources: string[] = [IntegrationConstants.INTEGRATION_ID];
-        if (this.settings.advanced.sendTwitchEvents) {
-            sources.push("twitch");
-        }
-        return sources;
-    }
-
     getSettings(): IntegrationParameters {
         return this.settings;
     }
@@ -475,6 +493,61 @@ export const definition: IntegrationDefinition = {
                 }
             }
         },
+        triggerTwitchEvents: {
+            title: "Trigger Twitch Events",
+            sortRank: 5,
+            settings: {
+                chatMessage: {
+                    title: "Chat Message",
+                    tip: "Trigger the 'Twitch:Chat Message' event when someone chats on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 1
+                },
+                follower: {
+                    title: "Follower",
+                    tip: "Trigger the 'Twitch:Follow' event when someone follows on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 2
+                },
+                streamOffline: {
+                    title: "Stream Ended",
+                    tip: "Trigger the 'Twitch:Stream Ended' event when the Kick stream goes offline",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 3
+                },
+                streamOnline: {
+                    title: "Stream Started",
+                    tip: "Trigger the 'Twitch:Stream Started' event when the Kick stream goes online",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 4
+                },
+                viewerArrived: {
+                    title: "Viewer Arrived",
+                    tip: "Trigger the 'Twitch:Viewer Arrived' event when a viewer arrives on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 5
+                },
+                viewerBanned: {
+                    title: "Viewer Banned",
+                    tip: "Trigger the 'Twitch:Viewer Banned' event when a viewer is banned on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 6
+                },
+                viewerTimeout: {
+                    title: "Viewer Timeout",
+                    tip: "Trigger the 'Twitch:Viewer Timeout' event when a viewer is timed out on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 7
+                }
+            }
+        },
         logging: {
             title: "Logging Settings",
             sortRank: 98,
@@ -506,13 +579,6 @@ export const definition: IntegrationDefinition = {
             title: "Advanced Settings",
             sortRank: 99,
             settings: {
-                sendTwitchEvents: {
-                    title: "Send Equivalent Twitch Events",
-                    tip: "Send the equivalent Twitch events for all Kick events that occur. THIS COULD BREAK FIREBOT! READ DOCUMENTATION CAREFULLY BEFORE ENABLING!",
-                    type: "boolean",
-                    default: false,
-                    sortRank: 1
-                },
                 dangerousOperations: {
                     title: "Allow Dangerous Operations -- THIS COULD BREAK FIREBOT!",
                     tip: "Enable dangerous operations that can create and modify users in the Firebot database. THIS COULD BREAK FIREBOT! READ DOCUMENTATION CAREFULLY BEFORE ENABLING!",

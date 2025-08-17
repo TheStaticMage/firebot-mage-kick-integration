@@ -4,6 +4,7 @@ import { integration } from "../integration";
 import { commandHandler } from "../internal/command";
 import { firebot, logger } from "../main";
 import { ChatMessage } from "../shared/types";
+import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 
 const messageCache = new Set<string>();
 
@@ -65,16 +66,20 @@ export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<
 
 function triggerChatMessage(userId: string, username: string, firebotChatMessage: FirebotChatMessage): void {
     const { eventManager } = firebot.modules;
-    for (const source of integration.getEventSources()) {
-        eventManager.triggerEvent(source, "chat-message", {
-            username: username,
-            userId: userId,
-            userDisplayName: firebotChatMessage.userDisplayName,
-            twitchUserRoles: [],
-            messageText: firebotChatMessage.rawText,
-            messageId: firebotChatMessage.id,
-            chatMessage: firebotChatMessage
-        });
+    const metadata = {
+        username: username,
+        userId: userId,
+        userDisplayName: firebotChatMessage.userDisplayName,
+        twitchUserRoles: [],
+        messageText: firebotChatMessage.rawText,
+        messageId: firebotChatMessage.id,
+        chatMessage: firebotChatMessage,
+        platform: "kick"
+    };
+
+    eventManager.triggerEvent(IntegrationConstants.INTEGRATION_ID, "chat-message", metadata);
+    if (integration.getSettings().triggerTwitchEvents.chatMessage) {
+        eventManager.triggerEvent("twitch", "chat-message", metadata);
     }
 }
 
@@ -83,18 +88,21 @@ export function triggerViewerArrived(
     userId: string,
     userDisplayName: string,
     messageText: string,
-    chatMessage: FirebotChatMessage
+    firebotChatMessage: FirebotChatMessage
 ) {
     const { eventManager } = firebot.modules;
-    for (const source of integration.getEventSources()) {
-        eventManager.triggerEvent(source, "viewer-arrived", {
-            username,
-            userId,
-            userDisplayName,
-            messageText,
-            messageId: chatMessage.id,
-            chatMessage
-        });
+    const metadata = {
+        username: username,
+        userId: userId,
+        userDisplayName: userDisplayName,
+        messageText: messageText,
+        chatMessage: firebotChatMessage,
+        platform: "kick"
+    };
+
+    eventManager.triggerEvent(IntegrationConstants.INTEGRATION_ID, "viewer-arrived", metadata);
+    if (integration.getSettings().triggerTwitchEvents.chatMessage) {
+        eventManager.triggerEvent("twitch", "viewer-arrived", metadata);
     }
 }
 
@@ -102,9 +110,9 @@ class FirebotChatHelpers {
     async buildFirebotChatMessage(msg: ChatMessage, msgText: string) {
         const firebotChatMessage: FirebotChatMessage = {
             id: msg.messageId,
-            username: `${msg.sender.username}@kick`,
-            userId: `k${msg.sender.userId.toString()}`,
-            userDisplayName: msg.sender.username,
+            username: kickifyUsername(msg.sender.username),
+            userId: kickifyUserId(msg.sender.userId.toString()),
+            userDisplayName: unkickifyUsername(msg.sender.username),
             //profilePicUrl: msg.sender.profilePicture, // Currently broken, see https://github.com/KickEngineering/KickDevDocs/issues/166
             profilePicUrl: "https://kick.com/favicon.ico",
             customRewardId: undefined,

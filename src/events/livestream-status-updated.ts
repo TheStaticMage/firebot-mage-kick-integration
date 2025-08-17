@@ -1,5 +1,6 @@
+import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
-import { kickifyUserId, kickifyUsername } from "../internal/util";
+import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot } from "../main";
 import { LivestreamStatusUpdated } from "../shared/types";
 
@@ -23,12 +24,16 @@ function triggerStreamOnline(
     userDisplayName: string
 ) {
     const { eventManager } = firebot.modules;
-    for (const source of integration.getEventSources()) {
-        eventManager.triggerEvent(source, "stream-online", {
-            username: `${username}@kick`,
-            userId: `k${userId}`,
-            userDisplayName
-        });
+    const metadata = {
+        username: kickifyUsername(username),
+        userId: kickifyUserId(userId),
+        userDisplayName: userDisplayName || unkickifyUsername(username),
+        platform: "kick"
+    };
+    eventManager.triggerEvent(IntegrationConstants.INTEGRATION_ID, "stream-online", metadata);
+
+    if (integration.getSettings().triggerTwitchEvents.streamOnline) {
+        eventManager.triggerEvent("twitch", "stream-online", metadata);
     }
 }
 
@@ -38,11 +43,15 @@ function triggerStreamOffline(
     userDisplayName: string
 ) {
     const { eventManager } = firebot.modules;
-    for (const source of integration.getEventSources()) {
-        eventManager.triggerEvent(source, "stream-offline", {
-            username: `${username}@kick`,
-            userId: `k${userId}`,
-            userDisplayName
-        });
+    const metadata = {
+        username: kickifyUsername(username),
+        userId: kickifyUserId(userId),
+        userDisplayName: userDisplayName || unkickifyUsername(username),
+        platform: "kick"
+    };
+    eventManager.triggerEvent(IntegrationConstants.INTEGRATION_ID, "stream-offline", metadata);
+
+    if (integration.getSettings().triggerTwitchEvents.streamOffline) {
+        eventManager.triggerEvent("twitch", "stream-offline", metadata);
     }
 }
