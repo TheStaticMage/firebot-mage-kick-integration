@@ -1,4 +1,4 @@
-import * as NodeCache from 'node-cache';
+import NodeCache from 'node-cache';
 import { IntegrationConstants } from "../constants";
 import { firebot, logger } from "../main";
 import { CategoryInfo, Channel } from "../shared/types";

@@ -28,7 +28,7 @@ export class Kick {
         this.apiAborter = new AbortController();
 
         try {
-            this.broadcaster = await this.userManager.getBasicKickUser();
+            this.broadcaster = await this.userManager.lookupUserById();
         } catch (error) {
             logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to get broadcaster ID: ${error}`);
             this.disconnect();
@@ -44,6 +44,7 @@ export class Kick {
         }
 
         this.channelManager.start();
+        await this.userManager.connectViewerDatabase();
         logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration connected.`);
     }
 
@@ -51,6 +52,7 @@ export class Kick {
         logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration disconnecting...`);
         this.apiAborter.abort();
         this.channelManager.stop();
+        this.userManager.disconnectViewerDatabase();
         logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration disconnected.`);
     }
 

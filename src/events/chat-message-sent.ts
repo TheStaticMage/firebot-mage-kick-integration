@@ -36,9 +36,16 @@ export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<
         }
     }
 
-    // Increment message count for user
-    const viewer = await integration.kick.userManager.getOrCreateViewer(payload.sender);
-    await integration.kick.userManager.countChatMessage(viewer._id, 1);
+    // Create user if they do not exist, and increment their chat messages
+    let viewer = await integration.kick.userManager.getViewerById(payload.sender.userId);
+    if (!viewer) {
+        viewer = await integration.kick.userManager.createNewViewer(payload.sender, [], true);
+        if (!viewer) {
+            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to create new viewer for userId=${payload.sender.userId}`);
+            return;
+        }
+    }
+    await integration.kick.userManager.incrementDbField(viewer._id, "chatMessages");
 
     // Command checking.
     await commandHandler.handleChatMessage(firebotChatMessage);
