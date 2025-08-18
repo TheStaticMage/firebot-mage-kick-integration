@@ -167,6 +167,30 @@ describe('platformVariable.evaluator', () => {
         expect(platformVariable.evaluator(trigger2)).toBe('twitch');
     });
 
+    it('does not have the bug fixed in PR#21', () => {
+        const trigger = {
+            type: 'preset',
+            metadata: {
+                username: "thestaticmage",
+                eventSource: { id: "twitch", name: "Twitch" },
+                eventData: { userId: "123456789", username: "thestaticmage" },
+                chatMessage: {}
+            }
+        } as any;
+        expect(platformVariable.evaluator(trigger)).toBe('twitch');
+
+        const trigger2 = {
+            type: 'event',
+            metadata: {
+                eventData: { username: 'someone' },
+                platform: undefined,
+                eventSource: undefined,
+                chatMessage: undefined
+            }
+        } as any;
+        expect(platformVariable.evaluator(trigger2)).toBe('twitch');
+    });
+
     it('returns "unknown" if no platform can be determined', () => {
         const trigger = { type: 'event', metadata: { eventData: undefined, platform: undefined, eventSource: undefined, chatMessage: undefined } } as any;
         expect(platformVariable.evaluator(trigger)).toBe('unknown');
