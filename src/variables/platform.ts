@@ -21,11 +21,6 @@ export const platformVariable: ReplaceVariable = {
             return debugPlatform("manual", "trigger.type", trigger);
         }
 
-        // Something other than an event should not ever reach here, but would be unknown
-        if (trigger.type !== "event") {
-            return debugPlatform("unknown", "trigger.type", trigger);
-        }
-
         // See if the platform is explicitly set in the metadata
         if (typeof trigger.metadata.eventData?.platform === "string") {
             return debugPlatform(trigger.metadata.eventData.platform, "metadata.eventData.platform", trigger);
