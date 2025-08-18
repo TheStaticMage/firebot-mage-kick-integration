@@ -50,6 +50,7 @@ export class Kick {
 
     disconnect(): void {
         logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration disconnecting...`);
+        this.deleteExistingSubscriptions();
         this.apiAborter.abort();
         this.channelManager.stop();
         this.userManager.disconnectViewerDatabase();
@@ -61,11 +62,41 @@ export class Kick {
         logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick auth token set successfully.`);
     }
 
-    async subscribeToEvents(): Promise<void> {
+    private async deleteExistingSubscriptions(): Promise<void> {
+        if (!integration.getSettings().webhookProxy.webhookProxyUrl) {
+            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Webhook proxy URL not set, skipping event unsubscription.`);
+            return;
+        }
+
+        interface webhookSubscriptionResponse {
+            data: {
+                id: string;
+                event: string;
+            }[];
+        }
+
+        try {
+            const response: webhookSubscriptionResponse = await this.httpCallWithTimeout('/public/v1/events/subscriptions', "GET");
+            const unsubscribePromises = response.data.map((subscription) => {
+                const params = new URLSearchParams({ id: subscription.id });
+                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Unsubscribing from event subscription with ID: ${subscription.id}`);
+                return this.httpCallWithTimeout(`/public/v1/events/subscriptions?${params.toString()}`, "DELETE");
+            });
+
+            await Promise.all(unsubscribePromises);
+            logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Successfully deleted existing event subscriptions.`);
+        } catch (error) {
+            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to delete existing event subscriptions: ${error}`);
+        }
+    }
+
+    private async subscribeToEvents(): Promise<void> {
         if (!integration.getSettings().webhookProxy.webhookProxyUrl) {
             logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Webhook proxy URL not set, skipping event subscription.`);
             return;
         }
+
+        await this.deleteExistingSubscriptions();
 
         const payload = {
             events: [
@@ -118,12 +149,12 @@ export class Kick {
             );
 
             if (integration.getSettings().logging.logApiResponses) {
-                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] API call to ${uri} successful. Response: ${JSON.stringify(response)}`);
+                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] API call to ${method} ${uri} successful. Response: ${JSON.stringify(response)}`);
             }
             return response;
         } catch (error) {
             if (integration.getSettings().logging.logApiResponses) {
-                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] API call to ${uri} failed: ${error}`);
+                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] API call to ${method} ${uri} failed: ${error}`);
             }
             throw error;
         }
