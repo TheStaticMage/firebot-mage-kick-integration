@@ -36,6 +36,7 @@ import { kickStreamerIdVariable } from "./variables/streamer-id";
 import { kickTimeoutDurationVariable } from "./variables/timeout-duration";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
+import { platformAwareUserDisplayNameVariable } from "./variables/platform-aware-user-display-name";
 
 const pusherAppKey = "32cbd69e4b950bf97679";
 
@@ -210,6 +211,7 @@ export class KickIntegration extends EventEmitter {
 
         // User variables
         replaceVariableManager.registerReplaceVariable(kickUserDisplayNameVariable);
+        replaceVariableManager.registerReplaceVariable(platformAwareUserDisplayNameVariable.replaceVariable);
 
         // Ban and timeout variables
         replaceVariableManager.registerReplaceVariable(kickModReason);
