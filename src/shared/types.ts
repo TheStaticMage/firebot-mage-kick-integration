@@ -4,10 +4,17 @@ export interface KickBadge {
     count?: number;
 }
 
+export interface KickRepliesTo {
+    messageId: string;
+    content: string;
+    sender: KickUser;
+}
+
 export interface ChatMessage {
     messageId: string;
+    repliesTo?: KickRepliesTo | undefined;
     broadcaster: KickUser;
-    sender: KickUser;
+    sender: KickUserWithIdentity;
     content: string;
     createdAt: Date | undefined;
 }
@@ -30,7 +37,10 @@ export interface KickUser {
     isVerified: boolean;
     profilePicture: string;
     channelSlug: string;
-    identity?: KickIdentity;
+}
+
+export interface KickUserWithIdentity extends KickUser {
+    identity: KickIdentity;
 }
 
 export interface BasicKickUser {
