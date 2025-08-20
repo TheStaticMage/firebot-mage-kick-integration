@@ -11,6 +11,8 @@ rules:
     ignore:
       - /node_modules/
       - /dist/
+      - /kick-api-types/
+      - /node_modules/kick-api-types
 
     # if true also checks if file ends in a single newline character
     single-new-line: true
