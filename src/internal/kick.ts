@@ -4,6 +4,7 @@ import { logger } from "../main";
 import { BasicKickUser } from "../shared/types";
 import { KickChannelManager } from "./channel-manager";
 import { httpCallWithTimeout } from "./http";
+import { KickUserApi } from "./user-api";
 import { KickUserManager } from "./user-manager";
 import { ChatManager } from "./chat-manager";
 
@@ -13,11 +14,13 @@ export class Kick {
     broadcaster: BasicKickUser | null = null;
     channelManager: KickChannelManager;
     chatManager: ChatManager;
+    userApi: KickUserApi;
     userManager: KickUserManager;
 
     constructor() {
         this.channelManager = new KickChannelManager(this);
         this.chatManager = new ChatManager(this);
+        this.userApi = new KickUserApi(this);
         this.userManager = new KickUserManager(this);
     }
 
@@ -44,6 +47,7 @@ export class Kick {
         }
 
         this.channelManager.start();
+        this.userApi.start();
         await this.userManager.connectViewerDatabase();
         logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration connected.`);
     }
@@ -53,6 +57,7 @@ export class Kick {
         this.deleteExistingSubscriptions();
         this.apiAborter.abort();
         this.channelManager.stop();
+        this.userApi.stop();
         this.userManager.disconnectViewerDatabase();
         logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration disconnected.`);
     }

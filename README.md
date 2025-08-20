@@ -32,6 +32,7 @@ Currently supported:
 
 - Chat integration:
   - Kick messages appear in Firebot's chat feed (Dashboard), displaying Kick usernames and supporting emotes.
+  - Ban user from the context menu in the chat feed.
 - Commands:
   - Standard commands mostly work, including restriction logic (with a custom Platform restriction).
 - Conditions:
@@ -79,14 +80,16 @@ Planned but not yet supported:
 
 - Subscription-related events (renewals, gifts, first time subs)
 - Live stream metadata updates (e.g., game/title change)
-- Unban or untimeout events
-- Actions such as ban/unban, time out/un-time out
+- Events when a user is unbanned or untimed-out
+- Effects to ban, unban, timeout, and untimeout users
 - Chat roles
+- Chat as a separate user account
 
 Limitations due to Kick:
 
 - Many user actions (e.g., custom rewards, raids, unbans) don't trigger webhooks. Some are only available via "pusher" WebSocket. Others are not provided at all. The integration can only support events that Kick provides.
 - Kick delivers profile image URLs that only resolve from kick.com, so these images may not display correctly elsewhere.
+- Kick's public API is lacking basic chat management options (e.g. delete message, clear chat), so we cannot implement these in Firebot's chat feed.
 - There is currently no API for fetching the viewer list, which prevents watch-time tracking and currency accrual.
 - Channel point redeems on Kick cannot be managed via API (creation, approval, rejection), nor can they be disabled or paused. This means that Firebot cannot control them.
 - Configuration of the "pusher" websocket requires your channel ID and chatroom ID, which are different from your user ID. The process to determine these can be tedious. Thankfully, you'll only need to do this once.
@@ -94,7 +97,6 @@ Limitations due to Kick:
 Limitations due to Firebot:
 
 - Firebot's viewer database uses Twitch user IDs as primary keys and assumes every user is from Twitch. This rigid design prevents full platform independence.
-- Chat feed actions in the dashboard (like delete message or ban user) assume Twitch context and may error out or do nothing for Kick messages or users.
 - Rate limiting (cooldowns) for commands and redeems doesn't work natively. Consider using the [Firebot Rate Limiter](https://github.com/TheStaticMage/firebot-rate-limiter) if needed.
 - Many built-in Firebot variables and effects are hard-coded to be available only to specific Twitch events. Therefore, this integration introduces Kick-specific variables like `$kickModerator`. Alternatively, you can trigger equivalent Twitch events if your effects are platform-aware.
 - Kick authorization flow is clunky. Thankfully, you'll only need to authorize once.

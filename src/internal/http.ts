@@ -43,8 +43,8 @@ export async function httpCallWithTimeout(
             signal: AbortSignal.any(signals)
         };
 
-        if (method !== "GET" && method !== "HEAD" && method !== "DELETE") {
-            // Only include body for methods that require it
+        if (body !== '' || method !== "GET" && method !== "HEAD" && method !== "DELETE") {
+            // Only include body for methods that require it, or when it is defined
             fetchOptions['body'] = body;
         }
 
