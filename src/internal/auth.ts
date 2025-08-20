@@ -1,4 +1,3 @@
-
 import { createHash, randomBytes, randomUUID } from "crypto";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
@@ -26,7 +25,7 @@ export class AuthManager {
             throw new Error(`Cannot connect Kick integration: No refresh token available.`);
         }
 
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Auth manager connecting...`);
+        logger.debug("Auth manager connecting...");
 
         this.authAborter = new AbortController();
 
@@ -34,21 +33,21 @@ export class AuthManager {
             await this.refreshAuthToken();
         } catch (error) {
             this.disconnect();
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to refresh Kick tokens: ${error}`);
+            logger.error(`Failed to refresh Kick tokens: ${error}`);
             throw error;
         }
 
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Auth manager connected.`);
+        logger.info("Auth manager connected.");
     }
 
     disconnect(): void {
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Auth manager disconnecting...`);
+        logger.debug("Auth manager disconnecting...");
         this.authAborter.abort();
         if (this.authRenewer) {
             clearTimeout(this.authRenewer);
             this.authRenewer = null;
         }
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Auth manager disconnected.`);
+        logger.info("Auth manager disconnected.");
     }
 
     getAuthToken(): string {
@@ -57,12 +56,12 @@ export class AuthManager {
         }
 
         if (this.authToken) {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] getAuthToken(): Auth token expired and has not yet been renewed`);
+            logger.warn("getAuthToken(): Auth token expired and has not yet been renewed");
             return "";
         }
 
         // If we reach this point, it means the auth token is not available
-        logger.error(`[${IntegrationConstants.INTEGRATION_ID}] getAuthToken(): Auth token was never generated`);
+        logger.error("getAuthToken(): Auth token was never generated");
         return "";
     }
 
@@ -106,7 +105,7 @@ export class AuthManager {
     }
 
     private getAuthorizationRequestUrlDirect(state: string, codeChallengeSha256: string): string {
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Generating authorization URL for Kick app...`);
+        logger.debug("Generating authorization URL for Kick app...");
         if (!integration.getSettings().kickApp.clientId || !integration.getSettings().kickApp.clientSecret) {
             throw new Error("Kick app client ID or secret is not set in settings.");
         }
@@ -154,11 +153,11 @@ export class AuthManager {
     async handleAuthCallback(req: any, res: any) {
         const { code, state } = req.query;
         if (!code || !state) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Missing 'code' or 'state' in auth callback.`);
+            logger.error("Missing 'code' or 'state' in auth callback.");
             res.status(400).send("Missing 'code' or 'state' in callback.");
             return;
         }
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] handleAuthCallback received code for state: ${state}`);
+        logger.info(`handleAuthCallback received code for state: ${state}`);
 
         const payload = {
             // eslint-disable-next-line camelcase
@@ -195,10 +194,10 @@ export class AuthManager {
             integration.saveIntegrationTokenData(this.refreshToken, proxyPollKey);
             integration.connect();
 
-            logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration connected successfully!`);
+            logger.info("Kick integration connected successfully!");
             res.status(200).send("Kick integration connected successfully! You can close this tab.");
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to exchange code for tokens: ${error}`);
+            logger.error(`Failed to exchange code for tokens: ${error}`);
             res.status(500).send(`Failed to exchange code for tokens: ${error}`);
         }
     }
@@ -206,10 +205,10 @@ export class AuthManager {
     async handleLinkCallback(req: any, res: any) {
         try {
             const authUrl = this.getAuthorizationRequestUrl();
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Redirecting user to authorization URL: ${authUrl}`);
+            logger.debug(`Redirecting user to authorization URL: ${authUrl}`);
             res.redirect(authUrl);
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error handling link callback: ${error}`);
+            logger.error(`Error handling link callback: ${error}`);
             res.status(500).send(`Error handling link callback: ${error}`);
         }
     }
@@ -220,10 +219,10 @@ export class AuthManager {
             this.scheduleNextRenewal(this.tokenExpiresAt - Date.now() - 300000); // Refresh 5 minutes before expiration
             return true;
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error refreshing auth token: ${error}`);
+            logger.error(`Error refreshing auth token: ${error}`);
 
             if (!this.refreshToken) {
-                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Refresh token is missing. Disconnecting integration.`);
+                logger.error("Refresh token is missing. Disconnecting integration.");
                 this.disconnect();
 
                 const { frontendCommunicator } = firebot.modules;
@@ -266,7 +265,7 @@ export class AuthManager {
         this.refreshToken = response.refresh_token;
         integration.kick.setAuthToken(this.authToken);
         integration.saveIntegrationTokenData(this.refreshToken);
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration tokens refreshed successfully. Valid until: ${new Date(this.tokenExpiresAt).toISOString()}`);
+        logger.info(`Kick integration tokens refreshed successfully. Valid until: ${new Date(this.tokenExpiresAt).toISOString()}`);
     }
 
     private scheduleNextRenewal(delay: number) {
@@ -276,6 +275,6 @@ export class AuthManager {
         this.authRenewer = setTimeout(async () => {
             await this.refreshAuthToken();
         }, delay);
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Next auth token renewal scheduled at ${new Date(Date.now() + delay).toISOString()}.`);
+        logger.debug(`Next auth token renewal scheduled at ${new Date(Date.now() + delay).toISOString()}.`);
     }
 }

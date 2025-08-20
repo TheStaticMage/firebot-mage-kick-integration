@@ -1,6 +1,5 @@
 import { FirebotViewer } from "@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database";
 import Datastore from "@seald-io/nedb";
-import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger } from "../main";
 import { BasicKickUser, KickUser } from "../shared/types";
@@ -30,32 +29,32 @@ export class KickUserManager {
 
         this._dbPath = getDataFilePath("kick-users.db");
 
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Trying to connect to Kick viewer database...`);
+        logger.info("Trying to connect to Kick viewer database...");
         try {
             this._db = new Datastore({ filename: this._dbPath });
             await this._db.loadDatabaseAsync();
         } catch (error) {
             if (error && typeof error === "object" && "message" in error) {
-                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] ViewerDB: Error Loading Database: ${(error as { message: string }).message}`);
+                logger.error(`ViewerDB: Error Loading Database: ${(error as { message: string }).message}`);
             } else {
-                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] ViewerDB: Error Loading Database: ${String(error)}`);
+                logger.error(`ViewerDB: Error Loading Database: ${String(error)}`);
             }
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] ViewerDB: Failed Database Path: ${this._dbPath}`);
+            logger.error(`ViewerDB: Failed Database Path: ${this._dbPath}`);
             return;
         }
 
         // Setup our automatic compaction interval to shrink filesize.
         this._db.setAutocompactionInterval(this._dbCompactionInterval);
         setInterval(() => {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] ViewerDB: Compaction should be happening now. Compaction Interval: ${this._dbCompactionInterval}`);
+            logger.debug(`ViewerDB: Compaction should be happening now. Compaction Interval: ${this._dbCompactionInterval}`);
         }, this._dbCompactionInterval);
 
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] ViewerDB: Viewer Database Loaded: ${this._dbPath}`);
+        logger.info(`ViewerDB: Viewer Database Loaded: ${this._dbPath}`);
     }
 
     disconnectViewerDatabase(): void {
         this._db = null;
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] ViewerDB: Database disconnected.`);
+        logger.info("ViewerDB: Database disconnected.");
     }
 
     async createNewViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<FirebotViewer | undefined> {
@@ -91,7 +90,7 @@ export class KickUserManager {
         try {
             await this._db.insertAsync(firebotViewer);
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] ViewerDB: Error Creating Viewer: ${String(error)}`);
+            logger.error(`ViewerDB: Error Creating Viewer: ${String(error)}`);
         }
 
         firebotViewer._id = kickifyUserId(firebotViewer._id);
@@ -116,7 +115,7 @@ export class KickUserManager {
             }
             return viewer;
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] ViewerDB: Error Finding Viewer by ID: id=${id}, error=${String(error)}`);
+            logger.error(`ViewerDB: Error Finding Viewer by ID: id=${id}, error=${String(error)}`);
             return undefined;
         }
     }
@@ -139,7 +138,7 @@ export class KickUserManager {
             }
             return viewer;
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] ViewerDB: Error Finding Viewer by Username: username=${username}, error=${String(error)}`);
+            logger.error(`ViewerDB: Error Finding Viewer by Username: username=${username}, error=${String(error)}`);
             return undefined;
         }
     }
@@ -176,17 +175,17 @@ export class KickUserManager {
             this.kick.httpCallWithTimeout(uri, "GET")
                 .then((response) => {
                     if (!response || !response.data || response.data.length !== 1) {
-                        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Failed to retrieve user from Kick API response. ${JSON.stringify(response)}`);
+                        logger.debug(`Failed to retrieve user from Kick API response. ${JSON.stringify(response)}`);
                         reject(new Error("Failed to retrieve user from Kick API."));
                     }
 
                     const user = parseBasicKickUser(response.data[0]);
                     if (!user.userId) {
-                        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] No user ID found in Kick API response.`);
+                        logger.debug("No user ID found in Kick API response.");
                         reject(new Error("No user ID found in Kick API response."));
                     }
 
-                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Successfully retrieved user: ${user.userId} (${user.name})`);
+                    logger.debug(`Successfully retrieved user: ${user.userId} (${user.name})`);
                     resolve(user);
                 })
                 .catch((error) => {
@@ -211,12 +210,12 @@ export class KickUserManager {
             const { affectedDocuments } = await this._db.updateAsync({ _id: unkickifyUserId(userId), disableAutoStatAccrual: { $ne: true } }, { $inc: updateDoc }, { returnUpdatedDocs: true });
 
             if (affectedDocuments != null) {
-                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Incremented DB field '${fieldName}' for user ${userId}. New value: ${(affectedDocuments as any)[fieldName]}`);
+                logger.debug(`Incremented DB field '${fieldName}' for user ${userId}. New value: ${(affectedDocuments as any)[fieldName]}`);
             } else {
-                logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Failed to increment DB field '${fieldName}' for user ${userId}. No documents were affected.`);
+                logger.warn(`Failed to increment DB field '${fieldName}' for user ${userId}. No documents were affected.`);
             }
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error incrementing DB field '${fieldName}' for user ${userId}: ${String(error)}`);
+            logger.error(`Error incrementing DB field '${fieldName}' for user ${userId}: ${String(error)}`);
             return;
         }
     }

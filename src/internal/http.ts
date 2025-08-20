@@ -1,4 +1,3 @@
-import { IntegrationConstants } from "../constants";
 import { logger } from "../main";
 
 export async function httpCallWithTimeout(
@@ -11,7 +10,7 @@ export async function httpCallWithTimeout(
 ): Promise<any> {
     return new Promise((resolve, reject) => {
         if (signal && signal.aborted) {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] API request aborted due to previous disconnection.`);
+            logger.warn("API request aborted due to previous disconnection.");
             reject(new Error("API request aborted"));
         }
 

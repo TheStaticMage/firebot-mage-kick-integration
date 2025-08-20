@@ -111,6 +111,6 @@ function debugPlatform(result: string, reference: string, trigger: Effects.Trigg
             }
         }
     };
-    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] platformVariable evaluated to "${result}" from "${reference}": trigger=${JSON.stringify(interestingPartsOfTrigger)}`);
+    logger.debug(`platformVariable evaluated to "${result}" from "${reference}": trigger=${JSON.stringify(interestingPartsOfTrigger)}`);
     return result;
 }

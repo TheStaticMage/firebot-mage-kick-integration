@@ -1,8 +1,7 @@
-import { Kick } from "./kick";
 import { firebot, logger } from "../main";
-import { IntegrationConstants } from "../constants";
-import { unkickifyUsername } from "./util";
+import { Kick } from "./kick";
 import { KickUserManager } from "./user-manager";
+import { unkickifyUsername } from "./util";
 
 interface UserBanRequest {
     username: string;
@@ -26,23 +25,23 @@ export class KickUserApi {
 
     stop(): void {
         // Can't stop listening to frontend communicator events
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] User API stopped.`);
+        logger.debug("User API stopped.");
     }
 
     async banUserByUsername(username: string, duration: number, shouldBeBanned: boolean, reason = ''): Promise<boolean> {
         if (username.trim() === '') {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] banUserByUsername: No username provided.`);
+            logger.warn("banUserByUsername: No username provided.");
             return false;
         }
 
         if (unkickifyUsername(username) === username) {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] banUserByUsername: Username provided that does not seem to be a kick user (${username}).`);
+            logger.warn(`banUserByUsername: Username provided that does not seem to be a kick user (${username}).`);
             return false;
         }
 
         const user = await this.kick.userManager.getViewerByUsername(username);
         if (!user) {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] banUserByUsername: User not found (${username}).`);
+            logger.warn(`banUserByUsername: User not found (${username}).`);
             return false;
         }
 
@@ -50,7 +49,7 @@ export class KickUserApi {
             await this.banUnbanUser(user._id, duration, shouldBeBanned, reason);
             return true;
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error occurred while banning/unbanning user (${user.username}): ${error}`);
+            logger.error(`Error occurred while banning/unbanning user (${user.username}): ${error}`);
             return false;
         }
     }
@@ -85,13 +84,13 @@ export class KickUserApi {
                 payload.reason = reason;
             }
 
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] banUser: Sending ${operation} request: ${JSON.stringify(payload)}`);
+            logger.debug(`banUser: Sending ${operation} request: ${JSON.stringify(payload)}`);
             await this.kick.httpCallWithTimeout('/public/v1/moderation/bans', "POST", JSON.stringify(payload));
-            logger.info(`[${IntegrationConstants.INTEGRATION_ID}] banUser: User ${operation} successful (userId=${realUserId}, duration=${duration}).`);
+            logger.info(`banUser: User ${operation} successful (userId=${realUserId}, duration=${duration}).`);
         } else {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] banUser: Sending unban request: ${JSON.stringify(payload)}`);
+            logger.debug(`banUser: Sending unban request: ${JSON.stringify(payload)}`);
             await this.kick.httpCallWithTimeout('/public/v1/moderation/bans', "DELETE", JSON.stringify(payload));
-            logger.info(`[${IntegrationConstants.INTEGRATION_ID}] banUser: User unban successful (userId=${realUserId}).`);
+            logger.info(`banUser: User unban successful (userId=${realUserId}).`);
         }
     }
 }

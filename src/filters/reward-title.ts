@@ -58,7 +58,7 @@ function compareValue(
     expectedValue: unknown,
     actualValue: unknown
 ): boolean {
-    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Comparing values: type=${comparisonType}, expected='${expectedValue}', actual='${actualValue}'`);
+    logger.debug(`Comparing values: type=${comparisonType}, expected='${expectedValue}', actual='${actualValue}'`);
     switch (comparisonType) {
         case ComparisonType.IS:
             return actualValue === expectedValue;

@@ -1,4 +1,3 @@
-import { IntegrationConstants } from "../../constants";
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleFollowerEvent } from "../../events/follower";
 import { handleLivestreamStatusUpdatedEvent } from "../../events/livestream-status-updated";
@@ -10,7 +9,7 @@ import { parseDate } from "../util";
 
 export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
     if (integration.getSettings().logging.logWebhooks) {
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Received webhook: ${JSON.stringify(webhook)}`);
+        logger.debug(`Received webhook: ${JSON.stringify(webhook)}`);
     }
 
     if (!webhook.kick_event_message_id || !webhook.kick_event_subscription_id || !webhook.kick_event_message_timestamp ||

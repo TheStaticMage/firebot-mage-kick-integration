@@ -1,4 +1,3 @@
-import { IntegrationConstants } from "../../constants";
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleRewardRedeemedEvent } from "../../events/reward-redeemed-event";
 import { integration } from "../../integration";
@@ -14,52 +13,52 @@ export class KickPusher {
 
     connect(pusherAppKey: string, chatroomId: string, channelId: string): void {
         if (!pusherAppKey) {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Pusher cannot connect: App Key is missing.`);
+            logger.warn("Pusher cannot connect: App Key is missing.");
             this.pusher = null;
             throw new Error("Pusher App Key is required");
         }
 
         if (!channelId && !chatroomId) {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Pusher will not connect: No subscriptions available (Channel ID and Chatroom ID are both missing).`);
+            logger.warn("Pusher will not connect: No subscriptions available (Channel ID and Chatroom ID are both missing).");
             this.pusher = null;
             throw new Error("Pusher Channel ID and Chatroom ID are required");
         }
 
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher connecting (app key: ${pusherAppKey}...`);
+        logger.debug(`Pusher connecting (app key: ${pusherAppKey}...`);
 
         Pusher.log = (message: any) => {
             if (integration.getSettings().logging.logWebsocketEvents) {
-                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher log: ${message}`);
+                logger.debug(`Pusher log: ${message}`);
             }
         };
 
         this.pusher = new Pusher(pusherAppKey, { cluster: 'us2' });
 
         this.pusher.connection.bind('error', (err: any) => {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Pusher error: ${JSON.stringify(err)}`);
+            logger.error(`Pusher error: ${JSON.stringify(err)}`);
             this.disconnect();
         });
 
         if (chatroomId) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to chatroom.${chatroomId}.v2`);
+            logger.debug(`Pusher subscribing to chatroom.${chatroomId}.v2`);
             const chatroomv2 = this.pusher.subscribe(`chatrooms.${chatroomId}.v2`);
             chatroomv2.bind_global(this.dispatchChatroomEvent.bind(this));
 
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to chatrooms.${chatroomId}`);
+            logger.debug(`Pusher subscribing to chatrooms.${chatroomId}`);
             const chatrooms = this.pusher.subscribe(`chatrooms.${chatroomId}`);
             chatrooms.bind_global(this.dispatchChatroomEvent.bind(this));
 
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to chatroom_${chatroomId}`);
+            logger.debug(`Pusher subscribing to chatroom_${chatroomId}`);
             const chatroom = this.pusher.subscribe(`chatroom_${chatroomId}`);
             chatroom.bind_global(this.dispatchChatroomEvent.bind(this));
         }
 
         if (channelId) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to channel.${channelId}`);
+            logger.debug(`Pusher subscribing to channel.${channelId}`);
             const channel = this.pusher.subscribe(`channel.${channelId}`);
             channel.bind_global(this.dispatchChannelEvent.bind(this));
 
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribing to channel_${channelId}`);
+            logger.debug(`Pusher subscribing to channel_${channelId}`);
             const channelOld = this.pusher.subscribe(`channel_${channelId}`);
             channelOld.bind_global(this.dispatchChannelEvent.bind(this));
         }
@@ -67,10 +66,10 @@ export class KickPusher {
 
     disconnect(): void {
         if (this.pusher) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Pusher disconnecting...`);
+            logger.debug("Pusher disconnecting...");
             this.pusher.disconnect();
             this.pusher = null;
-            logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher disconnected.`);
+            logger.info("Pusher disconnected.");
         }
     }
 
@@ -78,14 +77,14 @@ export class KickPusher {
         try {
             switch (event) {
                 case 'pusher:subscription_succeeded':
-                    logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribed successfully to channel events.`);
+                    logger.info("Pusher subscribed successfully to channel events.");
                     break;
                 default:
-                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Unhandled channel event: ${event}, data: ${JSON.stringify(data)}`);
+                    logger.debug(`Unhandled channel event: ${event}, data: ${JSON.stringify(data)}`);
                     throw new Error(`Unhandled event type: ${event}`);
             }
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error handling Pusher channel event: ${event}, error: ${error}`);
+            logger.error(`Error handling Pusher channel event: ${event}, error: ${error}`);
         }
     }
 
@@ -99,14 +98,14 @@ export class KickPusher {
                     await handleRewardRedeemedEvent(this.parseRewardRedeemedEvent(data));
                     break;
                 case 'pusher:subscription_succeeded':
-                    logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher subscribed successfully to chatroom events.`);
+                    logger.info("Pusher subscribed successfully to chatroom events.");
                     break;
                 default:
-                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Unhandled chatroom event: ${event}, data: ${JSON.stringify(data)}`);
+                    logger.debug(`Unhandled chatroom event: ${event}, data: ${JSON.stringify(data)}`);
                     throw new Error(`Unhandled event type: ${event}`);
             }
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error handling Pusher chatroom event: ${event}, error: ${error}`);
+            logger.error(`Error handling Pusher chatroom event: ${event}, error: ${error}`);
         }
     }
 

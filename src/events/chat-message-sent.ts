@@ -2,16 +2,16 @@ import { FirebotChatMessage, FirebotParsedMessagePart } from "@crowbartools/fire
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { commandHandler } from "../internal/command";
+import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
 import { ChatMessage } from "../shared/types";
-import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 
 const messageCache = new Set<string>();
 
 export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<void> {
     // Deduplication -- we can get messages via Pusher and webhook but they have the same ID
     if (messageCache.has(payload.messageId)) {
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Duplicate chat message ignored: id=${payload.messageId}`);
+        logger.debug(`Duplicate chat message ignored: id=${payload.messageId}`);
         return;
     }
     messageCache.add(payload.messageId);
@@ -30,7 +30,7 @@ export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<
                     firebotChatMessage.badges.push({ set_id: "mod", id: "1", info: badge.text });
                     break;
                 default:
-                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Unknown badge type: type=${badge.type} text=${badge.text}`);
+                    logger.debug(`Unknown badge type: type=${badge.type} text=${badge.text}`);
                     break;
             }
         }
@@ -41,7 +41,7 @@ export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<
     if (!viewer) {
         viewer = await integration.kick.userManager.createNewViewer(payload.sender, [], true);
         if (!viewer) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to create new viewer for userId=${payload.sender.userId}`);
+            logger.error(`Failed to create new viewer for userId=${payload.sender.userId}`);
             return;
         }
     }

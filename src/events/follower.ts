@@ -9,7 +9,7 @@ export async function handleFollowerEvent(payload: KickFollower): Promise<void> 
     if (!viewer) {
         viewer = await integration.kick.userManager.createNewViewer(payload.follower, [], true);
         if (!viewer) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to create new viewer for userId=${payload.follower.userId}`);
+            logger.error(`Failed to create new viewer for userId=${payload.follower.userId}`);
             return;
         }
     }

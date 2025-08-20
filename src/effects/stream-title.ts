@@ -1,6 +1,5 @@
 import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { integration } from "../integration";
-import { IntegrationConstants } from "../constants";
 import { logger } from "../main";
 
 export const streamTitleEffect: Firebot.EffectType<{
@@ -38,7 +37,7 @@ export const streamTitleEffect: Firebot.EffectType<{
             stream_title: effect.title
         };
 
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Setting stream title via payload: ${JSON.stringify(payload)}`);
+        logger.debug(`Setting stream title via payload: ${JSON.stringify(payload)}`);
 
         await integration.kick.httpCallWithTimeout(
             "/public/v1/channels",

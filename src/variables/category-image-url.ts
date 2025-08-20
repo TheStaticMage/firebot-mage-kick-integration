@@ -1,6 +1,5 @@
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
 import { integration } from '../integration';
-import { IntegrationConstants } from '../constants';
 import { logger } from '../main';
 
 export const kickCategoryImageUrlVariable: ReplaceVariable = {
@@ -29,13 +28,13 @@ export const kickCategoryImageUrlVariable: ReplaceVariable = {
         try {
             const channel = await integration.kick.channelManager.getChannel(username);
             if (!channel) {
-                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] No channel found for username: ${username}`);
+                logger.debug(`No channel found for username: ${username}`);
                 return "[No Category Image Found]";
             }
 
             return channel.category.thumbnail || "[No Category Image Found]";
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error retrieving category image URL for username ${username}: ${error}`);
+            logger.error(`Error retrieving category image URL for username ${username}: ${error}`);
             return "[No Category Image Found]";
         }
     }

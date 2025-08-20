@@ -1,8 +1,7 @@
 import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
-import { IntegrationConstants } from "../constants";
 import { logger } from "../main";
-import { Kick } from "./kick";
 import { platformVariable } from "../variables/platform";
+import { Kick } from "./kick";
 
 export class ChatManager {
     private kick: Kick;
@@ -37,7 +36,7 @@ export class ChatManager {
 
     private async sendChatMessage(message: string, chatter: "Streamer" | "Bot"): Promise<void> {
         if (!this.kick.broadcaster) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Cannot send chat message, broadcaster info not available.`);
+            logger.error("Cannot send chat message, broadcaster info not available.");
             return;
         }
 
@@ -50,9 +49,9 @@ export class ChatManager {
 
         try {
             await this.kick.httpCallWithTimeout('/public/v1/chat', "POST", JSON.stringify(payload));
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Successfully sent chat message as ${chatter}`);
+            logger.debug(`Successfully sent chat message as ${chatter}`);
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to send chat message: ${error}`);
+            logger.error(`Failed to send chat message: ${error}`);
         }
     }
 
@@ -68,7 +67,7 @@ export class ChatManager {
         try {
             return platformVariable.evaluator(trigger) || "unknown";
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error determining platform from trigger: ${error}`);
+            logger.error(`Error determining platform from trigger: ${error}`);
             return "unknown";
         }
     }

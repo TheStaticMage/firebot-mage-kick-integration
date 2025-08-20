@@ -1,6 +1,5 @@
 import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { integration } from "../integration";
-import { IntegrationConstants } from "../constants";
 import { logger } from "../main";
 
 export const streamGameEffect: Firebot.EffectType<{
@@ -58,7 +57,7 @@ export const streamGameEffect: Firebot.EffectType<{
             category_id: Number(category)
         };
 
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Setting stream category via payload: ${JSON.stringify(payload)}`);
+        logger.debug(`Setting stream category via payload: ${JSON.stringify(payload)}`);
 
         await integration.kick.httpCallWithTimeout(
             "/public/v1/channels",
