@@ -68,7 +68,7 @@ export class KickUserManager {
         }
 
         const firebotViewer: FirebotViewer = {
-            _id: unkickifyUsername(kickUser.userId.toString()),
+            _id: unkickifyUserId(kickUser.userId.toString()),
             username: unkickifyUsername(kickUser.username),
             displayName: kickUser.displayName || unkickifyUsername(kickUser.username),
             profilePicUrl: kickUser.profilePicture || "",
@@ -144,7 +144,12 @@ export class KickUserManager {
         }
     }
 
-    private static userIdToCleanString(userId: string | number = ""): string {
+    static userIdToCleanNumber(userId: string | number = ""): number {
+        const cleanedId = KickUserManager.userIdToCleanString(userId);
+        return cleanedId !== "" ? Number(cleanedId) : 0;
+    }
+
+    static userIdToCleanString(userId: string | number = ""): string {
         if (typeof userId === "number") {
             return userId > 0 ? userId.toString() : "";
         }
