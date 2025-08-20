@@ -1,4 +1,4 @@
-import { IntegrationData } from "@crowbartools/firebot-custom-scripts-types";
+import { IntegrationData, ScriptModules } from "@crowbartools/firebot-custom-scripts-types";
 import { EventEmitter } from "events";
 import { platformCondition } from "./conditions/platform";
 import { IntegrationConstants } from "./constants";
@@ -362,6 +362,10 @@ export class KickIntegration extends EventEmitter {
 
     isChatFeedEnabled(): boolean {
         return this.settings.general.chatFeed;
+    }
+
+    getModules(): ScriptModules {
+        return firebot.modules;
     }
 
     getSettings(): IntegrationParameters {

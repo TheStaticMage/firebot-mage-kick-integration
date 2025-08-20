@@ -1,7 +1,7 @@
 import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { integration } from "../integration";
-import { firebot, logger } from "../main";
 import { ChatManager } from "../internal/chat-manager";
+import { logger } from "../main";
 
 type chatPlatformEffectParams = {
     alwaysSendKick?: boolean;
@@ -14,6 +14,7 @@ type chatPlatformEffectParams = {
     message: string;
     messageKick?: string;
     sendAsReply?: boolean;
+    sendAsReplyKick?: boolean;
     skipKick?: boolean;
     skipTwitch?: boolean;
 }
@@ -54,7 +55,7 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
             <div style="color: #fb7373;" ng-if="effect.messageKick && effect.messageKick.length > 500">Chat messages cannot be longer than 500 characters. This message will get automatically chunked into multiple messages if it is too long after all replace variables have been populated.</div>
             <div style="padding-top: 10pt;">
                 <firebot-checkbox
-                    label="Use the Twitch message for Kick"
+                    label="Send the same message as above to Kick"
                     model="effect.copyMessageKick"
                     style="margin: 0px 15px 0px 0px"
                 />
@@ -70,7 +71,7 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
         <eos-container header="Twitch Options" pad-top="true">
             <firebot-checkbox
                 label="Send as reply"
-                tooltip="Replying only works within a Command or Chat Message event and currently only works on Twitch."
+                tooltip="Replying only works within a Command or Chat Message event."
                 model="effect.sendAsReply"
                 style="margin: 0px 15px 0px 0px"
             />
@@ -95,6 +96,13 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
         </eos-container>
 
         <eos-container header="Kick Options" pad-top="true">
+            <firebot-checkbox
+                label="Send as reply"
+                tooltip="Replying only works within a Command or Chat Message event."
+                model="effect.sendAsReplyKick"
+                style="margin: 0px 15px 0px 0px"
+            />
+
             <firebot-checkbox
                 label="Always send to Kick"
                 model="effect.alwaysSendKick"
@@ -138,6 +146,7 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
                 message: "",
                 messageKick: "",
                 sendAsReply: false,
+                sendAsReplyKick: false,
                 skipKick: false,
                 skipTwitch: false
             };
@@ -153,6 +162,9 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
         }
         if (typeof $scope.effect.sendAsReply !== "boolean") {
             $scope.effect.sendAsReply = false;
+        }
+        if (typeof $scope.effect.sendAsReplyKick !== "boolean") {
+            $scope.effect.sendAsReplyKick = false;
         }
         if (typeof $scope.effect.message !== "string") {
             $scope.effect.message = "";
@@ -197,33 +209,47 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
         const platform = ChatManager.getPlatformFromTrigger(trigger);
 
         // Send the message via the Kick
-        if (platform === "kick" || (platform === "" && effect.defaultSendKick) || effect.alwaysSendKick) {
+        if (platform === "kick" || (platform === "unknown" && effect.defaultSendKick) || effect.alwaysSendKick) {
             if (effect.skipKick) {
                 logger.debug("Skipping sending message to Kick as per effect settings.");
             } else {
-                logger.debug("Sending message to Kick.");
+                let messageId = undefined;
+                if (effect.sendAsReply && platform === 'kick') {
+                    if (trigger.type === "command") {
+                        messageId = trigger.metadata.chatMessage.id;
+                    } else if (trigger.type === "event") {
+                        const chatMsg = trigger.metadata.eventData?.chatMessage;
+                        if (chatMsg && typeof chatMsg === "object" && "id" in chatMsg) {
+                            messageId = (chatMsg as { id: string }).id;
+                        }
+                    }
+                }
+
+                logger.debug(`Sending message to Kick. (Reply: ${messageId ? messageId : "N/A"})`);
                 const messageToSend = effect.copyMessageKick ? effect.message : effect.messageKick || effect.message;
-                await integration.kick.chatManager.sendKickChatMessage(messageToSend, effect.chatterKick || "Streamer");
+                await integration.kick.chatManager.sendKickChatMessage(messageToSend, effect.chatterKick || "Streamer", messageId);
             }
         }
 
         // Send the message via Twitch
-        if (platform === "twitch" || (platform === "" && effect.defaultSendTwitch) || effect.alwaysSendTwitch) {
+        if (platform === "twitch" || (platform === "unknown" && effect.defaultSendTwitch) || effect.alwaysSendTwitch) {
             if (effect.skipTwitch) {
                 logger.debug("Skipping sending message to Twitch as per effect settings.");
             } else {
                 let messageId = undefined;
-                if (trigger.type === "command") {
-                    messageId = trigger.metadata.chatMessage.id;
-                } else if (trigger.type === "event") {
-                    const chatMsg = trigger.metadata.eventData?.chatMessage;
-                    if (chatMsg && typeof chatMsg === "object" && "id" in chatMsg) {
-                        messageId = (chatMsg as { id: string }).id;
+                if (effect.sendAsReply && platform === 'twitch') {
+                    if (trigger.type === "command") {
+                        messageId = trigger.metadata.chatMessage.id;
+                    } else if (trigger.type === "event") {
+                        const chatMsg = trigger.metadata.eventData?.chatMessage;
+                        if (chatMsg && typeof chatMsg === "object" && "id" in chatMsg) {
+                            messageId = (chatMsg as { id: string }).id;
+                        }
                     }
                 }
 
-                logger.debug("Sending message to Twitch.");
-                const { twitchChat } = firebot.modules;
+                logger.debug(`Sending message to Twitch. (Reply: ${messageId ? messageId : "N/A"})`);
+                const { twitchChat } = integration.getModules();
                 await twitchChat.sendChatMessage(effect.message, "", effect.chatterTwitch !== "Streamer" ? "bot" : "streamer", messageId);
             }
         }
