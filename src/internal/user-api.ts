@@ -1,7 +1,6 @@
 import { firebot, logger } from "../main";
 import { Kick } from "./kick";
-import { KickUserManager } from "./user-manager";
-import { unkickifyUsername } from "./util";
+import { unkickifyUsername, userIdToCleanNumber } from "./util";
 
 interface UserBanRequest {
     username: string;
@@ -60,7 +59,7 @@ export class KickUserApi {
             throw new Error("banUser: Broadcaster user ID not available.");
         }
 
-        const realUserId = KickUserManager.userIdToCleanNumber(userId);
+        const realUserId = userIdToCleanNumber(userId);
         if (!realUserId) {
             throw new Error("banUser: Invalid user ID provided.");
         }

@@ -5,7 +5,7 @@ import { logger } from "../main";
 import { BasicKickUser, KickUser } from "../shared/types";
 import { getDataFilePath } from "../util/datafile";
 import { Kick } from "./kick";
-import { kickifyUserId, kickifyUsername, unkickifyUserId, unkickifyUsername } from "./util";
+import { kickifyUserId, kickifyUsername, unkickifyUserId, unkickifyUsername, userIdToCleanString } from "./util";
 import { parseBasicKickUser } from "./webhook-handler/webhook-handler";
 
 export class KickUserManager {
@@ -143,30 +143,10 @@ export class KickUserManager {
         }
     }
 
-    static userIdToCleanNumber(userId: string | number = ""): number {
-        const cleanedId = KickUserManager.userIdToCleanString(userId);
-        return cleanedId !== "" ? Number(cleanedId) : 0;
-    }
-
-    static userIdToCleanString(userId: string | number = ""): string {
-        if (typeof userId === "number") {
-            return userId > 0 ? userId.toString() : "";
-        }
-
-        const unkickifiedUserId = unkickifyUserId(userId);
-        if (unkickifiedUserId.trim() !== "") {
-            if (!/^\d+$/.test(unkickifiedUserId)) {
-                throw new Error("userId string must be numeric.");
-            }
-            return unkickifiedUserId;
-        }
-        return "";
-    }
-
     async lookupUserById(userId: string | number = ""): Promise<BasicKickUser> {
         return new Promise((resolve, reject) => {
             const formVariables = new URLSearchParams();
-            const unkickifiedUserId = KickUserManager.userIdToCleanString(userId);
+            const unkickifiedUserId = userIdToCleanString(userId);
             if (unkickifiedUserId !== "") {
                 formVariables.append("id", unkickifiedUserId);
             }

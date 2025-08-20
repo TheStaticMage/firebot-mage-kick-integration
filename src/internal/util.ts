@@ -26,3 +26,22 @@ export function parseDate(dateString: string | undefined): Date | undefined {
     const date = new Date(dateString);
     return isNaN(date.getTime()) ? undefined : date;
 }
+
+export function userIdToCleanString(userId: string | number = ""): string {
+    if (typeof userId === "number") {
+        return userId > 0 ? userId.toString() : "";
+    }
+    const unkickifiedUserId = unkickifyUserId(userId);
+    if (unkickifiedUserId.trim() !== "") {
+        if (!/^\d+$/.test(unkickifiedUserId)) {
+            throw new Error("userId string must be numeric.");
+        }
+        return unkickifiedUserId;
+    }
+    return "";
+}
+
+export function userIdToCleanNumber(userId: string | number = ""): number {
+    const cleanedId = userIdToCleanString(userId);
+    return cleanedId !== "" ? Number(cleanedId) : 0;
+}
