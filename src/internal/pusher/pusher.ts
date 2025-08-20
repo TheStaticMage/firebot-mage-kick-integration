@@ -131,7 +131,19 @@ export class KickPusher {
                 }
             },
             content: d.content,
-            createdAt: parseDate(d.created_at)
+            createdAt: parseDate(d.created_at),
+            repliesTo: d.metadata.original_message && d.metadata.original_sender ? {
+                messageId: d.metadata.original_message.id,
+                content: d.metadata.original_message.content,
+                sender: {
+                    userId: d.metadata.original_sender.id.toString(),
+                    username: d.metadata.original_sender.username,
+                    displayName: d.metadata.original_sender.username,
+                    profilePicture: '', // Not provided in event
+                    isVerified: false, // Worth checking?
+                    channelSlug: '' // Not provided in event, maybe should calculate from username?
+                }
+            } : undefined
         };
     }
 

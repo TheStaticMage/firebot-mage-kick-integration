@@ -5,7 +5,7 @@ import { handleLivestreamStatusUpdatedEvent } from "../../events/livestream-stat
 import { handleModerationBannedEvent } from "../../events/moderation-banned";
 import { integration } from "../../integration";
 import { logger } from "../../main";
-import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata } from "../../shared/types";
+import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, KickUserWithIdentity, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata } from "../../shared/types";
 import { parseDate } from "../util";
 
 export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
@@ -45,8 +45,8 @@ export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
     }
 }
 
-export function parseKickUser(user: WebhookUser | WebhookUserWithIdentity): KickUser {
-    const result: KickUser = {
+export function parseKickUser(user: WebhookUser): KickUser {
+    return {
         isAnonymous: user.is_anonymous || false,
         userId: (user.user_id ?? 0).toString(),
         username: user.username || "",
@@ -55,19 +55,21 @@ export function parseKickUser(user: WebhookUser | WebhookUserWithIdentity): Kick
         profilePicture: user.profile_picture || "",
         channelSlug: user.channel_slug || ""
     };
+}
 
-    if ('identity' in user && user.identity) {
-        result.identity = {
+export function parseKickUserWithIdentity(user: WebhookUserWithIdentity): KickUserWithIdentity {
+    const base = parseKickUser(user);
+    return {
+        ...base,
+        identity: {
             usernameColor: user.identity.username_color || "",
             badges: user.identity.badges ? user.identity.badges.map(badge => ({
                 text: badge.text || "",
                 type: badge.type || "",
                 count: badge.count || 0
             })) : []
-        };
-    }
-
-    return result;
+        }
+    };
 }
 
 export function parseBasicKickUser(user: User): BasicKickUser {
@@ -112,55 +114,40 @@ export function parseChannel(rawData: any): Channel {
     return result;
 }
 
-function parseChatMessageEvent(rawData: string): ChatMessage {
+export function parseChatMessageEvent(rawData: string): ChatMessage {
     const data: ChatMessageEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
-
-    const badges: InboundBadge[] = [];
-    if (data.sender.identity && data.sender.identity.badges) {
-        for (const badge of data.sender.identity.badges) {
-            const parsedBadge: InboundBadge = {
-                text: badge.text,
-                type: badge.type
-            };
-            badges.push(parsedBadge);
-        }
-    }
-
-    const result: ChatMessage = {
+    return {
         messageId: data.message_id,
+        repliesTo: data.replies_to ? {
+            messageId: data.replies_to.message_id,
+            content: data.replies_to.content,
+            sender: parseKickUser(data.replies_to.sender)
+        } : undefined,
         broadcaster: parseKickUser(data.broadcaster),
-        sender: parseKickUser(data.sender),
+        sender: parseKickUserWithIdentity(data.sender),
         content: data.content,
         // 'emotes' seems to be outdated in documentation and coming through as null
         createdAt: parseDate(data.created_at)
     };
-
-    return result;
 }
 
 function parseFollowEvent(rawData: string): KickFollower {
     const data: ChannelFollowEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
-
-    const result: KickFollower = {
+    return {
         broadcaster: parseKickUser(data.broadcaster),
         follower: parseKickUser(data.follower)
     };
-
-    return result;
 }
 
 function parseLivestreamStatusUpdatedEvent(rawData: string): LivestreamStatusUpdated {
     const data: LivestreamStatusUpdatedEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
-
-    const result: LivestreamStatusUpdated = {
+    return {
         broadcaster: parseKickUser(data.broadcaster),
         isLive: data.is_live,
         title: data.title,
         startedAt: parseDate(data.started_at),
         endedAt: parseDate(data.ended_at ?? undefined)
     };
-
-    return result;
 }
 
 function parseModerationBannedEvent(rawData: string): ModerationBannedEvent {
@@ -172,12 +159,10 @@ function parseModerationBannedEvent(rawData: string): ModerationBannedEvent {
         expiresAt: parseDate(data.metadata.expires_at)
     };
 
-    const result: ModerationBannedEvent = {
+    return {
         broadcaster: parseKickUser(data.broadcaster),
         moderator: parseKickUser(data.moderator),
         bannedUser: parseKickUser(data.banned_user),
         metadata: metadata
     };
-
-    return result;
 }
