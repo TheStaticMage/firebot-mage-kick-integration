@@ -1,3 +1,4 @@
+import { ChannelFollowEvent, ChatMessageEvent, Channel as KickApiChannel, ModerationBannedEvent as KickApiModerationBannedEvent, LivestreamStatusUpdatedEvent, User, WebhookUser, WebhookUserWithIdentity } from "kick-api-types/v1";
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleFollowerEvent } from "../../events/follower";
 import { handleLivestreamStatusUpdatedEvent } from "../../events/livestream-status-updated";
@@ -44,10 +45,10 @@ export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
     }
 }
 
-export function parseKickUser(user: InboundKickUser): KickUser {
+export function parseKickUser(user: WebhookUser | WebhookUserWithIdentity): KickUser {
     const result: KickUser = {
         isAnonymous: user.is_anonymous || false,
-        userId: user.user_id.toString(),
+        userId: (user.user_id ?? 0).toString(),
         username: user.username || "",
         displayName: user.username || "",
         isVerified: user.is_verified || false,
@@ -55,12 +56,13 @@ export function parseKickUser(user: InboundKickUser): KickUser {
         channelSlug: user.channel_slug || ""
     };
 
-    if (user.identity) {
+    if ('identity' in user && user.identity) {
         result.identity = {
             usernameColor: user.identity.username_color || "",
             badges: user.identity.badges ? user.identity.badges.map(badge => ({
                 text: badge.text || "",
-                type: badge.type || ""
+                type: badge.type || "",
+                count: badge.count || 0
             })) : []
         };
     }
@@ -68,17 +70,13 @@ export function parseKickUser(user: InboundKickUser): KickUser {
     return result;
 }
 
-export function parseBasicKickUser(user: InboundBasicKickUser): BasicKickUser {
+export function parseBasicKickUser(user: User): BasicKickUser {
     const result: BasicKickUser = {
         name: user.name || "",
         profilePicture: user.profile_picture || "",
-        userId: user.user_id || 0
+        userId: user.user_id || 0,
+        email: user.email || ""
     };
-
-    if (user.email) {
-        result.email = user.email;
-    }
-
     return result;
 }
 
@@ -87,7 +85,7 @@ export function parseChannel(rawData: any): Channel {
         throw new Error("Invalid channel data format");
     }
 
-    const channelData: InboundChannel = rawData.data[0];
+    const channelData: KickApiChannel = rawData.data[0];
     const result: Channel = {
         bannerPicture: channelData.banner_picture || "",
         broadcasterUserId: channelData.broadcaster_user_id || 0,
@@ -115,7 +113,7 @@ export function parseChannel(rawData: any): Channel {
 }
 
 function parseChatMessageEvent(rawData: string): ChatMessage {
-    const data: InboundChatMessage = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: ChatMessageEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
 
     const badges: InboundBadge[] = [];
     if (data.sender.identity && data.sender.identity.badges) {
@@ -141,7 +139,7 @@ function parseChatMessageEvent(rawData: string): ChatMessage {
 }
 
 function parseFollowEvent(rawData: string): KickFollower {
-    const data: InboundFollowEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: ChannelFollowEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
 
     const result: KickFollower = {
         broadcaster: parseKickUser(data.broadcaster),
@@ -152,21 +150,21 @@ function parseFollowEvent(rawData: string): KickFollower {
 }
 
 function parseLivestreamStatusUpdatedEvent(rawData: string): LivestreamStatusUpdated {
-    const data: InboundLivestreamStatusUpdatedEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: LivestreamStatusUpdatedEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
 
     const result: LivestreamStatusUpdated = {
         broadcaster: parseKickUser(data.broadcaster),
         isLive: data.is_live,
         title: data.title,
         startedAt: parseDate(data.started_at),
-        endedAt: parseDate(data.ended_at)
+        endedAt: parseDate(data.ended_at ?? undefined)
     };
 
     return result;
 }
 
 function parseModerationBannedEvent(rawData: string): ModerationBannedEvent {
-    const data: InboundModerationBannedEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: KickApiModerationBannedEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
 
     const metadata: ModerationBannedMetadata = {
         reason: data.metadata.reason,
