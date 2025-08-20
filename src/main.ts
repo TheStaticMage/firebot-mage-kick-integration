@@ -4,7 +4,7 @@ import { IntegrationConstants } from './constants';
 import { definition, integration } from './integration';
 
 export let firebot: RunRequest<any>;
-export let logger: Logger;
+export let logger: LogWrapper;
 
 const scriptVersion = '0.2.2';
 

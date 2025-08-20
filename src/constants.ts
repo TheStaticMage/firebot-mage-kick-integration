@@ -5,6 +5,7 @@ export const IntegrationConstants = {
     INTEGRATION_URI: "firebot-mage-kick-integration",
     KICK_API_SERVER: "https://api.kick.com",
     KICK_AUTH_SERVER: "https://id.kick.com",
+    PUSHER_APP_KEY: "32cbd69e4b950bf97679",
     SCOPES: [
         "user:read",
         "channel:read",
