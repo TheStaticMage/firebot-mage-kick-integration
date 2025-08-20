@@ -1,6 +1,5 @@
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
 import { integration } from '../integration';
-import { IntegrationConstants } from '../constants';
 import { logger } from '../main';
 
 export const kickStreamTitleVariable : ReplaceVariable = {
@@ -29,13 +28,13 @@ export const kickStreamTitleVariable : ReplaceVariable = {
         try {
             const channel = await integration.kick.channelManager.getChannel(username);
             if (!channel) {
-                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] No channel found for username: ${username}`);
+                logger.debug(`No channel found for username: ${username}`);
                 return "[No channel found]";
             }
 
             return channel.streamTitle || "";
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error retrieving stream title for username ${username}: ${error}`);
+            logger.error(`Error retrieving stream title for username ${username}: ${error}`);
             return "[No channel found]";
         }
     }

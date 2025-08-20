@@ -3,10 +3,10 @@ import { integration } from "../integration";
 import { logger } from "../main";
 import { BasicKickUser } from "../shared/types";
 import { KickChannelManager } from "./channel-manager";
+import { ChatManager } from "./chat-manager";
 import { httpCallWithTimeout } from "./http";
 import { KickUserApi } from "./user-api";
 import { KickUserManager } from "./user-manager";
-import { ChatManager } from "./chat-manager";
 
 export class Kick {
     private apiAborter = new AbortController();
@@ -25,7 +25,7 @@ export class Kick {
     }
 
     async connect(token: string): Promise<void> {
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration connecting...`);
+        logger.debug("Kick API integration connecting...");
 
         this.setAuthToken(token);
         this.apiAborter = new AbortController();
@@ -33,7 +33,7 @@ export class Kick {
         try {
             this.broadcaster = await this.userManager.lookupUserById();
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to get broadcaster ID: ${error}`);
+            logger.error(`Failed to get broadcaster ID: ${error}`);
             this.disconnect();
             throw error;
         }
@@ -41,7 +41,7 @@ export class Kick {
         try {
             await this.subscribeToEvents();
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to subscribe to events: ${error}`);
+            logger.error(`Failed to subscribe to events: ${error}`);
             this.disconnect();
             throw error;
         }
@@ -49,27 +49,27 @@ export class Kick {
         this.channelManager.start();
         this.userApi.start();
         await this.userManager.connectViewerDatabase();
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration connected.`);
+        logger.info("Kick API integration connected.");
     }
 
     disconnect(): void {
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration disconnecting...`);
+        logger.debug("Kick API integration disconnecting...");
         this.deleteExistingSubscriptions();
         this.apiAborter.abort();
         this.channelManager.stop();
         this.userApi.stop();
         this.userManager.disconnectViewerDatabase();
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration disconnected.`);
+        logger.info("Kick API integration disconnected.");
     }
 
     setAuthToken(token: string) {
         this.authToken = token;
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick auth token set successfully.`);
+        logger.debug("Kick auth token set successfully.");
     }
 
     private async deleteExistingSubscriptions(): Promise<void> {
         if (!integration.getSettings().webhookProxy.webhookProxyUrl) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Webhook proxy URL not set, skipping event unsubscription.`);
+            logger.debug("Webhook proxy URL not set, skipping event unsubscription.");
             return;
         }
 
@@ -84,20 +84,20 @@ export class Kick {
             const response: webhookSubscriptionResponse = await this.httpCallWithTimeout('/public/v1/events/subscriptions', "GET");
             const unsubscribePromises = response.data.map((subscription) => {
                 const params = new URLSearchParams({ id: subscription.id });
-                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Unsubscribing from event subscription with ID: ${subscription.id}`);
+                logger.debug(`Unsubscribing from event subscription with ID: ${subscription.id}`);
                 return this.httpCallWithTimeout(`/public/v1/events/subscriptions?${params.toString()}`, "DELETE");
             });
 
             await Promise.all(unsubscribePromises);
-            logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Successfully deleted existing event subscriptions.`);
+            logger.info("Successfully deleted existing event subscriptions.");
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to delete existing event subscriptions: ${error}`);
+            logger.error(`Failed to delete existing event subscriptions: ${error}`);
         }
     }
 
     private async subscribeToEvents(): Promise<void> {
         if (!integration.getSettings().webhookProxy.webhookProxyUrl) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Webhook proxy URL not set, skipping event subscription.`);
+            logger.debug("Webhook proxy URL not set, skipping event subscription.");
             return;
         }
 
@@ -128,7 +128,7 @@ export class Kick {
         return new Promise((resolve, reject) => {
             this.httpCallWithTimeout('/public/v1/events/subscriptions', "POST", JSON.stringify(payload))
                 .then((response) => {
-                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Successfully subscribed to Kick events.`);
+                    logger.debug("Successfully subscribed to Kick events.");
                     resolve(response);
                 })
                 .catch((error) => {
@@ -140,7 +140,7 @@ export class Kick {
     async httpCallWithTimeout(uri: string, method: string, body = '', signal: AbortSignal | null = null, timeout = 10000): Promise<any> {
         const requestId = crypto.randomUUID();
         if (integration.getSettings().logging.logApiResponses) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] Making API call to ${uri} with method ${method} and body: ${JSON.stringify(body)}`);
+            logger.debug(`[${requestId}] Making API call to ${uri} with method ${method} and body: ${JSON.stringify(body)}`);
         }
 
         try {
@@ -154,12 +154,12 @@ export class Kick {
             );
 
             if (integration.getSettings().logging.logApiResponses) {
-                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] API call to ${method} ${uri} successful. Response: ${JSON.stringify(response)}`);
+                logger.debug(`[${requestId}] API call to ${method} ${uri} successful. Response: ${JSON.stringify(response)}`);
             }
             return response;
         } catch (error) {
             if (integration.getSettings().logging.logApiResponses) {
-                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] [${requestId}] API call to ${method} ${uri} failed: ${error}`);
+                logger.error(`[${requestId}] API call to ${method} ${uri} failed: ${error}`);
             }
             throw error;
         }

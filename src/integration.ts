@@ -157,7 +157,7 @@ export class KickIntegration extends EventEmitter {
             this.authManager.init(fileData.refreshToken);
             this.proxyPollKey = fileData.proxyPollKey;
         } else {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration data file not found or invalid. Please link the integration.`);
+            logger.warn("Kick integration data file not found or invalid. Please link the integration.");
             this.authManager.init("");
         }
 
@@ -255,10 +255,10 @@ export class KickIntegration extends EventEmitter {
         const { fs } = firebot.modules;
         if (fs.existsSync(this.dataFilePath)) {
             fs.unlinkSync(this.dataFilePath);
-            logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration data file deleted.`);
+            logger.info("Kick integration data file deleted.");
         }
 
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration unlinking complete.`);
+        logger.info("Kick integration unlinking complete.");
     }
 
     private saveCurrentUserSettings() {
@@ -274,7 +274,7 @@ export class KickIntegration extends EventEmitter {
         if (!this.authManager.canConnect()) {
             const { frontendCommunicator } = firebot.modules;
             frontendCommunicator.send("error", "Kick Integration: You need to link the integration before you can connect it.");
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration is not properly linked. Please link the integration first.`);
+            logger.error("Kick integration is not properly linked. Please link the integration first.");
             this.disconnect();
             return;
         }
@@ -282,9 +282,9 @@ export class KickIntegration extends EventEmitter {
         // Refresh the auth token (we always do this upon connecting)
         try {
             await this.authManager.connect();
-            logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick authentication connected successfully.`);
+            logger.info("Kick authentication connected successfully.");
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to connect Kick authentication: ${error}`);
+            logger.error(`Failed to connect Kick authentication: ${error}`);
             this.disconnect();
             const { frontendCommunicator } = firebot.modules;
             frontendCommunicator.send("error", "Kick Integration: Failed to authenticate to Kick. You may need to re-link the integration.");
@@ -294,9 +294,9 @@ export class KickIntegration extends EventEmitter {
         // Kick API integration setup
         try {
             await this.kick.connect(this.authManager.getAuthToken());
-            logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick API integration connected successfully.`);
+            logger.info("Kick API integration connected successfully.");
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to connect Kick API integration: ${error}`);
+            logger.error(`Failed to connect Kick API integration: ${error}`);
             this.disconnect();
             const { frontendCommunicator } = firebot.modules;
             frontendCommunicator.send("error", "Kick Integration: Failed to connect to the Kick API. You may need to re-link the integration.");
@@ -310,7 +310,7 @@ export class KickIntegration extends EventEmitter {
         try {
             this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to connect Kick websocket (Pusher) integration: ${error}`);
+            logger.error(`Failed to connect Kick websocket (Pusher) integration: ${error}`);
             this.disconnect();
             const { frontendCommunicator } = firebot.modules;
             frontendCommunicator.send("error", "Kick Integration: Failed to connect to the Kick websocket (Pusher) integration. You may need to re-link the integration or configure your channel and chatroom IDs.");
@@ -323,14 +323,14 @@ export class KickIntegration extends EventEmitter {
     }
 
     async disconnect() {
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration disconnecting...`);
+        logger.debug("Kick integration disconnecting...");
         this.connected = false;
         this.authManager.disconnect();
         this.kick.disconnect();
         this.poller.disconnect(this.proxyPollKey);
         this.pusher.disconnect();
         this.emit("disconnected", IntegrationConstants.INTEGRATION_ID);
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration disconnected.`);
+        logger.info("Kick integration disconnected.");
     }
 
     onUserSettingsUpdate(integrationData: IntegrationData<IntegrationParameters>) {
@@ -338,20 +338,20 @@ export class KickIntegration extends EventEmitter {
             const oldSettings = JSON.parse(JSON.stringify(this.settings));
             this.settings = JSON.parse(JSON.stringify(integrationData.userSettings));
 
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration user settings updated.`);
+            logger.debug("Kick integration user settings updated.");
             logger.debug(JSON.stringify(this.settings));
 
             if (integrationData.userSettings.webhookProxy.webhookProxyUrl !== oldSettings.webhookProxy.webhookProxyUrl
                 || integrationData.userSettings.kickApp.clientId !== oldSettings.kickApp.clientId
                 || integrationData.userSettings.kickApp.clientSecret !== oldSettings.kickApp.clientSecret
             ) {
-                logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration webhook proxy URL or client credentials changed. You may need to re-link the integration.`);
+                logger.warn("Kick integration webhook proxy URL or client credentials changed. You may need to re-link the integration.");
             }
 
             if (integrationData.userSettings.connectivity.pusherAppKey !== oldSettings.connectivity.pusherAppKey ||
                 integrationData.userSettings.connectivity.chatroomId !== oldSettings.connectivity.chatroomId ||
                 integrationData.userSettings.connectivity.channelId !== oldSettings.connectivity.channelId) {
-                logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Pusher settings changed. Reconnecting...`);
+                logger.info("Pusher settings changed. Reconnecting...");
                 this.pusher.disconnect();
                 this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
             }
@@ -373,7 +373,7 @@ export class KickIntegration extends EventEmitter {
     private loadIntegrationData(): integrationFileData | null {
         const { fs } = firebot.modules;
         if (!fs.existsSync(this.dataFilePath)) {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration data file not found. Please link the integration.`);
+            logger.warn("Kick integration data file not found. Please link the integration.");
             return null;
         }
 
@@ -381,7 +381,7 @@ export class KickIntegration extends EventEmitter {
             const data = fs.readFileSync(this.dataFilePath, "utf-8");
             return JSON.parse(data) as integrationFileData;
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to read Kick integration configuration file: ${error}`);
+            logger.error(`Failed to read Kick integration configuration file: ${error}`);
             return null;
         }
     }
@@ -394,7 +394,7 @@ export class KickIntegration extends EventEmitter {
 
         const { fs } = firebot.modules;
         fs.writeFileSync(this.dataFilePath, JSON.stringify(data, null, 2));
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick integration token data saved.`);
+        logger.debug("Kick integration token data saved.");
 
         this.proxyPollKey = data.proxyPollKey;
     }

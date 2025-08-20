@@ -1,4 +1,3 @@
-import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger } from "../main";
 import { httpCallWithTimeout } from "./http";
@@ -15,35 +14,35 @@ export class Poller {
         this.pollAborter = new AbortController();
 
         if (!this.proxyPollKey || !this.proxyPollUrl) {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Cannot start poller: Missing proxy poll key or URL.`);
+            logger.warn("Cannot start poller: Missing proxy poll key or URL.");
             return;
         }
 
         this.startPoller();
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Poller connected with proxy poll key: ${this.proxyPollKey}`);
+        logger.debug(`Poller connected with proxy poll key: ${this.proxyPollKey}`);
     }
 
     disconnect(proxyPollKey = ''): void {
         // This is to let the proxy know the poller is no longer active. It will
         // help make things cleaner on the server side in case of a reconnect.
         if (this.proxyPollUrl && (proxyPollKey || this.proxyPollKey)) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Disconnecting proxy poller with key: ${proxyPollKey || this.proxyPollKey}`);
+            logger.debug(`Disconnecting proxy poller with key: ${proxyPollKey || this.proxyPollKey}`);
             const url = `${this.proxyPollUrl}/${proxyPollKey || this.proxyPollKey}`;
             httpCallWithTimeout(url, "DELETE")
                 .then(() => {
-                    logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Successfully disconnected proxy poller.`);
+                    logger.info("Successfully disconnected proxy poller.");
                 })
                 .catch((error) => {
-                    logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error disconnecting proxy poller: ${error}`);
+                    logger.error(`Error disconnecting proxy poller: ${error}`);
                 });
         }
 
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Aborting any in-progress pollers...`);
+        logger.debug("Aborting any in-progress pollers...");
         this.pollAborter.abort();
     }
 
     private startPoller(): void {
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Starting proxy poller...`);
+        logger.debug("Starting proxy poller...");
 
         setTimeout(async () => {
             try {
@@ -52,7 +51,7 @@ export class Poller {
                     this.startPoller(); // Restart the poller after a successful poll
                 }, 0);
             } catch (error) {
-                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error occurred while polling: ${error}`);
+                logger.error(`Error occurred while polling: ${error}`);
                 if (this.pollAborter.signal.aborted) {
                     return;
                 }
@@ -69,20 +68,20 @@ export class Poller {
             httpCallWithTimeout(url, "GET", '', '', this.pollAborter.signal, 0)
                 .then((response): InboundWebhook[] => {
                     if (!response || !response.webhooks) {
-                        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] No webhooks received from proxy poll.`);
+                        logger.debug("No webhooks received from proxy poll.");
                         resolve();
                     }
                     return response.webhooks as InboundWebhook[];
                 })
                 .then(async (webhooks: InboundWebhook[]) => {
-                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Received ${webhooks.length} webhooks from proxy poll.`);
+                    logger.debug(`Received ${webhooks.length} webhooks from proxy poll.`);
                     for (const webhook of webhooks) {
                         await this.handleResponse(webhook);
                     }
                     resolve();
                 })
                 .catch((error) => {
-                    logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error during polling: ${error}`);
+                    logger.error(`Error during polling: ${error}`);
                     reject(error);
                 });
         });
@@ -92,7 +91,7 @@ export class Poller {
         try {
             await handleWebhook(response);
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error parsing webhook: ${error}`);
+            logger.error(`Error parsing webhook: ${error}`);
             return;
         }
     }

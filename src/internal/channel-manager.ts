@@ -27,13 +27,13 @@ export class KickChannelManager {
         this.channelRefresherAborter = new AbortController();
         this.startChannelRefresher();
         this.refreshChannel();
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick channel manager started.`);
+        logger.debug("Kick channel manager started.");
     }
 
     stop(): void {
         this.channelRefresherAborter.abort();
         this.stopChannelRefresher();
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Kick channel manager stopped.`);
+        logger.debug("Kick channel manager stopped.");
     }
 
     async getCategory(categoryId: number): Promise<CategoryInfo> {
@@ -46,7 +46,7 @@ export class KickChannelManager {
             this.kick.httpCallWithTimeout(`/public/v1/categories/${categoryId}`, "GET")
                 .then((response) => {
                     if (!response || !response.data || response.data.length !== 1) {
-                        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Failed to retrieve category from Kick API response. ${JSON.stringify(response)}`);
+                        logger.debug(`Failed to retrieve category from Kick API response. ${JSON.stringify(response)}`);
                         reject(new Error("Failed to retrieve category from Kick API."));
                     }
 
@@ -82,11 +82,11 @@ export class KickChannelManager {
             }
         }
         if (cacheValue) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Returning cached channel for key=${cacheKey}, username='${username}'`);
+            logger.debug(`Returning cached channel for key=${cacheKey}, username='${username}'`);
             return cacheValue;
         }
 
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Retrieving channel for username: '${username}'`);
+        logger.debug(`Retrieving channel for username: '${username}'`);
         try {
             const response = await this.getChannelReal(username);
             if (cacheKey === 'this_channel') {
@@ -96,7 +96,7 @@ export class KickChannelManager {
             }
             return response;
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error retrieving channel: ${error}`);
+            logger.error(`Error retrieving channel: ${error}`);
             throw error;
         }
     }
@@ -113,7 +113,7 @@ export class KickChannelManager {
             const uri = `/public/v1/channels${formVariables.toString().length > 0 ? `?${formVariables.toString()}` : ''}`;
             this.kick.httpCallWithTimeout(uri, "GET", "", this.channelRefresherAborter.signal)
                 .then((response) => {
-                    logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Successfully retrieved channel status for ${username || '(you)'}`);
+                    logger.debug(`Successfully retrieved channel status for ${username || '(you)'}`);
                     const channel = parseChannel(response);
                     resolve(channel);
                 })
@@ -128,10 +128,10 @@ export class KickChannelManager {
             .then((channelStatus: Channel) => {
                 this.channel = channelStatus;
                 this.triggerChannelDataUpdatedEvent();
-                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Channel status updated: isLive=${channelStatus.stream.isLive}, title=${channelStatus.streamTitle || ''}, category=${channelStatus.category.id}, viewers=${channelStatus.stream.viewerCount}`);
+                logger.debug(`Channel status updated: isLive=${channelStatus.stream.isLive}, title=${channelStatus.streamTitle || ''}, category=${channelStatus.category.id}, viewers=${channelStatus.stream.viewerCount}`);
             })
             .catch((error) => {
-                logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to refresh channel status: ${error}`);
+                logger.error(`Failed to refresh channel status: ${error}`);
             });
     }
 
@@ -155,71 +155,71 @@ export class KickChannelManager {
 
         this.channelRefresherAborter = new AbortController();
         this.refreshChannel();
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Channel refresher started.`);
+        logger.debug("Channel refresher started.");
     }
 
     private stopChannelRefresher(): void {
         if (this.channelRefresher) {
             clearInterval(this.channelRefresher);
             this.channelRefresher = null;
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Channel refresher stopped.`);
+            logger.debug("Channel refresher stopped.");
         }
     }
 
     async updateCategory(categoryId: number): Promise<boolean> {
         if (!this.channel) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] No channel found to update category.`);
+            logger.debug("No channel found to update category.");
             return false;
         }
 
         try {
             this.channel.category = await this.getCategory(categoryId);
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Failed to update channel category: ${error}`);
+            logger.error(`Failed to update channel category: ${error}`);
             return false;
         }
 
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Category updated to id=${categoryId} name=${this.channel.category.name}.`);
+        logger.debug(`Category updated to id=${categoryId} name=${this.channel.category.name}.`);
         this.triggerChannelDataUpdatedEvent();
         return true;
     }
 
     updateTitle(title: string): boolean {
         if (!this.channel) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] No channel found to update title.`);
+            logger.debug("No channel found to update title.");
             return false;
         }
 
         if (!title || title.trim().length === 0) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Invalid stream title. Title cannot be empty.`);
+            logger.debug("Invalid stream title. Title cannot be empty.");
             return false;
         }
 
         if (title === this.channel.streamTitle) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Title is already set to "${title}". No update needed.`);
+            logger.debug(`Title is already set to "${title}". No update needed.`);
             return false;
         }
 
         this.channel.streamTitle = title;
         this.triggerChannelDataUpdatedEvent();
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Title updated to "${title}".`);
+        logger.debug(`Title updated to "${title}".`);
         return true;
     }
 
     updateLiveStatus(isLive: boolean): boolean {
         if (!this.channel) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] No channel found to update live status.`);
+            logger.debug("No channel found to update live status.");
             return false;
         }
 
         if (isLive === this.channel.stream.isLive) {
-            logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Live status is already set to ${isLive}. No update needed.`);
+            logger.debug(`Live status is already set to ${isLive}. No update needed.`);
             return false;
         }
 
         this.channel.stream.isLive = isLive;
         this.triggerChannelDataUpdatedEvent();
-        logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Live status updated to ${isLive}.`);
+        logger.debug(`Live status updated to ${isLive}.`);
         return true;
     }
 

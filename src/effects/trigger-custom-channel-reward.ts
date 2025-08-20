@@ -1,11 +1,10 @@
 import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { RestrictionData } from "@crowbartools/firebot-custom-scripts-types/types/modules/command-manager";
-import { IntegrationConstants } from "../constants";
-import { firebot } from "../main";
-import { kickifyUserId, kickifyUsername } from "../internal/util";
 import { JsonDB } from "node-json-db";
-import { logger } from "../main";
+import { IntegrationConstants } from "../constants";
+import { kickifyUserId, kickifyUsername } from "../internal/util";
+import { firebot, logger } from "../main";
 declare const SCRIPTS_DIR: string; // Hack to get profile directory
 
 type triggerCustomChannelRewardParams = {
@@ -146,7 +145,7 @@ export const triggerCustomChannelRewardEffect: Firebot.EffectType<triggerCustomC
             db.load();
             channelRewardsData = db.getData("/") || {};
         } catch (error) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error loading JsonDB at ${customRewardsDbPath}. Cannot trigger custom channel reward effects.`, error);
+            logger.error(`Error loading JsonDB at ${customRewardsDbPath}. Cannot trigger custom channel reward effects.`, error);
             return false;
         }
 
@@ -166,7 +165,7 @@ export const triggerCustomChannelRewardEffect: Firebot.EffectType<triggerCustomC
         }
 
         if (!channelReward.effects) {
-            logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Channel reward ${channelReward.twitchData.title} has no effects to trigger.`);
+            logger.warn(`Channel reward ${channelReward.twitchData.title} has no effects to trigger.`);
             return true;
         }
 
@@ -196,7 +195,7 @@ export const triggerCustomChannelRewardEffect: Firebot.EffectType<triggerCustomC
         if (restrictionData) {
             try {
                 await restrictionManager.runRestrictionPredicates(trigger, restrictionData, false);
-                logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] Restrictions passed for user ${metadata.username} (${metadata.userId}) on reward ${channelReward.twitchData.title}`);
+                logger.debug(`Restrictions passed for user ${metadata.username} (${metadata.userId}) on reward ${channelReward.twitchData.title}`);
             } catch (restrictionReason) {
                 let reason;
                 if (Array.isArray(restrictionReason)) {
@@ -204,7 +203,7 @@ export const triggerCustomChannelRewardEffect: Firebot.EffectType<triggerCustomC
                 } else {
                     reason = restrictionReason;
                 }
-                logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] Restrictions failed for user ${metadata.username} (${metadata.userId}) on reward ${channelReward.twitchData.title}: ${reason}`);
+                logger.warn(`Restrictions failed for user ${metadata.username} (${metadata.userId}) on reward ${channelReward.twitchData.title}: ${reason}`);
                 return false;
             }
         }
@@ -220,12 +219,12 @@ export const triggerCustomChannelRewardEffect: Firebot.EffectType<triggerCustomC
         try {
             await effectRunner.processEffects(processEffectsRequest);
         } catch (reason) {
-            logger.error(`[${IntegrationConstants.INTEGRATION_ID}] Error when running effects for ${metadata.redemptionId}: ${reason}`);
+            logger.error(`Error when running effects for ${metadata.redemptionId}: ${reason}`);
             return false;
         }
 
         // If we reach here, it means the effects were successfully triggered.
-        logger.info(`[${IntegrationConstants.INTEGRATION_ID}] Successfully triggered effects for channel reward ${channelReward.twitchData.title} (ID: ${channelReward.id}) for user ${metadata.username} (${metadata.userId})`);
+        logger.info(`Successfully triggered effects for channel reward ${channelReward.twitchData.title} (ID: ${channelReward.id}) for user ${metadata.username} (${metadata.userId})`);
         return true;
     }
 };

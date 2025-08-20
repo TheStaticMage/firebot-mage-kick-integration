@@ -1,5 +1,6 @@
 import { Firebot, RunRequest } from '@crowbartools/firebot-custom-scripts-types';
 import { Logger } from '@crowbartools/firebot-custom-scripts-types/types/modules/logger';
+import { IntegrationConstants } from './constants';
 import { definition, integration } from './integration';
 
 export let firebot: RunRequest<any>;
@@ -23,7 +24,7 @@ const script: Firebot.CustomScript = {
     },
     run: (runRequest: RunRequest<any>) => {
         firebot = runRequest;
-        logger = runRequest.modules.logger;
+        logger = new LogWrapper(runRequest.modules.logger);
 
         const { integrationManager } = runRequest.modules;
         integrationManager.registerIntegration({ definition, integration });
@@ -31,3 +32,27 @@ const script: Firebot.CustomScript = {
 };
 
 export default script;
+
+class LogWrapper {
+    private _logger: Logger;
+
+    constructor(inLogger: Logger) {
+        this._logger = inLogger;
+    }
+
+    info(message: string) {
+        this._logger.info(`[${IntegrationConstants.INTEGRATION_ID}] ${message}`);
+    }
+
+    error(message: string) {
+        this._logger.error(`[${IntegrationConstants.INTEGRATION_ID}] ${message}`);
+    }
+
+    debug(message: string) {
+        this._logger.debug(`[${IntegrationConstants.INTEGRATION_ID}] ${message}`);
+    }
+
+    warn(message: string) {
+        this._logger.warn(`[${IntegrationConstants.INTEGRATION_ID}] ${message}`);
+    }
+}
