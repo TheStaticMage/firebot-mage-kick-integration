@@ -11,7 +11,7 @@ export class ChatManager {
         this.kick = kick;
     }
 
-    async sendKickChatMessage(msg: string, chatter: "Streamer" | "Bot"): Promise<boolean> {
+    async sendKickChatMessage(msg: string, chatter: "Streamer" | "Bot", replyToMessageId: string | undefined = undefined): Promise<boolean> {
         const segments: string[] = [];
         const maxLen = 500;
         while (msg.length > 0) {
@@ -29,23 +29,27 @@ export class ChatManager {
             msg = msg.slice(splitIdx).trimStart();
         }
         for (const segment of segments) {
-            await this.sendChatMessage(segment, chatter || "Streamer");
+            await this.sendChatMessage(segment, chatter || "Streamer", replyToMessageId);
         }
         return true;
     }
 
-    private async sendChatMessage(message: string, chatter: "Streamer" | "Bot"): Promise<void> {
+    private async sendChatMessage(message: string, chatter: "Streamer" | "Bot", replyToMessageId: string | undefined = undefined): Promise<void> {
         if (!this.kick.broadcaster) {
             logger.error("Cannot send chat message, broadcaster info not available.");
             return;
         }
 
-        const payload = {
+        const payload: Record<string, any> = {
             content: message,
             type: chatter === "Streamer" ? "user" : "bot",
             // eslint-disable-next-line camelcase
             broadcaster_user_id: this.kick.broadcaster.userId
         };
+        if (replyToMessageId) {
+            // eslint-disable-next-line camelcase
+            payload.reply_to_message_id = replyToMessageId;
+        }
 
         try {
             await this.kick.httpCallWithTimeout('/public/v1/chat', "POST", JSON.stringify(payload));

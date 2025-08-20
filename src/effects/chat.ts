@@ -4,6 +4,7 @@ import { integration } from "../integration";
 type chatEffectParams = {
     chatter: "Streamer" | "Bot";
     message: string;
+    sendAsReply: boolean;
 }
 
 export const chatEffect: Firebot.EffectType<chatEffectParams> = {
@@ -28,6 +29,14 @@ export const chatEffect: Firebot.EffectType<chatEffectParams> = {
             menu-position="under"
         />
         <div style="color: #fb7373;" ng-if="effect.message && effect.message.length > 500">Chat messages cannot be longer than 500 characters. This message will get automatically chunked into multiple messages if it is too long after all replace variables have been populated.</div>
+        <div style="display: flex; flex-direction: row; width: 100%; height: 36px; margin: 10px 0 10px; align-items: center;">
+            <firebot-checkbox
+                label="Send as reply"
+                tooltip="Replying only works within a Command or Chat Message event"
+                model="effect.sendAsReply"
+                style="margin: 0px 15px 0px 0px"
+            />
+        </div>
     </eos-container>
     `,
     optionsController: () => {
@@ -40,8 +49,20 @@ export const chatEffect: Firebot.EffectType<chatEffectParams> = {
         }
         return errors;
     },
-    onTriggerEvent: async ({ effect }) => {
-        await integration.kick.chatManager.sendKickChatMessage(effect.message, effect.chatter || "Streamer");
+    onTriggerEvent: async ({ trigger, effect }) => {
+        let messageId: string | undefined = undefined;
+        if (effect.sendAsReply) {
+            if (trigger.type === "command") {
+                messageId = trigger.metadata.chatMessage.id;
+            } else if (trigger.type === "event") {
+                const chatMessage = trigger.metadata.eventData?.chatMessage;
+                if (chatMessage && typeof chatMessage === "object" && "id" in chatMessage) {
+                    messageId = (chatMessage as { id: string }).id;
+                }
+            }
+        }
+
+        await integration.kick.chatManager.sendKickChatMessage(effect.message, effect.chatter || "Streamer", messageId);
         return true;
     }
 };
