@@ -145,7 +145,7 @@ export const triggerCustomChannelRewardEffect: Firebot.EffectType<triggerCustomC
             db.load();
             channelRewardsData = db.getData("/") || {};
         } catch (error) {
-            logger.error(`Error loading JsonDB at ${customRewardsDbPath}. Cannot trigger custom channel reward effects.`, error);
+            logger.error(`Error loading JsonDB at ${customRewardsDbPath}. Cannot trigger custom channel reward effects: ${error}`);
             return false;
         }
 

@@ -136,7 +136,7 @@ export class PlatformAwareUserDisplayNameVariable {
             }
             return "[No user found]";
         } catch (error) {
-            logger.debug(`Unable to find user with name "${username}"`, error);
+            logger.debug(`Unable to find user with name "${username}": ${error}`);
             return "[Error]";
         }
     }
