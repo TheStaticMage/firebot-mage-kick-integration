@@ -251,7 +251,7 @@ export class KickIntegration extends EventEmitter {
         if (!this.authManager.canConnect()) {
             const { frontendCommunicator } = firebot.modules;
             frontendCommunicator.send("error", `Kick Integration: You need to authorize the integration before you can use it. Do that in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
-            this.disconnect();
+            await this.disconnect();
             return;
         }
 
@@ -261,7 +261,7 @@ export class KickIntegration extends EventEmitter {
             logger.info("Kick authentication connected successfully.");
         } catch (error) {
             logger.error(`Failed to connect Kick authentication: ${error}`);
-            this.disconnect();
+            await this.disconnect();
             const { frontendCommunicator } = firebot.modules;
             frontendCommunicator.send("error", `Kick Integration: Failed to authenticate to Kick. You may need to re-authorize the integration. Do that in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             return;
@@ -273,21 +273,21 @@ export class KickIntegration extends EventEmitter {
             logger.info("Kick API integration connected successfully.");
         } catch (error) {
             logger.error(`Failed to connect Kick API integration: ${error}`);
-            this.disconnect();
+            await this.disconnect();
             const { frontendCommunicator } = firebot.modules;
             frontendCommunicator.send("error", `Kick Integration: Failed to connect to the Kick API. You may need to re-authorize the integration. Do that in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             return;
         }
 
         // Start the poller
-        this.poller.connect(this.proxyPollKey);
+        await this.poller.connect(this.proxyPollKey);
 
         // Websocket (pusher) connection setup
         try {
             this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
         } catch (error) {
             logger.error(`Failed to connect Kick websocket (Pusher) integration: ${error}`);
-            this.disconnect();
+            await this.disconnect();
             const { frontendCommunicator } = firebot.modules;
             frontendCommunicator.send("error", `Kick Integration: Failed to connect to the Kick websocket (Pusher). You may need to reconfigure your channel and chatroom IDs in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             return;
@@ -303,7 +303,7 @@ export class KickIntegration extends EventEmitter {
         this.connected = false;
         this.authManager.disconnect();
         await this.kick.disconnect();
-        this.poller.disconnect(this.proxyPollKey);
+        await this.poller.disconnect(this.proxyPollKey);
         this.pusher.disconnect();
         this.emit("disconnected", IntegrationConstants.INTEGRATION_ID);
         logger.info("Kick integration disconnected.");

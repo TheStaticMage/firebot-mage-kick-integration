@@ -38,7 +38,7 @@ export class Kick {
             this.broadcaster = await this.userManager.lookupUserById();
         } catch (error) {
             logger.error(`Failed to get broadcaster ID: ${error}`);
-            this.disconnect();
+            await this.disconnect();
             throw error;
         }
 
