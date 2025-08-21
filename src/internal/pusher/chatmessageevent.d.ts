@@ -13,9 +13,9 @@ interface ChatMessageEvent {
             badges: InboundBadge[];
         };
     };
-    metadata: {
+    metadata?: {
         original_sender: InboundOriginalSender;
-        original_message: InboundOriginalMessage;
+        original_message?: InboundOriginalMessage;
         message_ref: string;
     };
 }
