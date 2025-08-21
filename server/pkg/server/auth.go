@@ -180,7 +180,7 @@ func (s *Server) handleRefreshToken(ctx context.Context, w http.ResponseWriter, 
 	if result.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(result.Body)
 		s.log(ctx, r, "Refresh token request failed: status=%d, response=%s", result.StatusCode, body)
-		http.Error(w, fmt.Sprintf("Upstream refresh token request failed (%s)", requestId), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Upstream refresh token request failed (%s)", requestId), result.StatusCode)
 		return
 	}
 
