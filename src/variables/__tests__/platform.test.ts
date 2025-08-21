@@ -196,9 +196,14 @@ describe('platformVariable.evaluator', () => {
         expect(platformVariable.evaluator(trigger)).toBe('unknown');
     });
 
-    it('returns "manual" if trigger type is manual', () => {
-        const trigger = { type: 'manual', metadata: { eventData: undefined, platform: undefined, eventSource: undefined, chatMessage: undefined } } as any;
-        expect(platformVariable.evaluator(trigger)).toBe('manual');
+    it('returns kick for Kick events manually triggered', () => {
+        const trigger = { type: 'manual', metadata: { eventData: undefined, platform: undefined, eventSource: { id: IntegrationConstants.INTEGRATION_ID }, chatMessage: undefined } } as any;
+        expect(platformVariable.evaluator(trigger)).toBe('kick');
+    });
+
+    it('returns twitch for Twitch events manually triggered', () => {
+        const trigger = { type: 'manual', metadata: { eventData: undefined, platform: undefined, eventSource: { id: 'twitch' }, chatMessage: undefined } } as any;
+        expect(platformVariable.evaluator(trigger)).toBe('twitch');
     });
 
     it('returns "unknown" if trigger type is not event or manual', () => {

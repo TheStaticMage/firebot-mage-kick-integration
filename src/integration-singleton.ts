@@ -8,6 +8,7 @@ import { streamGameEffect } from "./effects/stream-game";
 import { streamTitleEffect } from "./effects/stream-title";
 import { triggerCustomChannelRewardEffect } from "./effects/trigger-custom-channel-reward";
 import { eventSource } from './event-source';
+import { hostViewerCountFilter } from "./filters/host-viewer-count";
 import { platformFilter } from "./filters/platform";
 import { rewardTitleFilter } from "./filters/reward-title";
 import { AuthManager } from "./internal/auth";
@@ -23,6 +24,7 @@ import { kickCategoryImageUrlVariable } from "./variables/category-image-url";
 import { kickChannelIdVariable } from "./variables/channel-id";
 import { kickChatMessageVariable } from "./variables/chat-message";
 import { kickCurrentViewerCountVariable } from "./variables/current-viewer-count";
+import { hostViewerCount } from "./variables/host-viewer-count";
 import { kickModReason } from "./variables/mod-reason";
 import { kickModerator } from "./variables/moderator";
 import { platformVariable } from "./variables/platform";
@@ -58,6 +60,7 @@ type IntegrationParameters = {
     triggerTwitchEvents: {
         chatMessage: boolean;
         follower: boolean;
+        raid: boolean;
         streamOnline: boolean;
         streamOffline: boolean;
         viewerArrived: boolean;
@@ -125,6 +128,7 @@ export class KickIntegration extends EventEmitter {
         triggerTwitchEvents: {
             chatMessage: false,
             follower: false,
+            raid: false,
             streamOffline: false,
             streamOnline: false,
             viewerArrived: false,
@@ -181,6 +185,7 @@ export class KickIntegration extends EventEmitter {
         eventManager.registerEventSource(eventSource);
 
         const { eventFilterManager } = firebot.modules;
+        eventFilterManager.registerFilter(hostViewerCountFilter);
         eventFilterManager.registerFilter(platformFilter);
         eventFilterManager.registerFilter(rewardTitleFilter);
 
@@ -202,6 +207,7 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.registerReplaceVariable(kickStreamerVariable);
 
         // Stream variables
+        replaceVariableManager.registerReplaceVariable(hostViewerCount);
         replaceVariableManager.registerReplaceVariable(kickCurrentViewerCountVariable);
         replaceVariableManager.registerReplaceVariable(kickStreamIsLiveVariable);
         replaceVariableManager.registerReplaceVariable(kickStreamTitleVariable);

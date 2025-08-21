@@ -108,3 +108,10 @@ export interface RewardRedeemedEvent {
     userInput: string;
     rewardBackgroundColor: string;
 }
+
+export interface StreamHostedEvent {
+    user: KickUser;
+    numberOfViewers: number;
+    optionalMessage: string;
+    createdAt: Date | undefined;
+}

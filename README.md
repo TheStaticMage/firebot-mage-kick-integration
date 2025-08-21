@@ -48,6 +48,7 @@ Currently supported:
   - Channel points redeemed
   - Chat message
   - Follow
+  - Host (raid)
   - Stream started
   - Stream ended
   - Viewer arrived
@@ -55,7 +56,9 @@ Currently supported:
   - Viewer timed out
 - Filters:
   - Platform
+  - Viewer count (hosts)
 - Variables:
+  - `$hostViewerCount` (also returns viewer count for Twitch raids)
   - `$kickCategory` (`$kickCategory`) for your channel or another channel
   - `$kickCategoryId` (`$kickGameId`) for your channel or another channel
   - `$kickCategoryImageUrl` for your channel or another channel
@@ -75,6 +78,7 @@ Currently supported:
   - `$kickUptime` for your channel or another channel
   - `$kickUserDisplayName`
   - `$platform`
+  - `$platformAwareUserDisplayName`
 
 Planned but not yet supported:
 

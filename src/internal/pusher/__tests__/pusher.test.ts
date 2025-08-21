@@ -197,3 +197,30 @@ describe('KickPusher.parseRewardRedeemedEvent', () => {
         });
     });
 });
+
+describe('KickPusher.parseStreamHostedEvent', () => {
+    let pusher: KickPusher;
+
+    beforeEach(() => {
+        pusher = new KickPusher();
+        jest.clearAllMocks();
+    });
+
+    it('parses a StreamHostedEvent payload', () => {
+        const jsonInput = `{"message":{"id":"d251ef14-5f5c-4593-8f7d-f5cc0aa52571","numberOfViewers":32,"optionalMessage":"","createdAt":"2025-08-20T20:26:31.231698Z"},"user":{"id":1234567,"username":"Kicker","isSuperAdmin":false,"verified":{"id":12345,"channel_id":7654321,"created_at":"2025-05-12T14:00:00.000000Z","updated_at":"2025-05-12T14:00:00.000000Z"}}}`;
+        const result = (pusher as any).parseStreamHostedEvent(JSON.parse(jsonInput));
+        expect(result).toEqual({
+            user: {
+                userId: "1234567",
+                username: "Kicker",
+                displayName: "Kicker",
+                profilePicture: "",
+                isVerified: true,
+                channelSlug: ""
+            },
+            numberOfViewers: 32,
+            optionalMessage: "",
+            createdAt: new Date("2025-08-20T20:26:31.231698Z")
+        });
+    });
+});

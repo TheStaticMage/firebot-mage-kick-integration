@@ -1,4 +1,5 @@
 import { EventSource } from '@crowbartools/firebot-custom-scripts-types/types/modules/event-manager';
+import { unkickifyUsername } from "./internal/util";
 
 export const eventSource: EventSource = {
     id: "mage-kick-integration",
@@ -188,6 +189,27 @@ export const eventSource: EventSource = {
                 username: "firebot",
                 userDisplayName: "Firebot",
                 userId: ""
+            }
+        },
+        {
+            id: "raid",
+            name: "Incoming Host (Kick)",
+            description: "When someone else hosts (raids) your channel on Kick",
+            cached: true,
+            cacheMetaKey: "username",
+            manualMetadata: {
+                username: "firebot@kick",
+                userDisplayName: "Firebot",
+                userId: "k1234567",
+                viewerCount: 42
+            },
+            activityFeed: {
+                icon: "fad fa-inbox-in",
+                getMessage: (eventData) => {
+                    const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    return `**${userDisplayName}** hosted on Kick with **${eventData.viewerCount}** viewer(s)`;
+                }
             }
         }
     ]
