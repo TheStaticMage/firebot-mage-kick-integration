@@ -174,6 +174,41 @@ describe('KickPusher.parseChatMessageEvent', () => {
         expect(result.createdAt).toBeInstanceOf(Date);
         expect(result.createdAt.toISOString()).toBe('2025-08-20T07:07:44.000Z');
     });
+
+    it('parses a message with no metadata', () => {
+        const jsonInput = `{"id":"59778b1e-9c4d-42e3-a1c7-8cf6de3eee79","chatroom_id":2346570,"content":"Message sent as bot","type":"message","created_at":"2025-08-21T07:20:31+00:00","sender":{"id":72805522,"username":"thestaticmagetest","slug":"thestaticmagetest","identity":{"color":"#31D6C2","badges":[]}}}`;
+
+        const result = (pusher as any).parseChatMessageEvent(JSON.parse(jsonInput));
+
+        expect(result).toEqual({
+            messageId: '59778b1e-9c4d-42e3-a1c7-8cf6de3eee79',
+            broadcaster: {
+                userId: '123',
+                username: 'broadcasterUser',
+                displayName: 'broadcasterUser',
+                profilePicture: 'pic_url',
+                isVerified: false,
+                channelSlug: 'broadcasterUser'
+            },
+            sender: {
+                userId: '72805522',
+                username: 'thestaticmagetest',
+                displayName: 'thestaticmagetest',
+                profilePicture: '',
+                isVerified: false,
+                channelSlug: 'thestaticmagetest',
+                identity: {
+                    usernameColor: '#31D6C2',
+                    badges: []
+                }
+            },
+            content: 'Message sent as bot',
+            createdAt: new Date('2025-08-21T07:20:31.000Z'),
+            repliesTo: undefined
+        });
+        expect(result.createdAt).toBeInstanceOf(Date);
+        expect(result.createdAt.toISOString()).toBe('2025-08-21T07:20:31.000Z');
+    });
 });
 
 describe('KickPusher.parseRewardRedeemedEvent', () => {

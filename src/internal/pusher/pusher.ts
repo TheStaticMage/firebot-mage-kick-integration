@@ -136,7 +136,7 @@ export class KickPusher {
             },
             content: d.content,
             createdAt: parseDate(d.created_at),
-            repliesTo: d.metadata.original_message && d.metadata.original_sender ? {
+            repliesTo: d.metadata && d.metadata.original_message && d.metadata.original_sender ? {
                 messageId: d.metadata.original_message.id,
                 content: d.metadata.original_message.content,
                 sender: {
