@@ -56,6 +56,8 @@ export class AuthManager {
             clearTimeout(this.authRenewer);
             this.authRenewer = null;
         }
+        this.authToken = "";
+        this.botAuthToken = "";
         logger.info("Auth manager disconnected.");
     }
 
@@ -142,7 +144,8 @@ export class AuthManager {
             state
         });
         const queryString = params.toString();
-        const authUrl = `${integration.getSettings().webhookProxy.webhookProxyUrl}/auth/authorize?${queryString}`;
+        const webhookProxyUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/+$/, "");
+        const authUrl = `${webhookProxyUrl}/auth/authorize?${queryString}`;
         return authUrl;
     }
 
@@ -210,7 +213,8 @@ export class AuthManager {
         let payloadString = "";
 
         if (integration.getSettings().webhookProxy.webhookProxyUrl) {
-            url = `${integration.getSettings().webhookProxy.webhookProxyUrl}/auth/token`;
+            const webhookProxyUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/+$/, "");
+            url = `${webhookProxyUrl}/auth/token`;
             payloadString = JSON.stringify(payload);
         } else {
             url = `${IntegrationConstants.KICK_AUTH_SERVER}/oauth/token`;
@@ -316,7 +320,8 @@ export class AuthManager {
         let payloadString = "";
 
         if (integration.getSettings().webhookProxy.webhookProxyUrl) {
-            url = `${integration.getSettings().webhookProxy.webhookProxyUrl}/auth/token`;
+            const webhookProxyUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/+$/, "");
+            url = `${webhookProxyUrl}/auth/token`;
             payloadString = JSON.stringify(payload);
         } else {
             url = `${IntegrationConstants.KICK_AUTH_SERVER}/oauth/token`;

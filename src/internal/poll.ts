@@ -9,7 +9,7 @@ export class Poller {
     private proxyPollUrl = "";
 
     connect(proxyPollKey: string): void {
-        const proxyPollUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/$/, "");
+        const proxyPollUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/+$/, "");
         if (!proxyPollUrl) {
             logger.warn("Cannot start poller: Missing proxy poll URL. (Configure in the integration settings.)");
             return;
