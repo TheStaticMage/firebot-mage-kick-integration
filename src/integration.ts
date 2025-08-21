@@ -9,7 +9,7 @@ export const definition: IntegrationDefinition = {
     description: IntegrationConstants.INTEGRATION_DESCRIPTION,
     connectionToggle: true,
     configurable: true,
-    linkType: "other", // Firebot doesn't support PKCE yet, so we use 'other' for now.
+    linkType: "none", // Firebot doesn't support PKCE yet, so we use 'none' for now.
     settingCategories: {
         connectivity: {
             title: "Connectivity Settings",
@@ -78,9 +78,29 @@ export const definition: IntegrationDefinition = {
                 }
             }
         },
+        accounts: {
+            title: "Accounts",
+            sortRank: 4,
+            settings: {
+                authorizeStreamerAccount: {
+                    title: "Authorize Streamer Account",
+                    tip: `Open this URL in a browser window to authorize the streamer account: http://localhost:7472/integrations/${IntegrationConstants.INTEGRATION_URI}/link/streamer`,
+                    type: "unknown",
+                    sortRank: 1
+                },
+                authorizeBotAccount: {
+                    title: "Authorize Bot Account",
+                    tip: `Open this URL in a browser window to authorize the bot account: http://localhost:7472/integrations/${IntegrationConstants.INTEGRATION_URI}/link/bot`,
+                    type: "boolean",
+                    description: "This is optional. You can register a separate account to chat in your stream.",
+                    default: false,
+                    sortRank: 2
+                }
+            }
+        },
         general: {
             title: "General Settings",
-            sortRank: 4,
+            sortRank: 5,
             settings: {
                 chatFeed: {
                     title: "Chat Feed",
@@ -93,7 +113,7 @@ export const definition: IntegrationDefinition = {
         },
         triggerTwitchEvents: {
             title: "Trigger Twitch Events",
-            sortRank: 5,
+            sortRank: 6,
             settings: {
                 chatMessage: {
                     title: "Chat Message",

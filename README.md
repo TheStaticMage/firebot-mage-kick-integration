@@ -30,6 +30,8 @@ This [Firebot](https://firebot.app) integration provides events and effects for 
 
 Currently supported:
 
+- Accounts:
+  - Chat as the streamer or as a separate bot account
 - Chat integration:
   - Kick messages appear in Firebot's chat feed (Dashboard), displaying Kick usernames and supporting emotes.
   - Ban user from the context menu in the chat feed.
@@ -87,7 +89,6 @@ Planned but not yet supported:
 - Events when a user is unbanned or untimed-out
 - Effects to ban, unban, timeout, and untimeout users
 - Chat roles
-- Chat as a separate user account
 
 Limitations due to Kick:
 
@@ -103,8 +104,6 @@ Limitations due to Firebot:
 - Firebot's viewer database uses Twitch user IDs as primary keys and assumes every user is from Twitch. This rigid design prevents full platform independence.
 - Rate limiting (cooldowns) for commands and redeems doesn't work natively. Consider using the [Firebot Rate Limiter](https://github.com/TheStaticMage/firebot-rate-limiter) if needed.
 - Many built-in Firebot variables and effects are hard-coded to be available only to specific Twitch events. Therefore, this integration introduces Kick-specific variables like `$kickModerator`. Alternatively, you can trigger equivalent Twitch events if your effects are platform-aware.
-- Kick authorization flow is clunky. Thankfully, you'll only need to authorize once.
-- Unlinking the integration causes Firebot to purge configuration data. Without relinking immediately, settings (like webhook URL, channel IDs, and other preferences) are lost.
 
 ## Installation
 

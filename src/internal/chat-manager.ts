@@ -40,9 +40,14 @@ export class ChatManager {
             return;
         }
 
+        if (chatter === "Bot" && !this.kick.bot) {
+            logger.warn("Cannot send chat message as Bot as bot account is not authorized. Falling back to streamer.");
+            chatter = "Streamer";
+        }
+
         const payload: Record<string, any> = {
             content: message,
-            type: chatter === "Streamer" ? "user" : "bot",
+            type: "user", // "bot" here is the registered Kick integration, not the second account registered as the bot
             // eslint-disable-next-line camelcase
             broadcaster_user_id: this.kick.broadcaster.userId
         };
@@ -52,7 +57,7 @@ export class ChatManager {
         }
 
         try {
-            await this.kick.httpCallWithTimeout('/public/v1/chat', "POST", JSON.stringify(payload));
+            await this.kick.httpCallWithTimeout('/public/v1/chat', "POST", JSON.stringify(payload), null, undefined, chatter === "Bot" ? this.kick.getBotAuthToken() : this.kick.getAuthToken());
             logger.debug(`Successfully sent chat message as ${chatter}`);
         } catch (error) {
             logger.error(`Failed to send chat message: ${error}`);
