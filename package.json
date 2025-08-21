@@ -1,7 +1,7 @@
 {
     "name": "firebot-mage-kick-integration",
     "scriptOutputName": "firebot-mage-kick-integration",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "description": "A Kick integration for Firebot",
     "main": "",
     "scripts": {
