@@ -138,7 +138,7 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
     optionsController: ($scope) => {
         if (!$scope.effect) {
             $scope.effect = {
-                chatterKick: "Streamer",
+                chatterKick: "Bot",
                 chatterTwitch: "Bot",
                 copyMessageKick: true,
                 defaultSendKick: false,
@@ -214,7 +214,7 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
                 logger.debug("Skipping sending message to Kick as per effect settings.");
             } else {
                 let messageId = undefined;
-                if (effect.sendAsReply && platform === 'kick') {
+                if (effect.sendAsReplyKick && platform === 'kick') {
                     if (trigger.type === "command") {
                         messageId = trigger.metadata.chatMessage.id;
                     } else if (trigger.type === "event") {
