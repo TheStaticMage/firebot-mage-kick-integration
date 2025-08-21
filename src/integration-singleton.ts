@@ -269,7 +269,7 @@ export class KickIntegration extends EventEmitter {
 
         // Kick API integration setup
         try {
-            await this.kick.connect(this.authManager.getAuthToken(), this.authManager.getBotAuthToken());
+            await this.kick.connect(await this.authManager.getAuthToken(), await this.authManager.getBotAuthToken());
             logger.info("Kick API integration connected successfully.");
         } catch (error) {
             logger.error(`Failed to connect Kick API integration: ${error}`);
@@ -309,27 +309,57 @@ export class KickIntegration extends EventEmitter {
         logger.info("Kick integration disconnected.");
     }
 
-    onUserSettingsUpdate(integrationData: IntegrationData<IntegrationParameters>) {
+    async onUserSettingsUpdate(integrationData: IntegrationData<IntegrationParameters>) {
         if (integrationData.userSettings) {
+            logger.debug("Kick integration user settings updated.");
             const oldSettings = JSON.parse(JSON.stringify(this.settings));
             this.settings = JSON.parse(JSON.stringify(integrationData.userSettings));
+            let mustReconnect = false;
 
-            logger.debug("Kick integration user settings updated.");
-            logger.debug(JSON.stringify(this.settings));
+            if (integrationData.userSettings.webhookProxy.webhookProxyUrl !== oldSettings.webhookProxy.webhookProxyUrl) {
+                logger.info("Kick integration webhook proxy URL has changed. You may need to re-link the integration.");
+                mustReconnect = true;
 
-            if (integrationData.userSettings.webhookProxy.webhookProxyUrl !== oldSettings.webhookProxy.webhookProxyUrl
-                || integrationData.userSettings.kickApp.clientId !== oldSettings.kickApp.clientId
+            }
+            if (integrationData.userSettings.kickApp.clientId !== oldSettings.kickApp.clientId
                 || integrationData.userSettings.kickApp.clientSecret !== oldSettings.kickApp.clientSecret
             ) {
-                logger.warn("Kick integration webhook proxy URL or client credentials changed. You may need to re-link the integration.");
+                logger.info("Kick integration webhook client credentials have changed. You may need to re-link the integration.");
+                if (!integrationData.userSettings.webhookProxy.webhookProxyUrl) {
+                    mustReconnect = true;
+                }
+            }
+
+            if (!integrationData.userSettings.webhookProxy.webhookProxyUrl && this.proxyPollKey) {
+                logger.info("Webhook proxy URL removed but a proxy key was previously set. Removing proxy key and reconnecting integration.");
+                this.proxyPollKey = '';
+                this.saveIntegrationTokenData(await this.authManager.getAuthToken(), await this.authManager.getBotAuthToken(), null);
+                mustReconnect = true;
             }
 
             if (integrationData.userSettings.connectivity.pusherAppKey !== oldSettings.connectivity.pusherAppKey ||
                 integrationData.userSettings.connectivity.chatroomId !== oldSettings.connectivity.chatroomId ||
                 integrationData.userSettings.connectivity.channelId !== oldSettings.connectivity.channelId) {
-                logger.info("Pusher settings changed. Reconnecting...");
-                this.pusher.disconnect();
-                this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
+                logger.info("Pusher settings have changed. The Kick integration will reconnect.");
+                mustReconnect = true;
+            }
+
+            if (integrationData.userSettings.accounts.authorizeBotAccount && !oldSettings.accounts.authorizeBotAccount) {
+                logger.info("Bot account authorization has been enabled. You may need to authorize the bot account.");
+                mustReconnect = true;
+            }
+
+            if (!integrationData.userSettings.accounts.authorizeBotAccount && oldSettings.accounts.authorizeBotAccount) {
+                logger.info("Bot account authorization has been disabled. The Kick integration will reconnect.");
+                mustReconnect = true;
+            }
+
+            if (mustReconnect) {
+                logger.info("Reconnecting integration due to settings change...");
+                await this.disconnect();
+                this.poller.setProxyPollKey(this.proxyPollKey);
+                this.poller.setProxyPollUrl(integrationData.userSettings.webhookProxy.webhookProxyUrl);
+                await this.connect();
             }
         }
     }

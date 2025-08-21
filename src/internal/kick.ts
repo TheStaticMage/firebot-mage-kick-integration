@@ -99,7 +99,11 @@ export class Kick {
 
     setAuthToken(token: string) {
         this.authToken = token;
-        logger.debug("Kick auth token set successfully.");
+        if (token) {
+            logger.debug("Kick streamer auth token set successfully.");
+        } else {
+            logger.debug("Kick streamer auth token cleared.");
+        }
     }
 
     getBotAuthToken(): string {
@@ -108,7 +112,11 @@ export class Kick {
 
     setBotAuthToken(token: string) {
         this.botAuthToken = token;
-        logger.debug("Kick bot auth token set successfully.");
+        if (token) {
+            logger.debug("Kick bot auth token set successfully.");
+        } else {
+            logger.debug("Kick bot auth token cleared.");
+        }
     }
 
     private async deleteExistingSubscriptions(): Promise<void> {

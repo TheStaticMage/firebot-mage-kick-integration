@@ -59,7 +59,11 @@ export class AuthManager {
         logger.info("Auth manager disconnected.");
     }
 
-    getAuthToken(): string {
+    async getAuthToken(): Promise<string> {
+        if (!this.authToken) {
+            await this.refreshAuthTokenReal('streamer');
+        }
+
         if (this.authToken && this.tokenExpiresAt > Date.now()) {
             return this.authToken;
         }
@@ -74,10 +78,14 @@ export class AuthManager {
         return "";
     }
 
-    getBotAuthToken(): string {
+    async getBotAuthToken(): Promise<string> {
         if (!integration.getSettings().accounts.authorizeBotAccount) {
             logger.debug("getBotAuthToken(): Bot account authorization is disabled.");
             return "";
+        }
+
+        if (!this.botAuthToken) {
+            await this.refreshAuthTokenReal('bot');
         }
 
         if (this.botAuthToken && this.botTokenExpiresAt > Date.now()) {

@@ -9,15 +9,19 @@ export class Poller {
     private proxyPollUrl = "";
 
     connect(proxyPollKey: string): void {
-        this.proxyPollKey = proxyPollKey;
-        this.proxyPollUrl = `${integration.getSettings().webhookProxy.webhookProxyUrl}/poll`;
-        this.pollAborter = new AbortController();
-
-        if (!this.proxyPollKey || !this.proxyPollUrl) {
-            logger.warn("Cannot start poller: Missing proxy poll key or URL.");
+        const proxyPollUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/$/, "");
+        if (!proxyPollUrl) {
+            logger.warn("Cannot start poller: Missing proxy poll URL. (Configure in the integration settings.)");
+            return;
+        }
+        if (!proxyPollKey) {
+            logger.warn("Cannot start poller: Missing proxy poll key.");
             return;
         }
 
+        this.proxyPollKey = proxyPollKey;
+        this.proxyPollUrl = `${proxyPollUrl}/poll`;
+        this.pollAborter = new AbortController();
         this.startPoller();
         logger.debug(`Poller connected with proxy poll key: ${this.proxyPollKey}`);
     }
@@ -41,7 +45,22 @@ export class Poller {
         this.pollAborter.abort();
     }
 
+    setProxyPollKey(proxyPollKey: string): void {
+        this.proxyPollKey = proxyPollKey;
+    }
+
+    setProxyPollUrl(proxyPollUrl: string): void {
+        this.proxyPollUrl = proxyPollUrl;
+    }
+
     private startPoller(): void {
+        // If the proxy key is not set there's no point in starting the poller.
+        if (!this.proxyPollKey) {
+            logger.warn("Cannot start poller: Missing proxy poll key.");
+            this.disconnect();
+            return;
+        }
+
         logger.debug("Starting proxy poller...");
 
         setTimeout(async () => {
