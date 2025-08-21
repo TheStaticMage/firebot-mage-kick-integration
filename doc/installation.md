@@ -113,11 +113,17 @@ Here's how to do it:
 
         - Are you using the default "Chat" effect built into Firebot to send a response? This will always send the message to Twitch, even if you're trying to reply to a message posted on Kick! (You probably need to convert this to the "Chat (Platform Aware)" effect distributed with this integration.)
 
-        - Are you using `$userDisplayName[$username]`? The `$userDisplayName` variable only queries Twitch users, so if it's a Kick user, you'll get `[Error]`. (You should use `$platformAwareUserDisplayName[$username]` from this integration instead as it'll work for either.)
-
         - Are you adding or removing VIP or moderator status from a user, banning a user, timing out a user, etc., as a result of an event? If the event comes in via Kick, this may have unexpected results when the API calls are sent to Twitch because the User IDs will be different.
 
         - Are you using the "Chat Message" event to route messages to a chat overlay, such as with the [Mage Onscreen Chat](https://github.com/TheStaticMage/firebot-mage-onscreen-chat) overlay? If so, you might be running afoul of the Twitch terms of service by merging chat messages from multiple platforms on your stream.
+
+        :warning: **CAUTION**: If you intend to have a combined event handler, be sure that you have thoroughly reviewed the variables being used. Here is a partial list of common gotchas:
+
+        - The `$chatMessage` variable only works for Twitch chat messages. Use `$kickChatMessage` for Kick chat messages.
+
+        - The `$raidViewerCount` variable only works for Twitch raids, so if you are handling a Kick host, this will evaluate to 0. (You can use `$hostViewerCount` for either platform instead.)
+
+        - The `$userDisplayName` variable only queries Twitch users, so if it's a Kick user, you'll get `[Error]`. (You can use `$platformAwareUserDisplayName[$username]` for either platform instead.)
 
         Note: Triggering the equivalent Firebot Twitch events is _in addition to_ triggering the Kick events supplied by this integration. (The Kick variants of these events will always be triggered, whether or not you have the box checked to trigger the equivalent Twitch event.)
 

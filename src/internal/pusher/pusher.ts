@@ -1,8 +1,9 @@
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleRewardRedeemedEvent } from "../../events/reward-redeemed-event";
+import { handleStreamHostedEvent } from "../../events/stream-hosted-event";
 import { integration } from "../../integration";
 import { logger } from "../../main";
-import { ChatMessage, KickUser, RewardRedeemedEvent } from "../../shared/types";
+import { ChatMessage, KickUser, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
 import { parseDate } from "../util";
 
 const Pusher = require('pusher-js');
@@ -94,6 +95,9 @@ export class KickPusher {
                 case 'App\\Events\\ChatMessageEvent':
                     await handleChatMessageSentEvent(this.parseChatMessageEvent(data));
                     break;
+                case 'App\\Events\\StreamHostedEvent':
+                    await handleStreamHostedEvent(this.parseStreamHostedEvent(data));
+                    break;
                 case 'RewardRedeemedEvent':
                     await handleRewardRedeemedEvent(this.parseRewardRedeemedEvent(data));
                     break;
@@ -156,6 +160,23 @@ export class KickPusher {
             username: d.username,
             userInput: d.user_input,
             rewardBackgroundColor: d.reward_background_color
+        };
+    }
+
+    private parseStreamHostedEvent(data: any): StreamHostedEvent {
+        const d = data as InboundStreamHostedEvent;
+        return {
+            user: {
+                userId: d.user.id.toString(),
+                username: d.user.username,
+                displayName: d.user.username,
+                profilePicture: '', // Not provided in event
+                isVerified: d.user.verified ? true : false,
+                channelSlug: '' // Not provided in event
+            },
+            numberOfViewers: d.message.numberOfViewers,
+            optionalMessage: d.message.optionalMessage,
+            createdAt: parseDate(d.message.createdAt)
         };
     }
 

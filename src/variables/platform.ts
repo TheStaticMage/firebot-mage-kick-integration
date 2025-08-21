@@ -16,9 +16,14 @@ export const platformVariable: ReplaceVariable = {
         }
     },
     evaluator: (trigger) => {
-        // Manual trigger returns "manual"
+        // Manual trigger prefers the event source regardless of metadata
         if (trigger.type === "manual") {
-            return debugPlatform("manual", "trigger.type", trigger);
+            switch (trigger.metadata.eventSource?.id) {
+                case IntegrationConstants.INTEGRATION_ID:
+                    return debugPlatform("kick", "metadata.eventSource.id (manual)", trigger);
+                case "twitch":
+                    return debugPlatform("twitch", "metadata.eventSource.id (manual)", trigger);
+            }
         }
 
         // See if the platform is explicitly set in the metadata

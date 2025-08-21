@@ -109,40 +109,47 @@ export const definition: IntegrationDefinition = {
                     default: false,
                     sortRank: 2
                 },
+                raid: {
+                    title: "Host (Raid)",
+                    tip: "Trigger the 'Twitch:Raid' event when someone hosts (raids) your stream on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 3
+                },
                 streamOffline: {
                     title: "Stream Ended",
                     tip: "Trigger the 'Twitch:Stream Ended' event when the Kick stream goes offline",
                     type: "boolean",
                     default: false,
-                    sortRank: 3
+                    sortRank: 4
                 },
                 streamOnline: {
                     title: "Stream Started",
                     tip: "Trigger the 'Twitch:Stream Started' event when the Kick stream goes online",
                     type: "boolean",
                     default: false,
-                    sortRank: 4
+                    sortRank: 5
                 },
                 viewerArrived: {
                     title: "Viewer Arrived",
                     tip: "Trigger the 'Twitch:Viewer Arrived' event when a viewer arrives on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 5
+                    sortRank: 6
                 },
                 viewerBanned: {
                     title: "Viewer Banned",
                     tip: "Trigger the 'Twitch:Viewer Banned' event when a viewer is banned on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 6
+                    sortRank: 7
                 },
                 viewerTimeout: {
                     title: "Viewer Timeout",
                     tip: "Trigger the 'Twitch:Viewer Timeout' event when a viewer is timed out on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 7
+                    sortRank: 8
                 }
             }
         },
