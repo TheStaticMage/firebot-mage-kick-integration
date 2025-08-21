@@ -54,6 +54,10 @@ type IntegrationParameters = {
         clientId: string;
         clientSecret: string;
     };
+    accounts: {
+        authorizeStreamerAccount: null;
+        authorizeBotAccount: boolean;
+    };
     general: {
         chatFeed: boolean;
     };
@@ -122,6 +126,10 @@ export class KickIntegration extends EventEmitter {
             clientId: "",
             clientSecret: ""
         },
+        accounts: {
+            authorizeStreamerAccount: null,
+            authorizeBotAccount: false
+        },
         general: {
             chatFeed: true
         },
@@ -153,18 +161,11 @@ export class KickIntegration extends EventEmitter {
             this.settings = JSON.parse(JSON.stringify(integrationData.userSettings));
         }
 
-        this.dataFilePath = getDataFilePath("integration-data.json");
-        const fileData = this.loadIntegrationData();
-        if (fileData) {
-            this.authManager.init(fileData.refreshToken);
-            this.proxyPollKey = fileData.proxyPollKey;
-        } else {
-            logger.warn("Kick integration data file not found or invalid. Please link the integration.");
-            this.authManager.init("");
-        }
-
         const { httpServer } = firebot.modules;
-        httpServer.registerCustomRoute(IntegrationConstants.INTEGRATION_URI, "link", "GET", async (req, res) => {
+        httpServer.registerCustomRoute(IntegrationConstants.INTEGRATION_URI, "link/streamer", "GET", async (req, res) => {
+            this.authManager.handleLinkCallback(req, res);
+        });
+        httpServer.registerCustomRoute(IntegrationConstants.INTEGRATION_URI, "link/bot", "GET", async (req, res) => {
             this.authManager.handleLinkCallback(req, res);
         });
         httpServer.registerCustomRoute(IntegrationConstants.INTEGRATION_URI, "callback", "GET", async (req, res) => {
@@ -232,54 +233,24 @@ export class KickIntegration extends EventEmitter {
 
         const { restrictionManager } = firebot.modules;
         restrictionManager.registerRestriction(platformRestriction);
-
-        const isLinked = this.loadIntegrationData();
-        if (!isLinked) {
-            this.unlink();
-            return;
-        }
-    }
-
-    async link() {
-        this.saveCurrentUserSettings();
-
-        // THIS IS HORRIBLE AND I AM SORRY
-        // Can't figure a good way to open the URL in the user's browser
-        // from the script. The modals seem to escape HTML, and this was
-        // the best one I could find.
-        const { frontendCommunicator } = firebot.modules;
-        const authUrl = `${this.settings.connectivity.firebotUrl}/integrations/${IntegrationConstants.INTEGRATION_URI}/link`;
-        frontendCommunicator.send("info", `Please copy and paste this URL into your browser to authorize the integration: ${authUrl}`);
-    }
-
-    async unlink() {
-        this.disconnect();
-        this.authManager.unlink();
-
-        const { fs } = firebot.modules;
-        if (fs.existsSync(this.dataFilePath)) {
-            fs.unlinkSync(this.dataFilePath);
-            logger.info("Kick integration data file deleted.");
-        }
-
-        logger.info("Kick integration unlinking complete.");
-    }
-
-    private saveCurrentUserSettings() {
-        // Firebot wipes out all record of the integration in the database,
-        // including the user settings, when it unlinks the integration. At
-        // least put the settings back into the database when re-linking.
-        const { integrationManager } = firebot.modules;
-        integrationManager.saveIntegrationUserSettings(IntegrationConstants.INTEGRATION_ID, this.settings, false);
     }
 
     async connect() {
+        // Load current refresh token and proxy poll key from data file
+        this.dataFilePath = getDataFilePath("integration-data.json");
+        const fileData = this.loadIntegrationData();
+        if (fileData) {
+            this.authManager.init(fileData.refreshToken, fileData.botRefreshToken);
+            this.proxyPollKey = fileData.proxyPollKey;
+        } else {
+            logger.warn("Kick integration data file not found or invalid. Please link the integration.");
+            this.authManager.init("", "");
+        }
+
         // Make sure the necessary tokens and settings are available
         if (!this.authManager.canConnect()) {
-            const { frontendCommunicator } = firebot.modules;
-            frontendCommunicator.send("error", "Kick Integration: You need to link the integration before you can connect it.");
-            logger.error("Kick integration is not properly linked. Please link the integration first.");
-            this.disconnect();
+            await this.disconnect();
+            this.sendCriticalErrorNotification("You need to set up authorization for the integration before you can use it. Do that in Settings > Integrations > Kick.");
             return;
         }
 
@@ -289,35 +260,32 @@ export class KickIntegration extends EventEmitter {
             logger.info("Kick authentication connected successfully.");
         } catch (error) {
             logger.error(`Failed to connect Kick authentication: ${error}`);
-            this.disconnect();
-            const { frontendCommunicator } = firebot.modules;
-            frontendCommunicator.send("error", "Kick Integration: Failed to authenticate to Kick. You may need to re-link the integration.");
+            await this.disconnect();
             return;
         }
 
         // Kick API integration setup
         try {
-            await this.kick.connect(this.authManager.getAuthToken());
+            const streamerToken = await this.authManager.getStreamerAuthToken();
+            const botToken = await this.authManager.getBotAuthToken();
+            await this.kick.connect(streamerToken, botToken);
             logger.info("Kick API integration connected successfully.");
         } catch (error) {
             logger.error(`Failed to connect Kick API integration: ${error}`);
-            this.disconnect();
-            const { frontendCommunicator } = firebot.modules;
-            frontendCommunicator.send("error", "Kick Integration: Failed to connect to the Kick API. You may need to re-link the integration.");
+            await this.disconnect();
             return;
         }
 
         // Start the poller
-        this.poller.connect(this.proxyPollKey);
+        await this.poller.connect(this.proxyPollKey);
 
         // Websocket (pusher) connection setup
         try {
             this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
         } catch (error) {
             logger.error(`Failed to connect Kick websocket (Pusher) integration: ${error}`);
-            this.disconnect();
-            const { frontendCommunicator } = firebot.modules;
-            frontendCommunicator.send("error", "Kick Integration: Failed to connect to the Kick websocket (Pusher) integration. You may need to re-link the integration or configure your channel and chatroom IDs.");
+            await this.disconnect();
+            this.sendCriticalErrorNotification(`Failed to connect to the Kick websocket (Pusher). You may need to reconfigure your channel and chatroom IDs in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             return;
         }
 
@@ -330,34 +298,70 @@ export class KickIntegration extends EventEmitter {
         logger.debug("Kick integration disconnecting...");
         this.connected = false;
         this.authManager.disconnect();
-        this.kick.disconnect();
-        this.poller.disconnect(this.proxyPollKey);
+        await this.kick.disconnect();
+        await this.poller.disconnect(this.proxyPollKey);
         this.pusher.disconnect();
         this.emit("disconnected", IntegrationConstants.INTEGRATION_ID);
         logger.info("Kick integration disconnected.");
     }
 
-    onUserSettingsUpdate(integrationData: IntegrationData<IntegrationParameters>) {
+    async onUserSettingsUpdate(integrationData: IntegrationData<IntegrationParameters>) {
         if (integrationData.userSettings) {
+            logger.debug("Kick integration user settings updated.");
             const oldSettings = JSON.parse(JSON.stringify(this.settings));
             this.settings = JSON.parse(JSON.stringify(integrationData.userSettings));
+            let mustReconnect = false;
 
-            logger.debug("Kick integration user settings updated.");
-            logger.debug(JSON.stringify(this.settings));
+            if (integrationData.userSettings.webhookProxy.webhookProxyUrl !== oldSettings.webhookProxy.webhookProxyUrl) {
+                logger.info("Kick integration webhook proxy URL has changed. You may need to re-link the integration.");
+                this.kick.setAuthToken('');
+                this.kick.setBotAuthToken('');
+                mustReconnect = true;
+            }
 
-            if (integrationData.userSettings.webhookProxy.webhookProxyUrl !== oldSettings.webhookProxy.webhookProxyUrl
-                || integrationData.userSettings.kickApp.clientId !== oldSettings.kickApp.clientId
+            if (integrationData.userSettings.kickApp.clientId !== oldSettings.kickApp.clientId
                 || integrationData.userSettings.kickApp.clientSecret !== oldSettings.kickApp.clientSecret
             ) {
-                logger.warn("Kick integration webhook proxy URL or client credentials changed. You may need to re-link the integration.");
+                logger.info("Kick integration webhook client credentials have changed. You may need to re-link the integration.");
+                if (!integrationData.userSettings.webhookProxy.webhookProxyUrl) {
+                    this.kick.setAuthToken('');
+                    this.kick.setBotAuthToken('');
+                    mustReconnect = true;
+                }
+            }
+
+            if (!integrationData.userSettings.webhookProxy.webhookProxyUrl && this.proxyPollKey) {
+                logger.info("Webhook proxy URL removed but a proxy key was previously set.");
+                this.proxyPollKey = '';
+                this.saveIntegrationTokenData(this.authManager.streamerRefreshToken, this.authManager.botRefreshToken, null);
+                mustReconnect = true;
             }
 
             if (integrationData.userSettings.connectivity.pusherAppKey !== oldSettings.connectivity.pusherAppKey ||
                 integrationData.userSettings.connectivity.chatroomId !== oldSettings.connectivity.chatroomId ||
                 integrationData.userSettings.connectivity.channelId !== oldSettings.connectivity.channelId) {
-                logger.info("Pusher settings changed. Reconnecting...");
-                this.pusher.disconnect();
-                this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
+                logger.info("Pusher settings have changed. The Kick integration will reconnect.");
+                mustReconnect = true;
+            }
+
+            if (integrationData.userSettings.accounts.authorizeBotAccount && !oldSettings.accounts.authorizeBotAccount) {
+                logger.info("Bot account authorization has been enabled. You may need to authorize the bot account.");
+                this.kick.setBotAuthToken('');
+                mustReconnect = true;
+            }
+
+            if (!integrationData.userSettings.accounts.authorizeBotAccount && oldSettings.accounts.authorizeBotAccount) {
+                logger.info("Bot account authorization has been disabled. The Kick integration will reconnect.");
+                this.kick.setBotAuthToken('');
+                mustReconnect = true;
+            }
+
+            if (mustReconnect) {
+                logger.info("Reconnecting integration due to settings change...");
+                await this.disconnect();
+                this.poller.setProxyPollKey(this.proxyPollKey);
+                this.poller.setProxyPollUrl(integrationData.userSettings.webhookProxy.webhookProxyUrl);
+                await this.connect();
             }
         }
     }
@@ -378,6 +382,11 @@ export class KickIntegration extends EventEmitter {
         return this.settings;
     }
 
+    sendCriticalErrorNotification(message: string) {
+        const { frontendCommunicator } = firebot.modules;
+        frontendCommunicator.send("error", `Kick Integration: ${message}`);
+    }
+
     private loadIntegrationData(): integrationFileData | null {
         const { fs } = firebot.modules;
         if (!fs.existsSync(this.dataFilePath)) {
@@ -394,9 +403,10 @@ export class KickIntegration extends EventEmitter {
         }
     }
 
-    saveIntegrationTokenData(refreshToken: string, proxyPollKey: string | null = null): void {
+    saveIntegrationTokenData(refreshToken: string, botRefreshToken: string, proxyPollKey: string | null = null): void {
         const data: integrationFileData = {
             refreshToken: refreshToken,
+            botRefreshToken: botRefreshToken,
             proxyPollKey: proxyPollKey || this.proxyPollKey
         };
 
@@ -410,6 +420,7 @@ export class KickIntegration extends EventEmitter {
 
 interface integrationFileData {
     refreshToken: string;
+    botRefreshToken: string;
     proxyPollKey: string;
 }
 

@@ -91,6 +91,10 @@ Here's how to do it:
 
       - **Client Secret**: Copy the client secret from the [Kick app](/doc/kick-app.md) that you created.  _Leave this setting blank if you are using a webhook proxy._
 
+    - **Accounts**
+
+      _We will come back very soon and authorize the accounts. Just skip this for now while you review the rest of the settings._
+
     - **General Settings**
 
       - **Chat Feed**: If checked (default), chat messages on Kick will be added to the Firebot chat feed, shown when you click on DASHBOARD in Firebot. Don't worry, this will not forward these messages to Twitch, add them to any on-screen chat overlay, etc. The [Twitch Simulcasting FAQ](https://help.twitch.tv/s/article/simulcasting-guidelines?language=en_US) explicitly notes that it's fine for you to use a tool that combines Twitch and Kick activity for your own use so long as you do not show it on stream:
@@ -139,32 +143,52 @@ Here's how to do it:
 
         THE DEVELOPER OF THIS INTEGRATION DOES NOT EVEN HAVE THESE ENABLED ON HIS OWN PRODUCTION FIREBOT INSTANCE!
 
-4. Click **Save** when you're done.
+4. Click **Save** when you're done. (Save your settings before you proceed to the authentication steps.)
 
-## Authentication
+## Authentication of Streamer
 
 You will authenticate to Kick using your browser, which will grant a token to the application. This uses a technology called [OAuth](https://docs.kick.com/getting-started/generating-tokens-oauth2-flow) which ensures that your Kick password is never needed by the Firebot integration.
 
-1. Navigate to Settings &gt; Integrations and look for the integration entitled **MageKickIntegration**.
+1. Log in to Kick as the streamer.
 
-2. If there is a button called **Unlink** next to that integration, you have already authenticated. If you want to re-authenticate, you can click this button to disconnect and unlink.
+2. Click the following link:
 
-3. Click the **Link** button.
+   [`http://localhost:7472/integrations/firebot-mage-kick-integration/link/streamer`](http://localhost:7472/integrations/firebot-mage-kick-integration/link/streamer)
 
-4. This will pop open an info box with a URL. You can copy and paste that URL to your browser. Or you can click here for the default URL:
+3. You will be redirected to a screen on Kick's website that prompts you to authorize the application. Click the **Allow Access** button.
 
-    [`http://localhost:7472/integrations/firebot-mage-kick-integration/link`](http://localhost:7472/integrations/firebot-mage-kick-integration/link)
+4. If everything works as it should, you should see this message in your browser after a few seconds:
 
-    _The integration author apologizes for the awkwardness of this flow. Firebot does not currently expose sufficient resources to script authors to create a dialog box with a clickable link._
-
-5. This will bring you to Kick's website. You may be prompted to log in if you have not already. The screen then prompts you to authorize the application. Click the **Allow Access** button.
-
-6. If everything works as it should, you should see this message in your browser after a few seconds:
-
-    > Kick integration connected successfully! You can close this tab.
+    > Kick integration authorized for streamer! You can close this tab.
 
     If you get that message, you can indeed close the tab.
 
-7. Back in Firebot, if the Info dialog with the URL is still open, you may close it.
+:bulb: You can re-authenticate at any time. The link to authenticate the streamer is also available under Settings &gt; Integrations &gt; **MageKickIntegration** &gt; Configure.
 
-:bulb: When you are done setting up the authentication or if you change any of the settings related to authentication (webhook proxy URL, client ID, client secret), you may need to connect. You can do this via the "Connections" which are accessed in the lower left corner of the Firebot application.
+## Authentication of Bot
+
+You may _optionally_ choose to have Firebot post chat messages as a separate Kick user, which we will call your "bot." (If you do not configure a separate bot user, chat messages will always be posted as the streamer.)
+
+1. Register a separate Kick account for your bot.
+
+2. Log in to Kick as the bot account. (We suggest using an incognito/private window so there is no confusion between your streamer account and bot account.)
+
+3. In Firebot, navigate to Settings &gt; Integrations &gt; **MageKickIntegration** and click the **Configure** button.
+
+4. Under the "Accounts" section, check the box for "Authorize Bot Account."
+
+5. Copy the link from the integration section into your (incognito) browser window, or just copy this link:
+
+   `http://localhost:7472/integrations/firebot-mage-kick-integration/link/bot`
+
+6. You will be redirected to a screen on Kick's website that prompts you to authorize the application. Click the **Allow Access** button.
+
+7. If everything works as it should, you should see this message in your browser after a few seconds:
+
+    > Kick integration authorized for bot! You can close this tab.
+
+    If you get that message, you can indeed close the tab.
+
+8. Be sure to save your integration settings in Firebot.
+
+:bulb: We suggest to make your bot a moderator so it can post URLs and bypass any other restrictions. (Note: this bot account does not attempt to take any "moderator" actions in the channel through Firebot.)

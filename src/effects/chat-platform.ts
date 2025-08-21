@@ -179,7 +179,7 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
             $scope.effect.defaultSendTwitch = false;
         }
         if (!$scope.effect.chatterKick) {
-            $scope.effect.chatterKick = "Streamer";
+            $scope.effect.chatterKick = "Bot";
         }
         if (!$scope.effect.chatterTwitch) {
             $scope.effect.chatterTwitch = "Bot";

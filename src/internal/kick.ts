@@ -7,10 +7,13 @@ import { ChatManager } from "./chat-manager";
 import { httpCallWithTimeout } from "./http";
 import { KickUserApi } from "./user-api";
 import { KickUserManager } from "./user-manager";
+import { parseBasicKickUser } from "./webhook-handler/webhook-handler";
 
 export class Kick {
     private apiAborter = new AbortController();
     private authToken = "";
+    private botAuthToken = "";
+    bot: BasicKickUser | null = null;
     broadcaster: BasicKickUser | null = null;
     channelManager: KickChannelManager;
     chatManager: ChatManager;
@@ -24,25 +27,53 @@ export class Kick {
         this.userManager = new KickUserManager(this);
     }
 
-    async connect(token: string): Promise<void> {
+    async connect(token: string, botToken: string): Promise<void> {
         logger.debug("Kick API integration connecting...");
 
         this.setAuthToken(token);
+        this.setBotAuthToken(botToken);
         this.apiAborter = new AbortController();
 
         try {
             this.broadcaster = await this.userManager.lookupUserById();
         } catch (error) {
             logger.error(`Failed to get broadcaster ID: ${error}`);
-            this.disconnect();
+            await this.disconnect();
             throw error;
+        }
+
+        if (botToken) {
+            try {
+                const uri = `/public/v1/users`;
+                const response = await this.httpCallWithTimeout(uri, "GET", '', null, 10000, botToken);
+
+                if (!response || !response.data || response.data.length !== 1) {
+                    logger.debug(`Failed to retrieve user from Kick API response. ${JSON.stringify(response)}`);
+                    throw new Error("Failed to retrieve user from Kick API.");
+                }
+
+                const user = parseBasicKickUser(response.data[0]);
+                if (!user.userId) {
+                    logger.debug("No user ID found in Kick API response.");
+                    throw new Error("No user ID found in Kick API response.");
+                }
+
+                logger.debug(`Successfully retrieved bot user: ${user.userId} (${user.name})`);
+                this.bot = user;
+            } catch (error) {
+                logger.error(`Failed to get bot user: ${error}`);
+                this.bot = null;
+            }
+        } else {
+            logger.debug("No bot token is given.");
+            this.bot = null;
         }
 
         try {
             await this.subscribeToEvents();
         } catch (error) {
             logger.error(`Failed to subscribe to events: ${error}`);
-            this.disconnect();
+            await this.disconnect();
             throw error;
         }
 
@@ -52,9 +83,9 @@ export class Kick {
         logger.info("Kick API integration connected.");
     }
 
-    disconnect(): void {
+    async disconnect(): Promise<void> {
         logger.debug("Kick API integration disconnecting...");
-        this.deleteExistingSubscriptions();
+        await this.deleteExistingSubscriptions();
         this.apiAborter.abort();
         this.channelManager.stop();
         this.userApi.stop();
@@ -62,9 +93,30 @@ export class Kick {
         logger.info("Kick API integration disconnected.");
     }
 
+    getAuthToken(): string {
+        return this.authToken;
+    }
+
     setAuthToken(token: string) {
         this.authToken = token;
-        logger.debug("Kick auth token set successfully.");
+        if (token) {
+            logger.debug("Kick streamer auth token set successfully.");
+        } else {
+            logger.debug("Kick streamer auth token cleared.");
+        }
+    }
+
+    getBotAuthToken(): string {
+        return this.botAuthToken;
+    }
+
+    setBotAuthToken(token: string) {
+        this.botAuthToken = token;
+        if (token) {
+            logger.debug("Kick bot auth token set successfully.");
+        } else {
+            logger.debug("Kick bot auth token cleared.");
+        }
     }
 
     private async deleteExistingSubscriptions(): Promise<void> {
@@ -137,17 +189,18 @@ export class Kick {
         });
     }
 
-    async httpCallWithTimeout(uri: string, method: string, body = '', signal: AbortSignal | null = null, timeout = 10000): Promise<any> {
+    async httpCallWithTimeout(uri: string, method: string, body = '', signal: AbortSignal | null = null, timeout = 10000, authToken = this.authToken): Promise<any> {
         const requestId = crypto.randomUUID();
         if (integration.getSettings().logging.logApiResponses) {
-            logger.debug(`[${requestId}] Making API call to ${uri} with method ${method} and body: ${JSON.stringify(body)}`);
+            const asUser = authToken === this.botAuthToken ? 'bot' : (this.authToken === this.authToken ? 'streamer' : (this.authToken === '' ? 'unauthenticated' : 'unknown'));
+            logger.debug(`[${requestId}] Making API call as ${asUser} to ${uri} with method ${method} and body: ${JSON.stringify(body)}`);
         }
 
         try {
             const response = await httpCallWithTimeout(
                 `${IntegrationConstants.KICK_API_SERVER}${uri}`,
                 method,
-                this.authToken,
+                authToken,
                 body,
                 AbortSignal.any([this.apiAborter.signal, ...(signal ? [signal] : [])]),
                 timeout
