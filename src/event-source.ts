@@ -1,5 +1,5 @@
 import { EventSource } from '@crowbartools/firebot-custom-scripts-types/types/modules/event-manager';
-import { unkickifyUsername } from "./internal/util";
+import { unkickifyUsername } from './internal/util';
 
 export const eventSource: EventSource = {
     id: "mage-kick-integration",
@@ -11,9 +11,9 @@ export const eventSource: EventSource = {
             description: "When someone chats in your channel on Kick",
             cached: false,
             manualMetadata: {
-                username: "firebot",
+                username: "firebot@kick",
                 userDisplayName: "Firebot",
-                userId: "",
+                userId: "k1234567",
                 messageText: "Test message"
             }
         },
@@ -24,19 +24,16 @@ export const eventSource: EventSource = {
             cached: true,
             cacheMetaKey: "username",
             manualMetadata: {
-                username: "firebot",
+                username: "firebot@kick",
                 userDisplayName: "Firebot",
-                userId: ""
+                userId: "k1234567"
             },
             activityFeed: {
                 icon: "fas fa-heart",
                 getMessage: (eventData) => {
-                    const username = typeof eventData.username === "string" ? eventData.username : "Unknown User";
+                    const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
                     const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
-                    const showUserIdName = username.toLowerCase() !== userDisplayName.toLowerCase();
-                    return `**${eventData.userDisplayName}${
-                        showUserIdName ? ` (${eventData.username})` : ""
-                    }** followed`;
+                    return `**${userDisplayName}** followed on Kick`;
                 }
             }
         },
@@ -73,19 +70,16 @@ export const eventSource: EventSource = {
             cached: true,
             cacheMetaKey: "username",
             manualMetadata: {
-                username: "firebot",
+                username: "firebot@kick",
                 userDisplayName: "Firebot",
-                userId: ""
+                userId: "k1234567"
             },
             activityFeed: {
                 icon: "fad fa-house-return",
                 getMessage: (eventData) => {
-                    const username = typeof eventData.username === "string" ? eventData.username : "";
-                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : "";
-                    const showUserIdName = username.toLowerCase() !== userDisplayName.toLowerCase();
-                    return `**${eventData.userDisplayName}${
-                        showUserIdName ? ` (${eventData.username})` : ""
-                    }** arrived`;
+                    const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    return `**${userDisplayName}** arrived on Kick`;
                 }
             }
         },
@@ -95,25 +89,21 @@ export const eventSource: EventSource = {
             description: "When someone is banned in your channel",
             cached: false,
             manualMetadata: {
-                username: "cavemobster",
+                username: "cavemobster@kick",
                 userDisplayName: "CaveMobster",
-                userId: "",
+                userId: "k2345678",
                 moderator: "Firebot",
                 modReason: "They were extra naughty"
             },
             activityFeed: {
                 icon: "fad fa-gavel",
                 getMessage: (eventData) => {
-                    const username = typeof eventData.username === "string" ? eventData.username : "";
-                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : "";
-                    const showUserIdName = username.toLowerCase() !== userDisplayName.toLowerCase();
-                    const moderator = typeof eventData.moderator === "string" ? eventData.moderator : "Unknown Moderator";
+                    const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    const moderator = typeof eventData.moderator === "string" ? unkickifyUsername(eventData.moderator) : "Unknown Moderator";
                     const modReason = typeof eventData.modReason === "string" ? eventData.modReason : "";
 
-                    let message = `**${userDisplayName}${
-                        showUserIdName ? ` (${username})` : ""
-                    }** was banned by **${moderator}**.`;
-
+                    let message = `**${userDisplayName}** was banned by **${moderator}** on Kick.`;
                     if (modReason) {
                         message = `${message} Reason: **${modReason}**`;
                     }
@@ -129,7 +119,7 @@ export const eventSource: EventSource = {
             manualMetadata: {
                 username: "alca",
                 userDisplayName: "Alca",
-                userId: "",
+                userId: "k3456789",
                 timeoutDuration: "60", // Kick reports this in minutes but we convert to seconds before calling the event
                 moderator: "Firebot",
                 modReason: "They were naughty"
@@ -137,16 +127,12 @@ export const eventSource: EventSource = {
             activityFeed: {
                 icon: "fad fa-stopwatch",
                 getMessage: (eventData) => {
-                    const username = typeof eventData.username === "string" ? eventData.username : "";
-                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : "";
-                    const showUserIdName = username.toLowerCase() !== userDisplayName.toLowerCase();
-                    const moderator = typeof eventData.moderator === "string" ? eventData.moderator : "Unknown Moderator";
+                    const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    const moderator = typeof eventData.moderator === "string" ? unkickifyUsername(eventData.moderator) : "Unknown Moderator";
                     const modReason = typeof eventData.modReason === "string" ? eventData.modReason : "";
 
-                    let message = `**${userDisplayName}${
-                        showUserIdName ? ` (${username})` : ""
-                    }** was timed out for **${eventData.timeoutDuration} sec(s)** by **${moderator}**.`;
-
+                    let message = `**${userDisplayName}** was timed out for **${eventData.timeoutDuration} sec(s)** by **${moderator}** on Kick.`;
                     if (modReason) {
                         message = `${message} Reason: **${modReason}**`;
                     }
@@ -162,19 +148,16 @@ export const eventSource: EventSource = {
             manualMetadata: {
                 username: "firebot",
                 userDisplayName: "Firebot",
-                userId: "",
+                userId: "k1234567",
                 rewardName: "Test Reward",
                 messageText: "Test message"
             },
             activityFeed: {
                 icon: "fad fa-circle",
                 getMessage: (eventData) => {
-                    const username = typeof eventData.username === "string" ? eventData.username : "";
-                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : "";
-                    const showUserIdName = username.toLowerCase() !== userDisplayName.toLowerCase();
-                    return `**${userDisplayName}${
-                        showUserIdName ? ` (${username})` : ""
-                    }** redeemed **${eventData.rewardName}**${
+                    const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    return `**${userDisplayName}** redeemed **${eventData.rewardName}** on Kick${
                         typeof eventData.messageText === "string" && eventData.messageText.length > 0 ? `: *${eventData.messageText}*` : ""
                     }`;
                 }
@@ -186,9 +169,9 @@ export const eventSource: EventSource = {
             description: "When the channel data is updated on Kick (this happens periodically)",
             cached: false,
             manualMetadata: {
-                username: "firebot",
+                username: "firebot@kick",
                 userDisplayName: "Firebot",
-                userId: ""
+                userId: "k1234567"
             }
         },
         {
