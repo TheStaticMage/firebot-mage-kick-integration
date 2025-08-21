@@ -249,9 +249,8 @@ export class KickIntegration extends EventEmitter {
 
         // Make sure the necessary tokens and settings are available
         if (!this.authManager.canConnect()) {
-            const { frontendCommunicator } = firebot.modules;
-            frontendCommunicator.send("error", `Kick Integration: You need to authorize the integration before you can use it. Do that in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             await this.disconnect();
+            this.sendCriticalErrorNotification("You need to set up authorization for the integration before you can use it. Do that in Settings > Integrations > Kick.");
             return;
         }
 
@@ -262,20 +261,18 @@ export class KickIntegration extends EventEmitter {
         } catch (error) {
             logger.error(`Failed to connect Kick authentication: ${error}`);
             await this.disconnect();
-            const { frontendCommunicator } = firebot.modules;
-            frontendCommunicator.send("error", `Kick Integration: Failed to authenticate to Kick. You may need to re-authorize the integration. Do that in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+            this.sendCriticalErrorNotification(`Failed to authenticate to Kick. You may need to re-authorize the integration in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             return;
         }
 
         // Kick API integration setup
         try {
-            await this.kick.connect(await this.authManager.getAuthToken(), await this.authManager.getBotAuthToken());
+            await this.kick.connect(await this.authManager.getStreamerAuthToken(), await this.authManager.getBotAuthToken());
             logger.info("Kick API integration connected successfully.");
         } catch (error) {
             logger.error(`Failed to connect Kick API integration: ${error}`);
             await this.disconnect();
-            const { frontendCommunicator } = firebot.modules;
-            frontendCommunicator.send("error", `Kick Integration: Failed to connect to the Kick API. You may need to re-authorize the integration. Do that in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+            this.sendCriticalErrorNotification(`Failed to connect to the Kick API. You may need to re-authorize the integration in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             return;
         }
 
@@ -288,8 +285,7 @@ export class KickIntegration extends EventEmitter {
         } catch (error) {
             logger.error(`Failed to connect Kick websocket (Pusher) integration: ${error}`);
             await this.disconnect();
-            const { frontendCommunicator } = firebot.modules;
-            frontendCommunicator.send("error", `Kick Integration: Failed to connect to the Kick websocket (Pusher). You may need to reconfigure your channel and chatroom IDs in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+            this.sendCriticalErrorNotification(`Failed to connect to the Kick websocket (Pusher). You may need to reconfigure your channel and chatroom IDs in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             return;
         }
 
@@ -333,7 +329,7 @@ export class KickIntegration extends EventEmitter {
             if (!integrationData.userSettings.webhookProxy.webhookProxyUrl && this.proxyPollKey) {
                 logger.info("Webhook proxy URL removed but a proxy key was previously set. Removing proxy key and reconnecting integration.");
                 this.proxyPollKey = '';
-                this.saveIntegrationTokenData(await this.authManager.getAuthToken(), await this.authManager.getBotAuthToken(), null);
+                this.saveIntegrationTokenData(await this.authManager.getStreamerAuthToken(), await this.authManager.getBotAuthToken(), null);
                 mustReconnect = true;
             }
 
@@ -378,6 +374,11 @@ export class KickIntegration extends EventEmitter {
 
     getSettings(): IntegrationParameters {
         return this.settings;
+    }
+
+    sendCriticalErrorNotification(message: string) {
+        const { frontendCommunicator } = firebot.modules;
+        frontendCommunicator.send("error", `Kick Integration: ${message}`);
     }
 
     private loadIntegrationData(): integrationFileData | null {
