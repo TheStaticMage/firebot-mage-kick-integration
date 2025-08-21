@@ -11,10 +11,10 @@ export class AuthManager {
     private codeChallenges: Record<string, string> = {};
     private tokenRequests: Record<string, 'streamer' | 'bot'> = {};
     private streamerAuthToken = "";
-    private streamerRefreshToken = "";
+    streamerRefreshToken = "";
     private streamerTokenExpiresAt = 0;
     private botAuthToken = "";
-    private botRefreshToken = "";
+    botRefreshToken = "";
     private botTokenExpiresAt = 0;
 
     init(refreshToken: string, botRefreshToken: string) {
@@ -36,13 +36,18 @@ export class AuthManager {
         }
 
         logger.debug("Auth manager connecting...");
-
-        this.authAborter = new AbortController();
-        const streamerTokenRenewal = this.refreshStreamerToken();
-        const botTokenRenewal = this.refreshBotToken();
-
         try {
-            await Promise.all([streamerTokenRenewal, botTokenRenewal]);
+            const streamerTokenRenewal = await this.refreshStreamerToken();
+            if (!streamerTokenRenewal) {
+                logger.error("Failed to refresh streamer auth token");
+                throw new Error("Failed to refresh streamer auth token");
+            }
+
+            const botTokenRenewal = await this.refreshBotToken();
+            if (!botTokenRenewal) {
+                logger.error("Failed to refresh bot auth token");
+                throw new Error("Failed to refresh bot auth token");
+            }
         } catch (error) {
             this.disconnect();
             logger.error(`Failed to refresh Kick tokens: ${error}`);
@@ -70,7 +75,12 @@ export class AuthManager {
 
     async getStreamerAuthToken(): Promise<string> {
         if (!this.streamerAuthToken) {
-            await this.refreshAuthTokenReal('streamer');
+            if (this.streamerRefreshToken) {
+                await this.refreshAuthTokenReal('streamer');
+            } else {
+                integration.sendCriticalErrorNotification(`Streamer refresh token is missing. You need to re-authorize the streamer account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+                return "";
+            }
         }
 
         if (this.streamerAuthToken && this.streamerTokenExpiresAt > Date.now()) {
@@ -94,7 +104,12 @@ export class AuthManager {
         }
 
         if (!this.botAuthToken) {
-            await this.refreshAuthTokenReal('bot');
+            if (this.botRefreshToken) {
+                await this.refreshAuthTokenReal('bot');
+            } else {
+                integration.sendCriticalErrorNotification(`Bot refresh token is missing. You need to re-authorize (or disable) the bot account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+                return "";
+            }
         }
 
         if (this.botAuthToken && this.botTokenExpiresAt > Date.now()) {
@@ -296,7 +311,6 @@ export class AuthManager {
             if (!this.streamerRefreshToken) {
                 logger.error("Streamer refresh token is missing. Disconnecting integration.");
                 this.disconnect();
-
                 integration.sendCriticalErrorNotification(`You need to authorize the streamer account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             } else {
                 this.scheduleNextStreamerTokenRenewal(10000); // Try again in 10 seconds if there's an error
@@ -307,7 +321,7 @@ export class AuthManager {
 
     private async refreshBotToken(): Promise<boolean> {
         if (!integration.getSettings().accounts.authorizeBotAccount || !this.botRefreshToken) {
-            return false;
+            return true; // There wasn't an error so we indicate success
         }
 
         try {
@@ -318,7 +332,7 @@ export class AuthManager {
             logger.error(`Error refreshing bot auth token: ${error}`);
             this.botRefreshToken = "";
             this.botAuthToken = "";
-            integration.sendCriticalErrorNotification(`You need to re-authorize the bot account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+            integration.sendCriticalErrorNotification(`You need to re-authorize (or disable) the bot account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
         }
         return false;
     }
@@ -349,21 +363,39 @@ export class AuthManager {
             payloadString = new URLSearchParams(payload).toString();
         }
 
-        const response = await httpCallWithTimeout(url, 'POST', '', payloadString);
-        if (tokenType === 'streamer') {
-            this.streamerAuthToken = response.access_token;
-            this.streamerRefreshToken = response.refresh_token;
-            this.streamerTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
-            integration.kick.setAuthToken(this.streamerAuthToken);
-            logger.info(`Kick integration token for streamer refreshed successfully. Valid until: ${new Date(this.streamerTokenExpiresAt).toISOString()}`);
-        } else {
-            this.botAuthToken = response.access_token;
-            this.botRefreshToken = response.refresh_token;
-            this.botTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
-            integration.kick.setBotAuthToken(this.botAuthToken);
-            logger.info(`Kick integration token for bot refreshed successfully. Valid until: ${new Date(this.botTokenExpiresAt).toISOString()}`);
+        try {
+            const response = await httpCallWithTimeout(url, 'POST', '', payloadString);
+            if (tokenType === 'streamer') {
+                this.streamerAuthToken = response.access_token;
+                this.streamerRefreshToken = response.refresh_token;
+                this.streamerTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
+                integration.kick.setAuthToken(this.streamerAuthToken);
+                logger.info(`Kick integration token for streamer refreshed successfully. Valid until: ${new Date(this.streamerTokenExpiresAt).toISOString()}`);
+            } else {
+                this.botAuthToken = response.access_token;
+                this.botRefreshToken = response.refresh_token;
+                this.botTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
+                integration.kick.setBotAuthToken(this.botAuthToken);
+                logger.info(`Kick integration token for bot refreshed successfully. Valid until: ${new Date(this.botTokenExpiresAt).toISOString()}`);
+            }
+        } catch (error: any) {
+            // Check if error has a status property and handle 401 specifically
+            if (error && typeof error === 'object' && 'status' in error && error.status === 401) {
+                integration.sendCriticalErrorNotification(`Kick integration ${tokenType} refresh token is invalid. Please re-authorize the ${tokenType} account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+                if (tokenType === 'streamer') {
+                    this.streamerRefreshToken = "";
+                } else {
+                    this.botRefreshToken = "";
+                }
+                logger.error(`Kick integration ${tokenType} refresh token is invalid. Please re-authorize.`);
+                return;
+            }
+
+            logger.error(`Error refreshing ${tokenType} auth token: ${error}`);
+            throw error;
+        } finally {
+            integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken);
         }
-        integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken);
     }
 
     private scheduleNextStreamerTokenRenewal(delay: number) {

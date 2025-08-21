@@ -55,7 +55,9 @@ export async function httpCallWithTimeout(
                 continue;
             }
             if (!response.ok) {
-                throw new Error(`HTTP error! Status: ${response.status} (URL: ${url}, payload: ${body})`);
+                const error: any = new Error(`HTTP error! Status: ${response.status} (URL: ${url}, payload: ${body})`);
+                error.status = response.status;
+                throw error;
             }
             if (response.status === 204) {
                 return ({});

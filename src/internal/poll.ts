@@ -1,3 +1,4 @@
+import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger } from "../main";
 import { httpCallWithTimeout } from "./http";
@@ -15,11 +16,12 @@ export class Poller {
 
         const proxyPollUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/+$/, "");
         if (!proxyPollUrl) {
-            logger.warn("Cannot start poller: Missing proxy poll URL. (Configure in the integration settings.)");
+            logger.debug("Cannot start poller: Missing proxy poll URL.");
             return;
         }
         if (!proxyPollKey) {
-            logger.warn("Cannot start poller: Missing proxy poll key.");
+            logger.error("Cannot start poller: Missing proxy poll key.");
+            integration.sendCriticalErrorNotification(`Failed to start the proxy poller. You probably need to re-authorize the streamer account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             return;
         }
 

@@ -261,18 +261,18 @@ export class KickIntegration extends EventEmitter {
         } catch (error) {
             logger.error(`Failed to connect Kick authentication: ${error}`);
             await this.disconnect();
-            this.sendCriticalErrorNotification(`Failed to authenticate to Kick. You may need to re-authorize the integration in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             return;
         }
 
         // Kick API integration setup
         try {
-            await this.kick.connect(await this.authManager.getStreamerAuthToken(), await this.authManager.getBotAuthToken());
+            const streamerToken = await this.authManager.getStreamerAuthToken();
+            const botToken = await this.authManager.getBotAuthToken();
+            await this.kick.connect(streamerToken, botToken);
             logger.info("Kick API integration connected successfully.");
         } catch (error) {
             logger.error(`Failed to connect Kick API integration: ${error}`);
             await this.disconnect();
-            this.sendCriticalErrorNotification(`Failed to connect to the Kick API. You may need to re-authorize the integration in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             return;
         }
 
@@ -314,22 +314,26 @@ export class KickIntegration extends EventEmitter {
 
             if (integrationData.userSettings.webhookProxy.webhookProxyUrl !== oldSettings.webhookProxy.webhookProxyUrl) {
                 logger.info("Kick integration webhook proxy URL has changed. You may need to re-link the integration.");
+                this.kick.setAuthToken('');
+                this.kick.setBotAuthToken('');
                 mustReconnect = true;
-
             }
+
             if (integrationData.userSettings.kickApp.clientId !== oldSettings.kickApp.clientId
                 || integrationData.userSettings.kickApp.clientSecret !== oldSettings.kickApp.clientSecret
             ) {
                 logger.info("Kick integration webhook client credentials have changed. You may need to re-link the integration.");
                 if (!integrationData.userSettings.webhookProxy.webhookProxyUrl) {
+                    this.kick.setAuthToken('');
+                    this.kick.setBotAuthToken('');
                     mustReconnect = true;
                 }
             }
 
             if (!integrationData.userSettings.webhookProxy.webhookProxyUrl && this.proxyPollKey) {
-                logger.info("Webhook proxy URL removed but a proxy key was previously set. Removing proxy key and reconnecting integration.");
+                logger.info("Webhook proxy URL removed but a proxy key was previously set.");
                 this.proxyPollKey = '';
-                this.saveIntegrationTokenData(await this.authManager.getStreamerAuthToken(), await this.authManager.getBotAuthToken(), null);
+                this.saveIntegrationTokenData(this.authManager.streamerRefreshToken, this.authManager.botRefreshToken, null);
                 mustReconnect = true;
             }
 
@@ -342,11 +346,13 @@ export class KickIntegration extends EventEmitter {
 
             if (integrationData.userSettings.accounts.authorizeBotAccount && !oldSettings.accounts.authorizeBotAccount) {
                 logger.info("Bot account authorization has been enabled. You may need to authorize the bot account.");
+                this.kick.setBotAuthToken('');
                 mustReconnect = true;
             }
 
             if (!integrationData.userSettings.accounts.authorizeBotAccount && oldSettings.accounts.authorizeBotAccount) {
                 logger.info("Bot account authorization has been disabled. The Kick integration will reconnect.");
+                this.kick.setBotAuthToken('');
                 mustReconnect = true;
             }
 

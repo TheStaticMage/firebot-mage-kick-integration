@@ -192,7 +192,8 @@ export class Kick {
     async httpCallWithTimeout(uri: string, method: string, body = '', signal: AbortSignal | null = null, timeout = 10000, authToken = this.authToken): Promise<any> {
         const requestId = crypto.randomUUID();
         if (integration.getSettings().logging.logApiResponses) {
-            logger.debug(`[${requestId}] Making API call to ${uri} with method ${method} and body: ${JSON.stringify(body)}`);
+            const asUser = authToken === this.botAuthToken ? 'bot' : (this.authToken === this.authToken ? 'streamer' : (this.authToken === '' ? 'unauthenticated' : 'unknown'));
+            logger.debug(`[${requestId}] Making API call as ${asUser} to ${uri} with method ${method} and body: ${JSON.stringify(body)}`);
         }
 
         try {
