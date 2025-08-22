@@ -95,13 +95,15 @@ Here's how to do it:
 
       _We will come back very soon and authorize the accounts. Just skip this for now while you review the rest of the settings._
 
-    - **General Settings**
+    - **Chat Settings**
 
       - **Chat Feed**: If checked (default), chat messages on Kick will be added to the Firebot chat feed, shown when you click on DASHBOARD in Firebot. Don't worry, this will not forward these messages to Twitch, add them to any on-screen chat overlay, etc. The [Twitch Simulcasting FAQ](https://help.twitch.tv/s/article/simulcasting-guidelines?language=en_US) explicitly notes that it's fine for you to use a tool that combines Twitch and Kick activity for your own use so long as you do not show it on stream:
 
         > Can I use third-party tools that combine activity from other platforms or services such as chat if I am just using them for my personal usage?
         >
         > Yes, you are free to use tools that are for your personal use. The prohibition on third-party tools only applies to content presented to viewers either on or off Twitch.
+
+      - **Send Your Chat Feed Messages to Kick**: If checked, messages that you type in the box at the bottom of Firebot's chat feed will also be sent to Kick. (Note that any messages you type in that box are automatically sent to Twitch, and there's no way to turn that off. Also, any "slash commands" (e.g. `/clear`) are only sent to Twitch.)
 
     - **Trigger Twitch Events**
 

@@ -18,8 +18,8 @@ type chatPlatformEffectParams = {
     defaultSendTwitch?: boolean;
 };
 
-const mockSendKickChatMessage = jest.fn().mockResolvedValue(undefined);
-const mockSendChatMessage = jest.fn().mockResolvedValue(undefined);
+export const mockSendKickChatMessage = jest.fn().mockResolvedValue(undefined);
+export const mockSendChatMessage = jest.fn().mockResolvedValue(undefined);
 
 jest.mock('../../integration', () => {
     return {

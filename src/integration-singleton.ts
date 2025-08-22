@@ -60,8 +60,9 @@ type IntegrationParameters = {
         authorizeStreamerAccount: null;
         authorizeBotAccount: boolean;
     };
-    general: {
+    chat: {
         chatFeed: boolean;
+        chatSend: boolean;
     };
     triggerTwitchEvents: {
         chatMessage: boolean;
@@ -132,8 +133,9 @@ export class KickIntegration extends EventEmitter {
             authorizeStreamerAccount: null,
             authorizeBotAccount: false
         },
-        general: {
-            chatFeed: true
+        chat: {
+            chatFeed: true,
+            chatSend: false
         },
         triggerTwitchEvents: {
             chatMessage: false,
@@ -375,7 +377,7 @@ export class KickIntegration extends EventEmitter {
     }
 
     isChatFeedEnabled(): boolean {
-        return this.settings.general.chatFeed;
+        return this.settings.chat.chatFeed;
     }
 
     getModules(): ScriptModules {
