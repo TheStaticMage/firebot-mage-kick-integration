@@ -98,8 +98,8 @@ export const definition: IntegrationDefinition = {
                 }
             }
         },
-        general: {
-            title: "General Settings",
+        chat: {
+            title: "Chat Settings",
             sortRank: 5,
             settings: {
                 chatFeed: {
@@ -108,6 +108,13 @@ export const definition: IntegrationDefinition = {
                     type: "boolean",
                     default: true,
                     sortRank: 1
+                },
+                chatSend: {
+                    title: "Send Your Chat Feed Messages to Kick",
+                    tip: "Messages you type in the chat feed are sent to Twitch automatically. Check this box to send them to Kick as well.",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 2
                 }
             }
         },

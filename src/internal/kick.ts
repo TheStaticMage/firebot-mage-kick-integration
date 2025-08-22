@@ -78,6 +78,7 @@ export class Kick {
         }
 
         this.channelManager.start();
+        await this.chatManager.start();
         this.userApi.start();
         await this.userManager.connectViewerDatabase();
         logger.info("Kick API integration connected.");
@@ -88,6 +89,7 @@ export class Kick {
         await this.deleteExistingSubscriptions();
         this.apiAborter.abort();
         this.channelManager.stop();
+        await this.chatManager.stop();
         this.userApi.stop();
         this.userManager.disconnectViewerDatabase();
         logger.info("Kick API integration disconnected.");

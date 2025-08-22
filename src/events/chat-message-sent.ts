@@ -6,15 +6,12 @@ import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/u
 import { firebot, logger } from "../main";
 import { ChatMessage } from "../shared/types";
 
-const messageCache = new Set<string>();
-
 export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<void> {
-    // Deduplication -- we can get messages via Pusher and webhook but they have the same ID
-    if (messageCache.has(payload.messageId)) {
+    const isRegistered = await integration.kick.chatManager.registerMessage(payload.messageId, 'kick');
+    if (!isRegistered) {
         logger.debug(`Duplicate chat message ignored: id=${payload.messageId}`);
         return;
     }
-    messageCache.add(payload.messageId);
 
     // Basic message parsing
     const helpers = new FirebotChatHelpers();
