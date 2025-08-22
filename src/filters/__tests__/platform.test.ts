@@ -1,6 +1,14 @@
-
 import { IntegrationConstants } from '../../constants';
 import { platformFilter } from '../platform';
+
+jest.mock('../../main', () => ({
+    logger: {
+        info: jest.fn(),
+        debug: jest.fn(),
+        error: jest.fn(),
+        warn: jest.fn()
+    }
+}));
 
 describe('platformFilter.predicate', () => {
     it('returns true when platform matches and comparisonType is "is"', () => {

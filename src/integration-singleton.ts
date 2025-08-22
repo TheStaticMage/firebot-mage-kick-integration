@@ -11,6 +11,7 @@ import { eventSource } from './event-source';
 import { hostViewerCountFilter } from "./filters/host-viewer-count";
 import { platformFilter } from "./filters/platform";
 import { rewardTitleFilter } from "./filters/reward-title";
+import { usernameFilter } from "./filters/username";
 import { AuthManager } from "./internal/auth";
 import { Kick } from "./internal/kick";
 import { Poller } from "./internal/poll";
@@ -39,6 +40,7 @@ import { kickStreamerIdVariable } from "./variables/streamer-id";
 import { kickTimeoutDurationVariable } from "./variables/timeout-duration";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
+import { streamerOrBotFilter } from "./filters/streamer-or-bot";
 
 type IntegrationParameters = {
     connectivity: {
@@ -189,6 +191,8 @@ export class KickIntegration extends EventEmitter {
         eventFilterManager.registerFilter(hostViewerCountFilter);
         eventFilterManager.registerFilter(platformFilter);
         eventFilterManager.registerFilter(rewardTitleFilter);
+        eventFilterManager.registerFilter(streamerOrBotFilter);
+        eventFilterManager.registerFilter(usernameFilter);
 
         const { replaceVariableManager } = firebot.modules;
 
