@@ -4,8 +4,8 @@ import { ChatManager } from "../internal/chat-manager";
 import { logger } from "../main";
 
 type chatPlatformEffectParams = {
-    alwaysSendKick?: boolean;
-    alwaysSendTwitch?: boolean;
+    alwaysSendKick?: boolean; // DEPRECATED
+    alwaysSendTwitch?: boolean; // DEPRECATED
     chatterKick: "Streamer" | "Bot";
     chatterTwitch: "Streamer" | "Bot";
     copyMessageKick?: boolean;
@@ -15,8 +15,10 @@ type chatPlatformEffectParams = {
     messageKick?: string;
     sendAsReply?: boolean;
     sendAsReplyKick?: boolean;
-    skipKick?: boolean;
-    skipTwitch?: boolean;
+    skipKick?: boolean; // DEPRECATED
+    skipTwitch?: boolean; // DEPRECATED
+    sendTwitch: "never" | "always" | "trigger";
+    sendKick: "never" | "always" | "trigger";
 }
 
 export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = {
@@ -64,60 +66,44 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
     </eos-container>
 
     <eos-container header="Twitch Chat Settings" pad-top="true">
+        <eos-container header="Send to Twitch" pad-top="true">
+            <dropdown-select options="{always: 'Always', never: 'Never', trigger: 'When Trigger was on Twitch'}" selected="effect.sendTwitch"></dropdown-select>
+        </eos-container>
+
         <eos-container header="Chat As" pad-top="true">
             <dropdown-select options="['Streamer', 'Bot']" selected="effect.chatterTwitch"></dropdown-select>
         </eos-container>
 
-        <eos-container header="Twitch Options" pad-top="true">
+        <eos-container header="Options" pad-top="true">
             <firebot-checkbox
                 label="Send as reply"
                 tooltip="Replying only works within a Command or Chat Message event."
                 model="effect.sendAsReply"
                 style="margin: 0px 15px 0px 0px"
             />
-
-            <firebot-checkbox
-                label="Always send to Twitch"
-                model="effect.alwaysSendTwitch"
-                style="margin: 0px 15px 0px 0px"
-            />
-
-            <firebot-checkbox
-                label="Never send to Twitch"
-                model="effect.skipTwitch"
-                style="margin: 0px 15px 0px 0px"
-            />
-        </div>
+        </eos-container>
     </eos-container>
 
     <eos-container header="Kick Chat Settings" pad-top="true">
+        <eos-container header="Send to Kick" pad-top="true">
+            <dropdown-select options="{always: 'Always', never: 'Never', trigger: 'When Trigger was on Kick'}" selected="effect.sendKick"></dropdown-select>
+        </eos-container>
+
         <eos-container header="Chat As" pad-top="true">
             <dropdown-select options="['Streamer', 'Bot']" selected="effect.chatterKick"></dropdown-select>
         </eos-container>
 
-        <eos-container header="Kick Options" pad-top="true">
+        <eos-container header="Options" pad-top="true">
             <firebot-checkbox
                 label="Send as reply"
                 tooltip="Replying only works within a Command or Chat Message event."
                 model="effect.sendAsReplyKick"
                 style="margin: 0px 15px 0px 0px"
             />
-
-            <firebot-checkbox
-                label="Always send to Kick"
-                model="effect.alwaysSendKick"
-                style="margin: 0px 15px 0px 0px"
-            />
-
-            <firebot-checkbox
-                label="Never send to Kick"
-                model="effect.skipKick"
-                style="margin: 0px 15px 0px 0px"
-            />
-        </div>
+        </eos-container>
     </eos-container>
 
-    <eos-container header="Undefined Trigger Handling" pad-top="true">
+    <eos-container header="Unknown Trigger Handling" pad-top="true">
         <p class="muted">If the trigger cannot be determined, send the message to:</p>
 
         <div style="display: flex; flex-direction: row; width: 100%; height: 36px; margin: 10px 0 10px; align-items: center;">
@@ -147,18 +133,28 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
                 messageKick: "",
                 sendAsReply: false,
                 sendAsReplyKick: false,
-                skipKick: false,
-                skipTwitch: false
+                sendKick: "trigger",
+                sendTwitch: "trigger"
             };
         }
+
+        // Backward compatibility / update
+        if ($scope.effect.sendKick === undefined) {
+            $scope.effect.sendKick = $scope.effect.alwaysSendKick ? "always" : ($scope.effect.skipKick ? "never" : "trigger");
+        }
+        if ($scope.effect.sendTwitch === undefined) {
+            $scope.effect.sendTwitch = $scope.effect.alwaysSendTwitch ? "always" : ($scope.effect.skipTwitch ? "never" : "trigger");
+        }
+
+        // Deprecation
+        $scope.effect.alwaysSendKick = undefined;
+        $scope.effect.skipKick = undefined;
+        $scope.effect.alwaysSendTwitch = undefined;
+        $scope.effect.skipTwitch = undefined;
+
+        // Defaults
         if (typeof $scope.effect.copyMessageKick !== "boolean") {
             $scope.effect.copyMessageKick = true;
-        }
-        if (typeof $scope.effect.skipKick !== "boolean") {
-            $scope.effect.skipKick = false;
-        }
-        if (typeof $scope.effect.skipTwitch !== "boolean") {
-            $scope.effect.skipTwitch = false;
         }
         if (typeof $scope.effect.sendAsReply !== "boolean") {
             $scope.effect.sendAsReply = false;
@@ -196,62 +192,62 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
         if (!effect.copyMessageKick && (effect.messageKick == null || effect.messageKick === "")) {
             errors.push("Kick chat message can't be blank when separate messages are enabled.");
         }
-        if (effect.alwaysSendKick && effect.skipKick) {
-            errors.push("You cannot always send to Kick and skip sending to Kick at the same time.");
+        if (!effect.sendKick) {
+            errors.push("You must specify an option of when to send messages to Kick.");
         }
-        if (effect.alwaysSendTwitch && effect.skipTwitch) {
-            errors.push("You cannot always send to Twitch and skip sending to Twitch at the same time.");
+        if (!effect.sendTwitch) {
+            errors.push("You must specify an option of when to send messages to Twitch.");
         }
         return errors;
     },
     onTriggerEvent: async ({ effect, trigger }) => {
+        // Handle deprecated parameters gracefully
+        if (effect.sendKick === undefined) {
+            effect.sendKick = effect.alwaysSendKick ? "always" : (effect.skipKick ? "never" : "trigger");
+        }
+        if (effect.sendTwitch === undefined) {
+            effect.sendTwitch = effect.alwaysSendTwitch ? "always" : (effect.skipTwitch ? "never" : "trigger");
+        }
+
         // The user ID determines which platform the message came from.
         const platform = ChatManager.getPlatformFromTrigger(trigger);
 
         // Send the message via the Kick
-        if (platform === "kick" || (platform === "unknown" && effect.defaultSendKick) || effect.alwaysSendKick) {
-            if (effect.skipKick) {
-                logger.debug("Skipping sending message to Kick as per effect settings.");
-            } else {
-                let messageId = undefined;
-                if (effect.sendAsReplyKick && platform === 'kick') {
-                    if (trigger.type === "command") {
-                        messageId = trigger.metadata.chatMessage.id;
-                    } else if (trigger.type === "event") {
-                        const chatMsg = trigger.metadata.eventData?.chatMessage;
-                        if (chatMsg && typeof chatMsg === "object" && "id" in chatMsg) {
-                            messageId = (chatMsg as { id: string }).id;
-                        }
+        if ((platform === "kick" && effect.sendKick === "trigger") || (platform === "unknown" && effect.defaultSendKick && effect.sendKick === "trigger") || effect.sendKick === "always") {
+            let messageId = undefined;
+            if (effect.sendAsReplyKick && platform === 'kick') {
+                if (trigger.type === "command") {
+                    messageId = trigger.metadata.chatMessage.id;
+                } else if (trigger.type === "event") {
+                    const chatMsg = trigger.metadata.eventData?.chatMessage;
+                    if (chatMsg && typeof chatMsg === "object" && "id" in chatMsg) {
+                        messageId = (chatMsg as { id: string }).id;
                     }
                 }
-
-                logger.debug(`Sending message to Kick. (Reply: ${messageId ? messageId : "N/A"})`);
-                const messageToSend = effect.copyMessageKick ? effect.message : effect.messageKick || effect.message;
-                await integration.kick.chatManager.sendKickChatMessage(messageToSend, effect.chatterKick || "Streamer", messageId);
             }
+
+            logger.debug(`Sending message to Kick. (Reply: ${messageId ? messageId : "N/A"})`);
+            const messageToSend = effect.copyMessageKick ? effect.message : effect.messageKick || effect.message;
+            await integration.kick.chatManager.sendKickChatMessage(messageToSend, effect.chatterKick || "Streamer", messageId);
         }
 
         // Send the message via Twitch
-        if (platform === "twitch" || (platform === "unknown" && effect.defaultSendTwitch) || effect.alwaysSendTwitch) {
-            if (effect.skipTwitch) {
-                logger.debug("Skipping sending message to Twitch as per effect settings.");
-            } else {
-                let messageId = undefined;
-                if (effect.sendAsReply && platform === 'twitch') {
-                    if (trigger.type === "command") {
-                        messageId = trigger.metadata.chatMessage.id;
-                    } else if (trigger.type === "event") {
-                        const chatMsg = trigger.metadata.eventData?.chatMessage;
-                        if (chatMsg && typeof chatMsg === "object" && "id" in chatMsg) {
-                            messageId = (chatMsg as { id: string }).id;
-                        }
+        if ((platform === "twitch" && effect.sendTwitch === "trigger") || (platform === "unknown" && effect.defaultSendTwitch && effect.sendTwitch === "trigger") || effect.sendTwitch === "always") {
+            let messageId = undefined;
+            if (effect.sendAsReply && platform === 'twitch') {
+                if (trigger.type === "command") {
+                    messageId = trigger.metadata.chatMessage.id;
+                } else if (trigger.type === "event") {
+                    const chatMsg = trigger.metadata.eventData?.chatMessage;
+                    if (chatMsg && typeof chatMsg === "object" && "id" in chatMsg) {
+                        messageId = (chatMsg as { id: string }).id;
                     }
                 }
-
-                logger.debug(`Sending message to Twitch. (Reply: ${messageId ? messageId : "N/A"})`);
-                const { twitchChat } = integration.getModules();
-                await twitchChat.sendChatMessage(effect.message, "", effect.chatterTwitch !== "Streamer" ? "bot" : "streamer", messageId);
             }
+
+            logger.debug(`Sending message to Twitch. (Reply: ${messageId ? messageId : "N/A"})`);
+            const { twitchChat } = integration.getModules();
+            await twitchChat.sendChatMessage(effect.message, "", effect.chatterTwitch !== "Streamer" ? "bot" : "streamer", messageId);
         }
 
         return true;
