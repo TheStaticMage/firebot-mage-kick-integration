@@ -123,7 +123,7 @@ class FirebotChatHelpers {
         return identity.badges
             .map(badge => ({
                 title: badge.type,
-                url: IntegrationConstants.KICK_BADGE_URLS[badge.type] || ""
+                url: IntegrationConstants.KICK_BADGE_DATA[badge.type] ? `data:image/svg+xml;base64,${btoa(IntegrationConstants.KICK_BADGE_DATA[badge.type])}` : ""
             }))
             .filter(badge => badge.url !== "");
     }
