@@ -174,6 +174,25 @@ export class KickUserManager {
         });
     }
 
+    async syncViewerRoles(userId: string, roles: string[], rolesToDeleteIfNotPresent: string[] = []): Promise<void> {
+        if (this.isViewerDBOn() !== true) {
+            // TODO: Redirect this call to "real" user DB
+            throw new Error("This is unavailable because 'allow dangerous operations' is enabled.");
+        }
+        if (!this._db) {
+            return;
+        }
+
+        const rolesToDelete = rolesToDeleteIfNotPresent.filter(role => !roles.includes(role));
+        logger.debug(`Syncing viewer roles for user ${userId}. Adding roles: ${roles}, Removing roles: ${rolesToDelete}`);
+
+        try {
+            await this._db.updateAsync({ _id: unkickifyUserId(userId) }, { $addToSet: { twitchRoles: { $each: roles } }, $pull: { twitchRoles: { $in: rolesToDelete } } });
+        } catch (error) {
+            logger.error(`Error adding viewer roles for user ${userId}: ${String(error)}`);
+        }
+    }
+
     async incrementDbField(userId: string, fieldName: string): Promise<void> {
         if (this.isViewerDBOn() !== true) {
             // TODO: Redirect this call to "real" user DB
