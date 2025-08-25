@@ -93,7 +93,7 @@ export class KickPusher {
         try {
             switch (event) {
                 case 'App\\Events\\ChatMessageEvent':
-                    await handleChatMessageSentEvent(this.parseChatMessageEvent(data));
+                    await handleChatMessageSentEvent(this.parseChatMessageEvent(data), 2); // Delay by 2 seconds in hopes webhook arrives first
                     break;
                 case 'App\\Events\\StreamHostedEvent':
                     await handleStreamHostedEvent(this.parseStreamHostedEvent(data));

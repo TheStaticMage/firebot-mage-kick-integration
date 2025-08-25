@@ -4,44 +4,52 @@ import { integration } from "../integration";
 import { commandHandler } from "../internal/command";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { ChatMessage } from "../shared/types";
+import { ChatMessage, KickIdentity } from "../shared/types";
 
-export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<void> {
-    const isRegistered = await integration.kick.chatManager.registerMessage(payload.messageId, 'kick');
-    if (!isRegistered) {
-        logger.debug(`Duplicate chat message ignored: id=${payload.messageId}`);
-        return;
-    }
+interface chatBadge {
+    title: string;
+    url: string;
+}
 
+export async function handleChatMessageSentEvent(payload: ChatMessage, delay = 0): Promise<void> {
     // Basic message parsing
     const helpers = new FirebotChatHelpers();
     const firebotChatMessage = await helpers.buildFirebotChatMessage(payload, payload.content);
 
     // Need to do better than this when we see more badge examples
-    firebotChatMessage.badges = [];
-    if (payload.sender.identity && payload.sender.identity.badges) {
-        for (const badge of payload.sender.identity.badges) {
-            switch (badge.type) {
-                case "broadcaster":
-                    // eslint-disable-next-line camelcase
-                    firebotChatMessage.badges.push({ set_id: "mod", id: "1", info: badge.text });
-                    break;
-                default:
-                    logger.debug(`Unknown badge type: type=${badge.type} text=${badge.text}`);
-                    break;
-            }
-        }
-    }
+    const badgeRoles: string[] = helpers.getBadges(payload.sender.identity).map(b => b.title);
+    const possibleBadges: string[] = ["broadcaster", "moderator"];
 
     // Create user if they do not exist, and increment their chat messages
     let viewer = await integration.kick.userManager.getViewerById(payload.sender.userId);
-    if (!viewer) {
+    if (viewer) {
+        await integration.kick.userManager.syncViewerRoles(viewer._id, badgeRoles, possibleBadges);
+    } else {
         viewer = await integration.kick.userManager.createNewViewer(payload.sender, [], true);
         if (!viewer) {
             logger.error(`Failed to create new viewer for userId=${payload.sender.userId}`);
             return;
         }
     }
+
+    // This might be delayed -- the webhook contains more information than
+    // pusher (e.g. badges) but the pusher message usually comes first. However
+    // the webhooks are sometimes delayed, so we don't want to wait too long for
+    // the webhook to come either. This tries to make the best operational
+    // choice.
+    if (delay > 0) {
+        logger.debug(`handleChatMessageSentEvent: Delaying message processing by ${delay} seconds`);
+        await new Promise(resolve => setTimeout(resolve, delay * 1000));
+    }
+
+    // Skip duplicate messages here
+    const isRegistered = await integration.kick.chatManager.registerMessage(payload.messageId, 'kick');
+    if (!isRegistered) {
+        logger.debug(`Duplicate chat message ignored: id=${payload.messageId}`);
+        return;
+    }
+
+    // Update chat message count
     await integration.kick.userManager.incrementDbField(viewer._id, "chatMessages");
 
     // Command checking.
@@ -111,6 +119,15 @@ export function triggerViewerArrived(
 }
 
 class FirebotChatHelpers {
+    getBadges(identity: KickIdentity): chatBadge[] {
+        return identity.badges
+            .map(badge => ({
+                title: badge.type,
+                url: IntegrationConstants.KICK_BADGE_URLS[badge.type] || ""
+            }))
+            .filter(badge => badge.url !== "");
+    }
+
     async buildFirebotChatMessage(msg: ChatMessage, msgText: string) {
         const firebotChatMessage: FirebotChatMessage = {
             id: msg.messageId,
@@ -145,7 +162,7 @@ class FirebotChatHelpers {
             action: false,
             tagged: false,
             isCheer: false,
-            badges: [],
+            badges: this.getBadges(msg.sender.identity),
             parts: [],
             roles: [],
             isSharedChatMessage: false,
@@ -189,12 +206,12 @@ class FirebotChatHelpers {
         }
         firebotChatMessage.parts = messageParts;
 
-        firebotChatMessage.isFounder = false; // Kick doesn't have a founder badge
-        firebotChatMessage.isBroadcaster = msg.broadcaster.userId === msg.sender.userId;
+        firebotChatMessage.isFounder = msg.sender.identity.badges.some(b => b.type === "og");
+        firebotChatMessage.isBroadcaster = msg.sender.identity.badges.some(b => b.type === "broadcaster");
         firebotChatMessage.isBot = false; // We can maybe determine this later
-        firebotChatMessage.isMod = false; // We can maybe determine this later
-        firebotChatMessage.isSubscriber = false; // We can maybe determine this later
-        firebotChatMessage.isVip = false; // Kick doesn't have a VIP badge
+        firebotChatMessage.isMod = msg.sender.identity.badges.some(b => b.type === "moderator");
+        firebotChatMessage.isSubscriber = msg.sender.identity.badges.some(b => b.type === "subscriber");
+        firebotChatMessage.isVip = msg.sender.identity.badges.some(b => b.type === "vip");
 
         if (firebotChatMessage.isFounder) {
             firebotChatMessage.roles.push("founder");

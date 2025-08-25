@@ -63,7 +63,7 @@ describe('KickPusher.dispatchChatroomEvent', () => {
         const spy = jest.spyOn<any, any>(pusher, 'parseChatMessageEvent').mockReturnValue('parsed');
         await (pusher as any).dispatchChatroomEvent('App\\Events\\ChatMessageEvent', { foo: 'bar' });
         expect(spy).toHaveBeenCalledWith({ foo: 'bar' });
-        expect(handleChatMessageSentEvent).toHaveBeenCalledWith('parsed');
+        expect(handleChatMessageSentEvent).toHaveBeenCalledWith('parsed', 2);
     });
 
     it('calls handleRewardRedeemedEvent for RewardRedeemedEvent', async () => {
