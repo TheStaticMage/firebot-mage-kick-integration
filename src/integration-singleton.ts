@@ -70,6 +70,7 @@ type IntegrationParameters = {
         raid: boolean;
         streamOnline: boolean;
         streamOffline: boolean;
+        titleChanged: boolean;
         viewerArrived: boolean;
         viewerBanned: boolean;
         viewerTimeout: boolean;
@@ -143,6 +144,7 @@ export class KickIntegration extends EventEmitter {
             raid: false,
             streamOffline: false,
             streamOnline: false,
+            titleChanged: false,
             viewerArrived: false,
             viewerBanned: false,
             viewerTimeout: false
