@@ -18,7 +18,7 @@ export async function handleChatMessageSentEvent(payload: ChatMessage, delay = 0
 
     // Need to do better than this when we see more badge examples
     const badgeRoles: string[] = helpers.getBadges(payload.sender.identity).map(b => b.title);
-    const possibleBadges: string[] = ["broadcaster", "moderator"];
+    const possibleBadges: string[] = ["broadcaster", "moderator", "vip", "og"];
 
     // Create user if they do not exist, and increment their chat messages
     let viewer = await integration.kick.userManager.getViewerById(payload.sender.userId);
@@ -37,9 +37,12 @@ export async function handleChatMessageSentEvent(payload: ChatMessage, delay = 0
     // the webhooks are sometimes delayed, so we don't want to wait too long for
     // the webhook to come either. This tries to make the best operational
     // choice.
+    //
     if (delay > 0) {
-        logger.debug(`handleChatMessageSentEvent: Delaying message processing by ${delay} seconds`);
-        await new Promise(resolve => setTimeout(resolve, delay * 1000));
+        logger.debug(`handleChatMessageSentEvent: Message processing delay is currently disabled (request: ${delay} seconds)`);
+        // Currently commented out: The pusher events do seem to have badges. We can
+        // add this back if we have future dependencies on fields only in webhooks.
+        // await new Promise(resolve => setTimeout(resolve, delay * 1000));
     }
 
     // Skip duplicate messages here
