@@ -168,6 +168,10 @@ export class Kick {
                     version: 1
                 },
                 {
+                    name: "livestream.metadata.updated",
+                    version: 1
+                },
+                {
                     name: "livestream.status.updated",
                     version: 1
                 },

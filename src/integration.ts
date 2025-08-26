@@ -157,26 +157,33 @@ export const definition: IntegrationDefinition = {
                     default: false,
                     sortRank: 5
                 },
+                titleChanged: {
+                    title: "Title Changed",
+                    tip: "Trigger the 'Twitch:Title Changed' event when the Kick stream title changes",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 6
+                },
                 viewerArrived: {
                     title: "Viewer Arrived",
                     tip: "Trigger the 'Twitch:Viewer Arrived' event when a viewer arrives on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 6
+                    sortRank: 7
                 },
                 viewerBanned: {
                     title: "Viewer Banned",
                     tip: "Trigger the 'Twitch:Viewer Banned' event when a viewer is banned on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 7
+                    sortRank: 8
                 },
                 viewerTimeout: {
                     title: "Viewer Timeout",
                     tip: "Trigger the 'Twitch:Viewer Timeout' event when a viewer is timed out on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 8
+                    sortRank: 9
                 }
             }
         },

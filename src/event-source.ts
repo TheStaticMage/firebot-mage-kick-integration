@@ -194,6 +194,37 @@ export const eventSource: EventSource = {
                     return `**${userDisplayName}** hosted on Kick with **${eventData.viewerCount}** viewer(s)`;
                 }
             }
+        },
+        {
+            id: "title-changed",
+            name: "Title Changed",
+            description: "When you change your Kick stream title.",
+            cached: false,
+            manualMetadata: {
+                title: "Stream Title"
+            },
+            activityFeed: {
+                icon: "fad fa-text",
+                getMessage: (eventData) => {
+                    return `Kick stream title changed to **${eventData.title}**`;
+                }
+            }
+        },
+        {
+            id: "category-changed",
+            name: "Category Changed",
+            description: "When you change your Kick stream category.",
+            cached: false,
+            manualMetadata: {
+                category: "Just Chatting",
+                categoryId: 15
+            },
+            activityFeed: {
+                icon: "fad fa-th-large",
+                getMessage: (eventData) => {
+                    return `Kick stream category changed to **${eventData.category}**`;
+                }
+            }
         }
     ]
 };

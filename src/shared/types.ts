@@ -50,6 +50,20 @@ export interface BasicKickUser {
     userId: number;
 }
 
+export interface LivestreamMetadataUpdated {
+    broadcaster: KickUser;
+    metadata: {
+        title: string;
+        language: string;
+        hasMatureContent: boolean;
+        category: {
+            id: number;
+            name: string;
+            thumbnail: string;
+        };
+    };
+}
+
 export interface LivestreamStatusUpdated {
     broadcaster: KickUser;
     isLive: boolean;

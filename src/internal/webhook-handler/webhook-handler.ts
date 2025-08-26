@@ -1,11 +1,12 @@
-import { ChannelFollowEvent, ChatMessageEvent, Channel as KickApiChannel, ModerationBannedEvent as KickApiModerationBannedEvent, LivestreamStatusUpdatedEvent, User, WebhookUser, WebhookUserWithIdentity } from "kick-api-types/v1";
+import { ChannelFollowEvent, ChatMessageEvent, Channel as KickApiChannel, ModerationBannedEvent as KickApiModerationBannedEvent, LivestreamMetadataUpdatedEvent, LivestreamStatusUpdatedEvent, User, WebhookUser, WebhookUserWithIdentity } from "kick-api-types/v1";
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleFollowerEvent } from "../../events/follower";
+import { handleLivestreamMetadataUpdatedEvent } from "../../events/livestream-metadata-updated";
 import { handleLivestreamStatusUpdatedEvent } from "../../events/livestream-status-updated";
 import { handleModerationBannedEvent } from "../../events/moderation-banned";
 import { integration } from "../../integration";
 import { logger } from "../../main";
-import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, KickUserWithIdentity, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata } from "../../shared/types";
+import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, KickUserWithIdentity, LivestreamMetadataUpdated, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata } from "../../shared/types";
 import { parseDate } from "../util";
 
 export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
@@ -27,6 +28,11 @@ export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
         case "channel.followed": {
             const event = parseFollowEvent(webhook.raw_data);
             handleFollowerEvent(event);
+            break;
+        }
+        case "livestream.metadata.updated": {
+            const event = parseLivestreamMetadataUpdatedEvent(webhook.raw_data);
+            handleLivestreamMetadataUpdatedEvent(event);
             break;
         }
         case "livestream.status.updated": {
@@ -136,6 +142,24 @@ function parseFollowEvent(rawData: string): KickFollower {
     return {
         broadcaster: parseKickUser(data.broadcaster),
         follower: parseKickUser(data.follower)
+    };
+}
+
+function parseLivestreamMetadataUpdatedEvent(rawData: string): LivestreamMetadataUpdated {
+    const data: LivestreamMetadataUpdatedEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    return {
+        broadcaster: parseKickUser(data.broadcaster),
+        metadata: {
+            title: data.metadata.title || "",
+            language: data.metadata.language || "",
+            hasMatureContent: data.metadata.has_mature_content || false,
+            category: {
+                // category and Category are due to https://github.com/KickEngineering/KickDevDocs/issues/238
+                id: data.metadata.category?.id || data.metadata.Category?.id || 0,
+                name: data.metadata.category?.name || data.metadata.Category?.name || "",
+                thumbnail: data.metadata.category?.thumbnail || data.metadata.Category?.thumbnail || ""
+            }
+        }
     };
 }
 

@@ -1,5 +1,6 @@
 import NodeCache from 'node-cache';
 import { IntegrationConstants } from "../constants";
+import { triggerCategoryChangedEvent, triggerTitleChangedEvent } from '../events/livestream-metadata-updated';
 import { firebot, logger } from "../main";
 import { CategoryInfo, Channel } from "../shared/types";
 import { Kick } from "./kick";
@@ -36,7 +37,7 @@ export class KickChannelManager {
         logger.debug("Kick channel manager stopped.");
     }
 
-    async getCategory(categoryId: number): Promise<CategoryInfo> {
+    async getCategoryInfo(categoryId: number): Promise<CategoryInfo> {
         return new Promise((resolve, reject) => {
             const fromCache = this.categoryCache.get(categoryId);
             if (fromCache) {
@@ -127,6 +128,12 @@ export class KickChannelManager {
         this.getChannelReal()
             .then((channelStatus: Channel) => {
                 this.channel = channelStatus;
+                if (this.updateCategory(channelStatus.category)) {
+                    triggerCategoryChangedEvent(channelStatus.category);
+                }
+                if (this.updateTitle(channelStatus.streamTitle || "")) {
+                    triggerTitleChangedEvent(channelStatus.streamTitle);
+                }
                 this.triggerChannelDataUpdatedEvent();
                 logger.debug(`Channel status updated: isLive=${channelStatus.stream.isLive}, title=${channelStatus.streamTitle || ''}, category=${channelStatus.category.id}, viewers=${channelStatus.stream.viewerCount}`);
             })
@@ -166,22 +173,30 @@ export class KickChannelManager {
         }
     }
 
-    async updateCategory(categoryId: number): Promise<boolean> {
+    getCategory(): CategoryInfo | null {
+        return this.channel ? this.channel.category : null;
+    }
+
+    updateCategory(category: CategoryInfo): boolean {
         if (!this.channel) {
             logger.debug("No channel found to update category.");
             return false;
         }
 
-        try {
-            this.channel.category = await this.getCategory(categoryId);
-        } catch (error) {
-            logger.error(`Failed to update channel category: ${error}`);
+        if (category.id === 0) {
+            logger.debug("Invalid category ID. Category update failed.");
             return false;
         }
 
-        logger.debug(`Category updated to id=${categoryId} name=${this.channel.category.name}.`);
-        this.triggerChannelDataUpdatedEvent();
-        return true;
+        if (this.channel.category.id === category.id) {
+            logger.debug(`Category is already set to id=${category.id} name=${this.channel.category.name}. No update needed.`);
+            return false;
+        }
+
+        const categoryWasEmpty = this.channel.category.id === 0;
+        this.channel.category = category;
+        logger.debug(`Category updated to id=${category.id} name=${this.channel.category.name}.`);
+        return !categoryWasEmpty;
     }
 
     updateTitle(title: string): boolean {
@@ -200,10 +215,10 @@ export class KickChannelManager {
             return false;
         }
 
+        const titleWasEmpty = this.channel.streamTitle === '';
         this.channel.streamTitle = title;
-        this.triggerChannelDataUpdatedEvent();
-        logger.debug(`Title updated to "${title}".`);
-        return true;
+        logger.debug(`Title ${titleWasEmpty ? 'initially set' : 'updated'} to "${title}".`);
+        return !titleWasEmpty;
     }
 
     updateLiveStatus(isLive: boolean): boolean {
@@ -218,15 +233,15 @@ export class KickChannelManager {
         }
 
         this.channel.stream.isLive = isLive;
-        this.triggerChannelDataUpdatedEvent();
         logger.debug(`Live status updated to ${isLive}.`);
         return true;
     }
 
-    private triggerChannelDataUpdatedEvent(): void {
+    triggerChannelDataUpdatedEvent(): void {
         if (!this.channel) {
             return;
         }
+
         const { eventManager } = firebot.modules;
         eventManager.triggerEvent(IntegrationConstants.INTEGRATION_ID, "channel-data-updated", {
             username: kickifyUsername(this.kick.broadcaster?.name || ""),
