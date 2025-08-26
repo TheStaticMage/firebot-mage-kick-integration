@@ -157,33 +157,54 @@ export const definition: IntegrationDefinition = {
                     default: false,
                     sortRank: 5
                 },
+                sub: {
+                    title: "Sub",
+                    tip: "Trigger the 'Twitch:Sub' event when someone subscribes or resubscribes on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 6
+                },
+                subCommunityGift: {
+                    title: "Sub Community Gift",
+                    tip: "Trigger the 'Twitch:Community Subs Gifted' event when someone gifts community subscriptions on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 7
+                },
+                subGift: {
+                    title: "Sub Gifted",
+                    tip: "Trigger the 'Twitch:Sub Gifted' event when someone gifts a subscription on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 8
+                },
                 titleChanged: {
                     title: "Title Changed",
                     tip: "Trigger the 'Twitch:Title Changed' event when the Kick stream title changes",
                     type: "boolean",
                     default: false,
-                    sortRank: 6
+                    sortRank: 9
                 },
                 viewerArrived: {
                     title: "Viewer Arrived",
                     tip: "Trigger the 'Twitch:Viewer Arrived' event when a viewer arrives on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 7
+                    sortRank: 10
                 },
                 viewerBanned: {
                     title: "Viewer Banned",
                     tip: "Trigger the 'Twitch:Viewer Banned' event when a viewer is banned on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 8
+                    sortRank: 11
                 },
                 viewerTimeout: {
                     title: "Viewer Timeout",
                     tip: "Trigger the 'Twitch:Viewer Timeout' event when a viewer is timed out on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 9
+                    sortRank: 12
                 }
             }
         },

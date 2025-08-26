@@ -176,6 +176,18 @@ export class Kick {
                     version: 1
                 },
                 {
+                    name: "channel.subscription.renewal",
+                    version: 1
+                },
+                {
+                    name: "channel.subscription.gifts",
+                    version: 1
+                },
+                {
+                    name: "channel.subscription.new",
+                    version: 1
+                },
+                {
                     name: "moderation.banned",
                     version: 1
                 }

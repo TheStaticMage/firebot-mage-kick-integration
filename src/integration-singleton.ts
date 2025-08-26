@@ -41,6 +41,13 @@ import { kickTimeoutDurationVariable } from "./variables/timeout-duration";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
 import { streamerOrBotFilter } from "./filters/streamer-or-bot";
+import { kickSubTypeVariable } from "./variables/subs/sub-type";
+import { kickGiftReceiverUsernameVariable } from "./variables/subs/gift-receiver-username";
+import { kickGiftGiverUsernameVariable } from "./variables/subs/gift-giver-username";
+import { kickIsAnonymousVariable } from "./variables/subs/is-anonymous";
+import { kickSubStreakVariable } from "./variables/subs/sub-streak";
+import { kickSubMonthsVariable } from "./variables/subs/sub-months";
+import { kickGiftCountVariable } from "./variables/subs/gift-count";
 
 type IntegrationParameters = {
     connectivity: {
@@ -70,6 +77,9 @@ type IntegrationParameters = {
         raid: boolean;
         streamOnline: boolean;
         streamOffline: boolean;
+        sub: boolean;
+        subCommunityGift: boolean;
+        subGift: boolean;
         titleChanged: boolean;
         viewerArrived: boolean;
         viewerBanned: boolean;
@@ -144,6 +154,9 @@ export class KickIntegration extends EventEmitter {
             raid: false,
             streamOffline: false,
             streamOnline: false,
+            sub: false,
+            subCommunityGift: false,
+            subGift: false,
             titleChanged: false,
             viewerArrived: false,
             viewerBanned: false,
@@ -235,6 +248,15 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.registerReplaceVariable(kickRewardIdVariable);
         replaceVariableManager.registerReplaceVariable(kickRewardNameVariable);
         replaceVariableManager.registerReplaceVariable(kickRewardMessageVariable);
+
+        // Subscription related variables
+        replaceVariableManager.registerReplaceVariable(kickGiftCountVariable);
+        replaceVariableManager.registerReplaceVariable(kickGiftGiverUsernameVariable);
+        replaceVariableManager.registerReplaceVariable(kickGiftReceiverUsernameVariable);
+        replaceVariableManager.registerReplaceVariable(kickIsAnonymousVariable);
+        replaceVariableManager.registerReplaceVariable(kickSubMonthsVariable);
+        replaceVariableManager.registerReplaceVariable(kickSubStreakVariable);
+        replaceVariableManager.registerReplaceVariable(kickSubTypeVariable);
 
         // Miscellaneous variables
         replaceVariableManager.registerReplaceVariable(platformVariable);

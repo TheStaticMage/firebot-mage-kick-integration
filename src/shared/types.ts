@@ -129,3 +129,20 @@ export interface StreamHostedEvent {
     optionalMessage: string;
     createdAt: Date | undefined;
 }
+
+export interface ChannelSubscription {
+    broadcaster: KickUser,
+    subscriber: KickUser,
+    duration: number,
+    isResub: boolean
+    createdAt: Date,
+    expiresAt?: Date
+}
+
+export interface ChannelGiftSubscription {
+    broadcaster: KickUser,
+    gifter: KickUser,
+    giftees: KickUser[],
+    createdAt: Date,
+    expiresAt?: Date
+}
