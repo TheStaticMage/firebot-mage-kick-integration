@@ -18,6 +18,15 @@ export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
         throw new Error("Invalid webhook data");
     }
 
+    // This is NOT intended to be for security, since you are implicitly
+    // trusting the proxy owner and they could just send you fake data. Rather,
+    // it's meant to protect you against innocent mistakes (e.g. developer
+    // accidentally sending test webhooks with the wrong key).
+    if (webhook.is_test_event && !integration.getSettings().advanced.allowTestWebhooks) {
+        logger.warn(`Received test webhook but test webhooks are disabled: ${JSON.stringify(webhook)}`);
+        return;
+    }
+
     switch (webhook.kick_event_type) {
         case "chat.message.sent": {
             const event = parseChatMessageEvent(webhook.raw_data);

@@ -91,6 +91,7 @@ type IntegrationParameters = {
         logWebsocketEvents: boolean;
     };
     advanced: {
+        allowTestWebhooks: boolean;
         dangerousOperations: boolean;
     };
 };
@@ -168,6 +169,7 @@ export class KickIntegration extends EventEmitter {
             logWebsocketEvents: false
         },
         advanced: {
+            allowTestWebhooks: false,
             dangerousOperations: false
         }
     };

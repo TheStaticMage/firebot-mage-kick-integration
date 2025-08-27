@@ -78,7 +78,8 @@ func (s *Server) HandleWebHook(ctx context.Context) func(w http.ResponseWriter, 
 				EventType:             eventType,
 				EventVersion:          eventVersion,
 			},
-			RawData: body,
+			IsTestEvent: false,
+			RawData:     body,
 		}
 
 		// Add the webhook to the user's state
