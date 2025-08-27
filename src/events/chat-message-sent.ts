@@ -16,16 +16,16 @@ export async function handleChatMessageSentEvent(payload: ChatMessage, delay = 0
     const helpers = new FirebotChatHelpers();
     const firebotChatMessage = await helpers.buildFirebotChatMessage(payload, payload.content);
 
-    // Need to do better than this when we see more badge examples
+    // Are there more badges we need to support?
     const badgeRoles: string[] = helpers.getBadges(payload.sender.identity).map(b => b.title);
-    const possibleBadges: string[] = ["broadcaster", "moderator", "vip", "og"];
+    const possibleBadges: string[] = ["broadcaster", "moderator", "vip", "og", "subscriber"];
 
     // Create user if they do not exist, and increment their chat messages
     let viewer = await integration.kick.userManager.getViewerById(payload.sender.userId);
     if (viewer) {
         await integration.kick.userManager.syncViewerRoles(viewer._id, badgeRoles, possibleBadges);
     } else {
-        viewer = await integration.kick.userManager.createNewViewer(payload.sender, [], true);
+        viewer = await integration.kick.userManager.createNewViewer(payload.sender, badgeRoles, true);
         if (!viewer) {
             logger.error(`Failed to create new viewer for userId=${payload.sender.userId}`);
             return;

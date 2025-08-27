@@ -32,12 +32,13 @@ Currently supported:
 
 - Accounts:
   - Chat as the streamer or as a separate bot account
-- Chat integration:
-  - Kick messages appear in Firebot's chat feed (Dashboard), displaying Kick usernames and supporting emotes.
-  - Ban user from the context menu in the chat feed.
-  - Badges: broadcaster, moderator, VIP, OG
+- Chat feed integration:
+  - Kick messages appear in Firebot's chat feed (Dashboard), displaying Kick usernames
+  - Kick emotes in Kick messages are supported
+  - Ban user from the context menu in the chat feed
+  - Badges: broadcaster, moderator, VIP, OG, subscriber
 - Commands:
-  - Standard commands mostly work, including restriction logic (with a custom Platform restriction).
+  - Standard commands mostly work, including restriction logic (with a custom Platform restriction)
 - Conditions:
   - Platform
 - Effects:
@@ -97,9 +98,7 @@ Currently supported:
 
 Planned but not yet supported:
 
-- Subscription-related replacement variables
 - Track subscriptions we know about to estimate which users are current subscribers
-- Subscriber badge in chat feed
 - Events when a user is unbanned or untimed-out
 - Effects to ban, unban, timeout, and untimeout users
 - Chat roles
