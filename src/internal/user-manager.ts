@@ -1,8 +1,7 @@
 import { FirebotViewer } from "@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database";
 import Datastore from "@seald-io/nedb";
-import { integration } from "../integration";
 import { logger } from "../main";
-import { BasicKickUser, KickUser } from "../shared/types";
+import { BasicKickUser, KickGifter, KickSubscription, KickUser } from "../shared/types";
 import { getDataFilePath } from "../util/datafile";
 import { IKick } from "./kick-interface";
 import { kickifyUserId, kickifyUsername, unkickifyUserId, unkickifyUsername, userIdToCleanString } from "./util";
@@ -10,60 +9,60 @@ import { parseBasicKickUser } from "./webhook-handler/webhook-parsers";
 
 export class KickUserManager {
     private kick: IKick;
-    private _db: Datastore | null = null;
+    protected _db: Datastore | null = null;
     private _dbCompactionInterval = 30000;
     private _dbPath = "";
+    protected _giftDb: Datastore | null = null;
+    private _giftDbCompactionInterval = 30000;
+    private _giftDbPath = "";
+    protected _subDb: Datastore | null = null;
+    private _subDbCompactionInterval = 30000;
+    private _subDbPath = "";
 
     constructor(kick: IKick) {
         this.kick = kick;
     }
 
-    isViewerDBOn(): boolean {
-        return !integration.areDangerousOpsEnabled();
+    async connectViewerDatabase(): Promise<void> {
+        this._dbPath = getDataFilePath("kick-users.db");
+        this._db = await this.connectDatabase(this._dbPath, this._dbCompactionInterval);
+
+        this._giftDbPath = getDataFilePath("kick-gift-users.db");
+        this._giftDb = await this.connectDatabase(this._giftDbPath, this._giftDbCompactionInterval);
+
+        this._subDbPath = getDataFilePath("kick-sub-users.db");
+        this._subDb = await this.connectDatabase(this._subDbPath, this._subDbCompactionInterval);
+
+        await this.purgeExpiredSubscribers();
+        await this.purgeExpiredGiftSubs();
     }
 
-    async connectViewerDatabase(): Promise<void> {
-        if (this.isViewerDBOn() !== true) {
-            return;
-        }
-
-        this._dbPath = getDataFilePath("kick-users.db");
-
-        logger.info("Trying to connect to Kick viewer database...");
+    private async connectDatabase(dbPath: string, dbCompactionInterval: number): Promise<Datastore> {
         try {
-            this._db = new Datastore({ filename: this._dbPath });
-            await this._db.loadDatabaseAsync();
+            const db = new Datastore({ filename: dbPath });
+            await db.loadDatabaseAsync();
+            db.setAutocompactionInterval(dbCompactionInterval);
+            logger.info(`connectDatabase: Database Loaded: ${dbPath}`);
+            return db;
         } catch (error) {
             if (error && typeof error === "object" && "message" in error) {
-                logger.error(`ViewerDB: Error Loading Database: ${(error as { message: string }).message}`);
+                logger.error(`connectDatabase: Error Loading Database at ${dbPath}: ${(error as { message: string }).message}`);
             } else {
-                logger.error(`ViewerDB: Error Loading Database: ${String(error)}`);
+                logger.error(`connectDatabase: Error Loading Database at ${dbPath}: ${String(error)}`);
             }
-            logger.error(`ViewerDB: Failed Database Path: ${this._dbPath}`);
-            return;
+            throw error;
         }
-
-        // Setup our automatic compaction interval to shrink filesize.
-        this._db.setAutocompactionInterval(this._dbCompactionInterval);
-        setInterval(() => {
-            logger.debug(`ViewerDB: Compaction should be happening now. Compaction Interval: ${this._dbCompactionInterval}`);
-        }, this._dbCompactionInterval);
-
-        logger.info(`ViewerDB: Viewer Database Loaded: ${this._dbPath}`);
     }
 
     disconnectViewerDatabase(): void {
         this._db = null;
-        logger.info("ViewerDB: Database disconnected.");
+        this._giftDb = null;
+        this._subDb = null;
     }
 
     async createNewViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<FirebotViewer | undefined> {
-        if (this.isViewerDBOn() !== true) {
-            // TODO: Redirect this call to "real" user DB
-            throw new Error("This is unavailable because 'allow dangerous operations' is enabled.");
-        }
         if (!this._db) {
-            return;
+            throw new Error("Viewer database is not connected.");
         }
 
         const firebotViewer: FirebotViewer = {
@@ -99,12 +98,8 @@ export class KickUserManager {
     }
 
     async getViewerById(id: string): Promise<FirebotViewer | undefined> {
-        if (this.isViewerDBOn() !== true) {
-            // TODO: Redirect this call to "real" user DB
-            throw new Error("This is unavailable because 'allow dangerous operations' is enabled.");
-        }
         if (!this._db) {
-            return;
+            throw new Error("Viewer database is not connected.");
         }
 
         try {
@@ -121,12 +116,8 @@ export class KickUserManager {
     }
 
     async getViewerByUsername(username: string): Promise<FirebotViewer | undefined> {
-        if (this.isViewerDBOn() !== true) {
-            // TODO: Redirect this call to "real" user DB
-            throw new Error("This is unavailable because 'allow dangerous operations' is enabled.");
-        }
         if (!this._db) {
-            return;
+            throw new Error("Viewer database is not connected.");
         }
 
         try {
@@ -175,12 +166,8 @@ export class KickUserManager {
     }
 
     async syncViewerRoles(userId: string, roles: string[], rolesToDeleteIfNotPresent: string[] = []): Promise<void> {
-        if (this.isViewerDBOn() !== true) {
-            // TODO: Redirect this call to "real" user DB
-            throw new Error("This is unavailable because 'allow dangerous operations' is enabled.");
-        }
         if (!this._db) {
-            return;
+            throw new Error("Viewer database is not connected.");
         }
 
         const rolesToDelete = rolesToDeleteIfNotPresent.filter(role => !roles.includes(role));
@@ -194,12 +181,8 @@ export class KickUserManager {
     }
 
     async incrementDbField(userId: string, fieldName: string): Promise<void> {
-        if (this.isViewerDBOn() !== true) {
-            // TODO: Redirect this call to "real" user DB
-            throw new Error("This is unavailable because 'allow dangerous operations' is enabled.");
-        }
         if (!this._db) {
-            return;
+            throw new Error("Viewer database is not connected.");
         }
 
         try {
@@ -218,4 +201,138 @@ export class KickUserManager {
             return;
         }
     }
+
+    async getGifter(gifterId: string): Promise<KickGifter> {
+        if (!this._giftDb) {
+            throw new Error("Gifter database is not connected.");
+        }
+
+        const gifter = await this._giftDb.findOneAsync<KickGifterDBRecord>({ _id: unkickifyUserId(gifterId) });
+        const now = new Date();
+        if (!gifter) {
+            return {
+                userId: gifterId,
+                gifts: [],
+                totalSubs: 0
+            };
+        }
+        const filteredGifts = gifter.gifts
+            .filter(giftDb => new Date(giftDb.sub.expiresAt) > now)
+            .map(giftDb => ({
+                userId: giftDb._id,
+                sub: giftDb.sub
+            }));
+        return {
+            userId: gifter._id,
+            gifts: filteredGifts,
+            totalSubs: gifter.totalSubs
+        };
+    }
+
+    async recordGift(gifterId: string, gifteeId: string, createdAt: Date, expiresAt: Date): Promise<void> {
+        if (!this._giftDb) {
+            throw new Error("Gifter database is not connected.");
+        }
+
+        const giftSub: KickGiftSubDBRecord = {
+            _id: gifteeId,
+            sub: { createdAt, expiresAt }
+        };
+
+        const currentGifter = await this._giftDb.findOneAsync<KickGifterDBRecord>({ _id: unkickifyUserId(gifterId) });
+        if (currentGifter) {
+            currentGifter.gifts.push(giftSub);
+            await this._giftDb.updateAsync(
+                { _id: unkickifyUserId(gifterId) },
+                {
+                    $set: { gifts: currentGifter.gifts },
+                    $inc: { totalSubs: 1 }
+                }
+            );
+        } else {
+            await this._giftDb.insertAsync({ _id: unkickifyUserId(gifterId), gifts: [giftSub], totalSubs: 1 });
+        }
+    }
+
+    async getSubscriber(userId: string): Promise<KickSubscription | null> {
+        if (!this._subDb) {
+            throw new Error("Subscriber database is not connected.");
+        }
+
+        const rec = await this._subDb.findOneAsync<KickSubscription>({ _id: unkickifyUserId(userId) });
+        if (!rec) {
+            return null;
+        }
+        const now = new Date();
+        if (rec.expiresAt && new Date(rec.expiresAt) <= now) {
+            return null;
+        }
+        return rec;
+    }
+
+    async recordSubscription(userId: string, createdAt: Date, expiresAt: Date): Promise<void> {
+        if (!this._subDb) {
+            throw new Error("Subscriber database is not connected.");
+        }
+
+        const currentSubscriber = await this._subDb.findOneAsync<KickSubscription>({ _id: unkickifyUserId(userId) });
+        if (currentSubscriber) {
+            if (expiresAt && currentSubscriber.expiresAt >= expiresAt) {
+                logger.debug(`Not updating existing subscriber record for user ${userId}: Expiration date longer than requested.`);
+                return;
+            }
+
+            logger.debug(`Updating existing subscriber record for user ${userId} to expiration date ${expiresAt}.`);
+            currentSubscriber.expiresAt = expiresAt;
+            await this._subDb.updateAsync({ _id: unkickifyUserId(userId) }, { $set: { expiresAt } });
+            return;
+        }
+
+        const newSubscriber: KickSubscription = {
+            createdAt,
+            expiresAt
+        };
+
+        await this._subDb.insertAsync({ _id: unkickifyUserId(userId), ...newSubscriber });
+    }
+
+
+    private async purgeExpiredSubscribers(): Promise<void> {
+        if (!this._subDb) {
+            throw new Error("Subscriber database is not connected.");
+        }
+        const now = new Date();
+        await this._subDb.removeAsync({ expiresAt: { $lte: now } }, { multi: true });
+    }
+
+    private async purgeExpiredGiftSubs(): Promise<void> {
+        if (!this._giftDb) {
+            throw new Error("Gift database is not connected.");
+        }
+        const now = new Date();
+        const gifters = await this._giftDb.findAsync<KickGifterDBRecord>({});
+        for (const gifter of gifters) {
+            if (Array.isArray(gifter.gifts)) {
+                const filteredGifts = gifter.gifts.filter((gift: any) => new Date(gift.sub.expiresAt) > now);
+                if (filteredGifts.length !== gifter.gifts.length) {
+                    await this._giftDb.updateAsync({ _id: gifter._id }, { $set: { gifts: filteredGifts } });
+                }
+                // If gifts is empty and totalSubs is 0, delete the record
+                if (filteredGifts.length === 0 && gifter.totalSubs === 0) {
+                    await this._giftDb.removeAsync({ _id: gifter._id }, {});
+                }
+            }
+        }
+    }
+}
+
+interface KickGifterDBRecord {
+    _id: string,
+    gifts: KickGiftSubDBRecord[], // All current gift subs
+    totalSubs: number, // Total gift subs given
+}
+
+interface KickGiftSubDBRecord {
+    _id: string,
+    sub: KickSubscription
 }

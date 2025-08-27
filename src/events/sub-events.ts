@@ -1,28 +1,27 @@
+import { FirebotViewer } from "@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { ChannelSubscription, ChannelGiftSubscription } from "../shared/types";
+import { ChannelSubscription, ChannelGiftSubscription, KickUser } from "../shared/types";
 
 export async function handleChannelSubscriptionEvent(payload: ChannelSubscription): Promise<void> {
     const userId = kickifyUserId(payload.subscriber.userId.toString());
     const username = kickifyUsername(payload.subscriber.username);
 
-    // Create the user if they don't exist
-    let viewer = await integration.kick.userManager.getViewerById(userId);
-    if (!viewer) {
-        viewer = await integration.kick.userManager.createNewViewer(payload.subscriber, [], true);
-        if (!viewer) {
-            logger.warn(`Failed to create new viewer for userId=${userId}`);
-        }
-    }
+    await getOrCreateViewer(userId, payload.subscriber);
+    await integration.kick.userManager.recordSubscription(
+        userId,
+        payload.createdAt,
+        payload.expiresAt ?? plusThirtyDays(payload.createdAt)
+    );
 
     // Trigger the subscriber event
     const { eventManager } = firebot.modules;
     const metadata = {
         username,
         userId,
-        userDisplayName: viewer && viewer.displayName ? viewer.displayName : unkickifyUsername(username),
+        userDisplayName: payload.subscriber.displayName || unkickifyUsername(payload.subscriber.username),
         subPlan: "kickDefault", // Not a thing on Kick, so invent our own metadata consistent with Twitch
         totalMonths: payload.duration || 1,
         subMessage: "", // Not set on Kick
@@ -47,26 +46,23 @@ export async function handleChannelSubscriptionGiftsEvent(payload: ChannelGiftSu
     if (payload.gifter.isAnonymous) {
         logger.debug("Skipping anonymous gifter for Kick gift subscription event.");
     } else {
-        // Create the gifter user if they don't exist
-        const gifterId = kickifyUserId(payload.gifter.userId.toString());
-        let viewer = await integration.kick.userManager.getViewerById(gifterId);
-        if (!viewer) {
-            viewer = await integration.kick.userManager.createNewViewer(payload.gifter, [], true);
-            if (!viewer) {
-                logger.warn(`Failed to create new viewer for gifter: userId=${gifterId}`);
-            }
-        }
+        await getOrCreateViewer(payload.gifter.userId, payload.gifter);
     }
 
-    // Create each giftee user if they don't exist
     for (const giftee of payload.giftees) {
-        const gifteeId = kickifyUserId(giftee.userId.toString());
-        let viewer = await integration.kick.userManager.getViewerById(gifteeId);
-        if (!viewer) {
-            viewer = await integration.kick.userManager.createNewViewer(giftee, [], true);
-            if (!viewer) {
-                logger.warn(`Failed to create new viewer for giftee: userId=${gifteeId}`);
-            }
+        await getOrCreateViewer(giftee.userId, giftee);
+        await integration.kick.userManager.recordSubscription(
+            giftee.userId,
+            payload.createdAt,
+            payload.expiresAt ?? plusThirtyDays(payload.createdAt)
+        );
+        if (!payload.gifter.isAnonymous) {
+            await integration.kick.userManager.recordGift(
+                payload.gifter.userId,
+                giftee.userId,
+                payload.createdAt,
+                payload.expiresAt ?? plusThirtyDays(payload.createdAt)
+            );
         }
     }
 
@@ -118,4 +114,18 @@ export async function handleChannelSubscriptionGiftsEvent(payload: ChannelGiftSu
             }
         }
     }
+}
+
+function plusThirtyDays(date: Date): Date {
+    const newDate = new Date(date);
+    newDate.setDate(newDate.getDate() + 30);
+    return newDate;
+}
+
+async function getOrCreateViewer(userId: string, user: KickUser): Promise<FirebotViewer | undefined> {
+    let viewer = await integration.kick.userManager.getViewerById(userId);
+    if (!viewer) {
+        viewer = await integration.kick.userManager.createNewViewer(user, [], true);
+    }
+    return viewer;
 }

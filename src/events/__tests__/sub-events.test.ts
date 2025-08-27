@@ -7,7 +7,9 @@ jest.mock('../../integration', () => ({
         kick: {
             userManager: {
                 getViewerById: jest.fn().mockResolvedValue(undefined),
-                createNewViewer: jest.fn().mockResolvedValue({ displayName: 'DisplayName' })
+                createNewViewer: jest.fn().mockResolvedValue({}),
+                recordSubscription: () => jest.fn(),
+                recordGift: () => jest.fn()
             }
         },
         getSettings: () => ({ triggerTwitchEvents: { sub: false } })
@@ -64,7 +66,7 @@ describe('handleChannelSubscriptionEvent', () => {
                 isResub: false,
                 username: 'subscriber@kick',
                 userId: 'k2',
-                userDisplayName: 'DisplayName',
+                userDisplayName: 'subscriber',
                 subPlan: 'kickDefault',
                 totalMonths: 1,
                 subMessage: '',
@@ -105,7 +107,7 @@ describe('handleChannelSubscriptionEvent', () => {
                 isResub: true,
                 username: 'subscriber@kick',
                 userId: 'k2',
-                userDisplayName: 'DisplayName',
+                userDisplayName: 'subscriber',
                 subPlan: 'kickDefault',
                 totalMonths: 69,
                 subMessage: '',
