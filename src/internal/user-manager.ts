@@ -6,7 +6,7 @@ import { BasicKickUser, KickUser } from "../shared/types";
 import { getDataFilePath } from "../util/datafile";
 import { Kick } from "./kick";
 import { kickifyUserId, kickifyUsername, unkickifyUserId, unkickifyUsername, userIdToCleanString } from "./util";
-import { parseBasicKickUser } from "./webhook-handler/webhook-handler";
+import { parseBasicKickUser } from "./webhook-handler/webhook-parsers";
 
 export class KickUserManager {
     private kick: Kick;

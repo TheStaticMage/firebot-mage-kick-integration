@@ -7,7 +7,7 @@ import { ChatManager } from "./chat-manager";
 import { httpCallWithTimeout } from "./http";
 import { KickUserApi } from "./user-api";
 import { KickUserManager } from "./user-manager";
-import { parseBasicKickUser } from "./webhook-handler/webhook-handler";
+import { parseBasicKickUser } from "./webhook-handler/webhook-parsers";
 
 export class Kick {
     private apiAborter = new AbortController();

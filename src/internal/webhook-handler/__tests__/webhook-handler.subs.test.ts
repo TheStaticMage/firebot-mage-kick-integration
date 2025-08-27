@@ -3,7 +3,7 @@ import {
     parseChannelSubscriptionGiftsEvent,
     parseChannelSubscriptionNewEvent,
     parseChannelSubscriptionRenewalEvent
-} from '../webhook-handler';
+} from '../webhook-parsers';
 
 describe('parseChannelSubscriptionNewEvent', () => {
     beforeAll(() => {
