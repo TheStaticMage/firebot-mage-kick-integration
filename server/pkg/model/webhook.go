@@ -1,15 +1,24 @@
 package model
 
-type Webhook struct {
-	// Headers
+import "encoding/json"
+
+type WebhookHeaders struct {
 	EventMessageID        string `json:"kick_event_message_id"`
 	EventSubscriptionID   string `json:"kick_event_subscription_id"`
 	EventMessageTimestamp string `json:"kick_event_message_timestamp"`
 	EventType             string `json:"kick_event_type"`
 	EventVersion          string `json:"kick_event_version"`
+}
 
-	// Raw Data
+type Webhook struct {
+	WebhookHeaders
 	RawData []byte `json:"raw_data"`
+}
+
+type InjectableWebhook struct {
+	WebhookHeaders
+	RawData string          `json:"raw_data"`
+	Payload json.RawMessage `json:"payload"`
 }
 
 type WebhookBroadcaster struct {

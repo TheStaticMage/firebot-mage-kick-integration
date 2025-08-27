@@ -10,6 +10,7 @@ import (
 )
 
 type Config struct {
+	AdminToken   string            `env:"ADMIN_TOKEN" envDefault:""`
 	ClientID     string            `env:"CLIENT_ID" required:"true"`
 	ClientSecret string            `env:"CLIENT_SECRET" required:"true"`
 	HTTPPort     string            `env:"HTTP_PORT" envDefault:"10000"`

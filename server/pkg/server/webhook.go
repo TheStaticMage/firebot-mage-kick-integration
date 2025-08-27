@@ -71,12 +71,14 @@ func (s *Server) HandleWebHook(ctx context.Context) func(w http.ResponseWriter, 
 
 		// Construct the Webhook object
 		webhook := model.Webhook{
-			EventMessageID:        messageID,
-			EventSubscriptionID:   r.Header.Get("Kick-Event-Subscription-ID"),
-			EventMessageTimestamp: timestamp,
-			EventType:             eventType,
-			EventVersion:          eventVersion,
-			RawData:               body,
+			WebhookHeaders: model.WebhookHeaders{
+				EventMessageID:        messageID,
+				EventSubscriptionID:   r.Header.Get("Kick-Event-Subscription-ID"),
+				EventMessageTimestamp: timestamp,
+				EventType:             eventType,
+				EventVersion:          eventVersion,
+			},
+			RawData: body,
 		}
 
 		// Add the webhook to the user's state
