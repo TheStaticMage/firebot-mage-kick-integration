@@ -5,7 +5,7 @@ import { firebot, logger } from "../main";
 import { CategoryInfo, Channel } from "../shared/types";
 import { Kick } from "./kick";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from './util';
-import { parseChannel } from "./webhook-handler/webhook-handler";
+import { parseChannel } from "./webhook-handler/webhook-parsers";
 
 export class KickChannelManager {
     private kick: Kick;

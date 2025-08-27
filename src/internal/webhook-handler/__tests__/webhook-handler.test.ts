@@ -1,4 +1,4 @@
-import { parseChatMessageEvent } from "../webhook-handler";
+import { parseChatMessageEvent } from "../webhook-parsers";
 
 jest.mock('../../../integration', () => {
     return {
