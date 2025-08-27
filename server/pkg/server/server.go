@@ -113,6 +113,14 @@ func (s *Server) main(ctx context.Context, wg *sync.WaitGroup) {
 		_, _ = w.Write([]byte(`{"status":"ok"}`))
 	})
 
+	http.HandleFunc("/inject/", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		s.HandleInject(ctx)(w, r)
+	})
+
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Not Found", http.StatusNotFound)
 	})
