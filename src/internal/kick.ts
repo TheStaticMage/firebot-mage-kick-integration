@@ -5,11 +5,12 @@ import { BasicKickUser } from "../shared/types";
 import { KickChannelManager } from "./channel-manager";
 import { ChatManager } from "./chat-manager";
 import { httpCallWithTimeout } from "./http";
+import { IKick } from "./kick-interface";
 import { KickUserApi } from "./user-api";
 import { KickUserManager } from "./user-manager";
 import { parseBasicKickUser } from "./webhook-handler/webhook-parsers";
 
-export class Kick {
+export class Kick implements IKick {
     private apiAborter = new AbortController();
     private authToken = "";
     private botAuthToken = "";

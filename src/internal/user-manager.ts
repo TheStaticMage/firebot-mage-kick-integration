@@ -4,17 +4,17 @@ import { integration } from "../integration";
 import { logger } from "../main";
 import { BasicKickUser, KickUser } from "../shared/types";
 import { getDataFilePath } from "../util/datafile";
-import { Kick } from "./kick";
+import { IKick } from "./kick-interface";
 import { kickifyUserId, kickifyUsername, unkickifyUserId, unkickifyUsername, userIdToCleanString } from "./util";
 import { parseBasicKickUser } from "./webhook-handler/webhook-parsers";
 
 export class KickUserManager {
-    private kick: Kick;
+    private kick: IKick;
     private _db: Datastore | null = null;
     private _dbCompactionInterval = 30000;
     private _dbPath = "";
 
-    constructor(kick: Kick) {
+    constructor(kick: IKick) {
         this.kick = kick;
     }
 
