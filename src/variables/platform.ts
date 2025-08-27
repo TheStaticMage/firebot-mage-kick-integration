@@ -9,11 +9,7 @@ export const platformVariable: ReplaceVariable = {
         aliases: ["platform"],
         description: "Returns the platform on which the event was triggered (twitch, kick, firebot, etc.)",
         categories: ["common"],
-        possibleDataOutput: ["text"],
-        triggers: {
-            event: true,
-            manual: true
-        }
+        possibleDataOutput: ["text"]
     },
     evaluator: (trigger) => {
         // Manual trigger prefers the event source regardless of metadata

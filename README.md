@@ -35,6 +35,7 @@ Currently supported:
 - Chat integration:
   - Kick messages appear in Firebot's chat feed (Dashboard), displaying Kick usernames and supporting emotes.
   - Ban user from the context menu in the chat feed.
+  - Badges: broadcaster, moderator, VIP, OG
 - Commands:
   - Standard commands mostly work, including restriction logic (with a custom Platform restriction).
 - Conditions:
@@ -51,8 +52,13 @@ Currently supported:
   - Chat message
   - Follow
   - Host (raid)
-  - Stream started
+  - Stream category (game) updated
   - Stream ended
+  - Stream started
+  - Stream title updated
+  - Sub
+  - Sub (Community Gifted)
+  - Sub (Gifted)
   - Viewer arrived
   - Viewer banned
   - Viewer timed out
@@ -67,6 +73,13 @@ Currently supported:
   - `$kickChatMessage`
   - `$kickChannelId` for your channel or another channel
   - `$kickCurrentViewerCount` for your channel or another channel
+  - `$kickGiftCount` (also works for Twitch events)
+  - `$kickGiftGiverUsername` (also works for Twitch events)
+  - `$kickGiftReceiverUsername` (also works for Twitch events)
+  - `$kickIsAnonymous` (for gift sub events; also works for Twitch events)
+  - `$kickSubMonths` (also works for Twitch events)
+  - `$kickSubStreak` (also works for Twitch events; for Kick this always equals `$kickSubMonths`)
+  - `$kickSubType` (also works for Twitch events; for Kick this always equals `"kickDefault"`)
   - `$kickModerator` (for bans/timeouts)
   - `$kickModReason` (for bans/timeouts)
   - `$kickRewardId` (for redeems)
@@ -84,11 +97,13 @@ Currently supported:
 
 Planned but not yet supported:
 
-- Subscription-related events (renewals, gifts, first time subs)
-- Live stream metadata updates (e.g., game/title change)
+- Subscription-related replacement variables
+- Track subscriptions we know about to estimate which users are current subscribers
+- Subscriber badge in chat feed
 - Events when a user is unbanned or untimed-out
 - Effects to ban, unban, timeout, and untimeout users
 - Chat roles
+- Outgoing host (raid) event
 
 Limitations due to Kick:
 
@@ -96,6 +111,7 @@ Limitations due to Kick:
 - Kick delivers profile image URLs that only resolve from kick.com, so these images may not display correctly elsewhere.
 - Kick's public API is lacking basic chat management options (e.g. delete message, clear chat), so we cannot implement these in Firebot's chat feed.
 - There is currently no API for fetching the viewer list, which prevents watch-time tracking and currency accrual.
+- There is currently no API to get your followers, subscribers, VIPs, moderators, etc. This limits what can be practically achieved with roles.
 - Channel point redeems on Kick cannot be managed via API (creation, approval, rejection), nor can they be disabled or paused. This means that Firebot cannot control them.
 - Configuration of the "pusher" websocket requires your channel ID and chatroom ID, which are different from your user ID. The process to determine these can be tedious. Thankfully, you'll only need to do this once.
 

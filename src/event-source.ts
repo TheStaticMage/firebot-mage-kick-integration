@@ -225,6 +225,78 @@ export const eventSource: EventSource = {
                     return `Kick stream category changed to **${eventData.category}**`;
                 }
             }
+        },
+        {
+            id: "sub",
+            name: "Sub",
+            description: "When someone subscribes (or resubscribes) to your channel on Kick.",
+            cached: false,
+            manualMetadata: {
+                username: "firebot@kick",
+                userDisplayName: "Firebot",
+                userId: "k1234567",
+                isResub: false,
+                subMessage: "Test message",
+                totalMonths: 10
+            },
+            activityFeed: {
+                icon: "fas fa-star",
+                getMessage: (eventData) => {
+                    const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    const totalMonths = typeof eventData.totalMonths === "number" ? eventData.totalMonths : parseInt(String(eventData.totalMonths), 10) || 1;
+                    const durationString = eventData.isResub ? ` for **${totalMonths}** month(s)` : "";
+                    return `**${userDisplayName}** ${eventData.isResub ? "resubscribed" : "subscribed"} on Kick${durationString}`;
+                }
+            }
+        },
+        {
+            id: "subs-gifted",
+            name: "Sub Gifted",
+            description: "When someone gifts a sub to someone else in your channel on Kick.",
+            cached: false,
+            manualMetadata: {
+                gifterUsername: "Firebot@kick",
+                isAnonymous: false,
+                gifteeUsername: "MageEnclave@kick"
+            },
+            activityFeed: {
+                icon: "fad fa-gift",
+                getMessage: (eventData) => {
+                    const username = eventData.isAnonymous ? "An Anonymous Gifter" : typeof eventData.gifterUsername === "string" ? unkickifyUsername(eventData.gifterUsername) : "Unknown User";
+                    const userDisplayName = eventData.isAnonymous ? "An Anonymous Gifter" : typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    return `**${userDisplayName}** gifted a sub to **${eventData.gifteeUsername}** on Kick`;
+                }
+            }
+        },
+        {
+            id: "community-subs-gifted",
+            name: "Community Subs Gifted",
+            description: "When someone gifts subs to the community of the channel on Kick.",
+            cached: false,
+            manualMetadata: {
+                gifterUsername: "Firebot@kick",
+                isAnonymous: false,
+                subCount: 5,
+                giftReceivers: {
+                    type: "gift-receivers-list",
+                    value: [
+                        { gifteeUsername: "User1@kick", giftSubMonths: 1 },
+                        { gifteeUsername: "User2@kick", giftSubMonths: 1 },
+                        { gifteeUsername: "User3@kick", giftSubMonths: 1 },
+                        { gifteeUsername: "User4@kick", giftSubMonths: 1 },
+                        { gifteeUsername: "User5@kick", giftSubMonths: 1 }
+                    ]
+                }
+            },
+            activityFeed: {
+                icon: "fad fa-gifts",
+                getMessage: (eventData) => {
+                    const username = eventData.isAnonymous ? "An Anonymous Gifter" : typeof eventData.gifterUsername === "string" ? unkickifyUsername(eventData.gifterUsername) : "Unknown User";
+                    const userDisplayName = eventData.isAnonymous ? "An Anonymous Gifter" : typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    return `**${userDisplayName}** gifted **${eventData.subCount}** sub(s) to the community on Kick`;
+                }
+            }
         }
     ]
 };

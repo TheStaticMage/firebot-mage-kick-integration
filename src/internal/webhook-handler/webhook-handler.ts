@@ -1,12 +1,13 @@
-import { ChannelFollowEvent, ChatMessageEvent, Channel as KickApiChannel, ModerationBannedEvent as KickApiModerationBannedEvent, LivestreamMetadataUpdatedEvent, LivestreamStatusUpdatedEvent, User, WebhookUser, WebhookUserWithIdentity } from "kick-api-types/v1";
+import { ChannelFollowEvent, ChatMessageEvent, Channel as KickApiChannel, ModerationBannedEvent as KickApiModerationBannedEvent, LivestreamMetadataUpdatedEvent, LivestreamStatusUpdatedEvent, NewSubscriptionEvent, SubscriptionGiftEvent, SubscriptionRenewalEvent, User, WebhookUser, WebhookUserWithIdentity } from "kick-api-types/v1";
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleFollowerEvent } from "../../events/follower";
 import { handleLivestreamMetadataUpdatedEvent } from "../../events/livestream-metadata-updated";
 import { handleLivestreamStatusUpdatedEvent } from "../../events/livestream-status-updated";
 import { handleModerationBannedEvent } from "../../events/moderation-banned";
+import { handleChannelSubscriptionEvent, handleChannelSubscriptionGiftsEvent } from "../../events/sub-events";
 import { integration } from "../../integration";
 import { logger } from "../../main";
-import { BasicKickUser, Channel, ChatMessage, KickFollower, KickUser, KickUserWithIdentity, LivestreamMetadataUpdated, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata } from "../../shared/types";
+import { BasicKickUser, Channel, ChannelGiftSubscription, ChannelSubscription, ChatMessage, KickFollower, KickUser, KickUserWithIdentity, LivestreamMetadataUpdated, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata } from "../../shared/types";
 import { parseDate } from "../util";
 
 export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
@@ -28,6 +29,21 @@ export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
         case "channel.followed": {
             const event = parseFollowEvent(webhook.raw_data);
             handleFollowerEvent(event);
+            break;
+        }
+        case "channel.subscription.renewal": {
+            const event = parseChannelSubscriptionRenewalEvent(webhook.raw_data);
+            handleChannelSubscriptionEvent(event);
+            break;
+        }
+        case "channel.subscription.gifts": {
+            const event = parseChannelSubscriptionGiftsEvent(webhook.raw_data);
+            handleChannelSubscriptionGiftsEvent(event);
+            break;
+        }
+        case "channel.subscription.new": {
+            const event = parseChannelSubscriptionNewEvent(webhook.raw_data);
+            handleChannelSubscriptionEvent(event);
             break;
         }
         case "livestream.metadata.updated": {
@@ -188,5 +204,43 @@ function parseModerationBannedEvent(rawData: string): ModerationBannedEvent {
         moderator: parseKickUser(data.moderator),
         bannedUser: parseKickUser(data.banned_user),
         metadata: metadata
+    };
+}
+
+export function parseChannelSubscriptionNewEvent(rawData: string): ChannelSubscription {
+    const data: NewSubscriptionEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+
+    return {
+        broadcaster: parseKickUser(data.broadcaster),
+        subscriber: parseKickUser(data.subscriber),
+        duration: data.duration || 1,
+        isResub: false,
+        createdAt: parseDate(data.created_at) || new Date(),
+        expiresAt: parseDate(data.expires_at) || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    };
+}
+
+export function parseChannelSubscriptionRenewalEvent(rawData: string): ChannelSubscription {
+    const data: SubscriptionRenewalEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+
+    return {
+        broadcaster: parseKickUser(data.broadcaster),
+        subscriber: parseKickUser(data.subscriber),
+        duration: data.duration,
+        isResub: true,
+        createdAt: parseDate(data.created_at) || new Date(),
+        expiresAt: parseDate(data.expires_at) || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+    };
+}
+
+export function parseChannelSubscriptionGiftsEvent(rawData: string): ChannelGiftSubscription {
+    const data: SubscriptionGiftEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+
+    return {
+        broadcaster: parseKickUser(data.broadcaster),
+        gifter: parseKickUser(data.gifter),
+        giftees: data.giftees.map(parseKickUser),
+        createdAt: parseDate(data.created_at) || new Date(),
+        expiresAt: parseDate(data.expires_at) || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     };
 }
