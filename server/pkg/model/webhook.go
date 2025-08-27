@@ -12,7 +12,8 @@ type WebhookHeaders struct {
 
 type Webhook struct {
 	WebhookHeaders
-	RawData []byte `json:"raw_data"`
+	IsTestEvent bool   `json:"is_test_event"`
+	RawData     []byte `json:"raw_data"`
 }
 
 type InjectableWebhook struct {

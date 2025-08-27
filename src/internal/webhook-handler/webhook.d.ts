@@ -4,5 +4,6 @@ interface InboundWebhook {
     kick_event_message_timestamp: string;
     kick_event_type: string;
     kick_event_version: string;
+    is_test_event?: boolean;
     raw_data: string; // Assuming rawData is a base64 encoded JSON string
 }

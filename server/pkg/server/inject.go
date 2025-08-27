@@ -96,7 +96,8 @@ func (s *Server) HandleInject(ctx context.Context) func(w http.ResponseWriter, r
 				EventType:             injectable.EventType,
 				EventVersion:          injectable.EventVersion,
 			},
-			RawData: injectable.Payload,
+			IsTestEvent: true,
+			RawData:     injectable.Payload,
 		}
 
 		// Add the webhook to the user's state

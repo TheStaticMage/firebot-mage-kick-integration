@@ -239,6 +239,13 @@ export const definition: IntegrationDefinition = {
             title: "Advanced Settings",
             sortRank: 99,
             settings: {
+                allowTestWebhooks: {
+                    title: "Allow Test Webhooks",
+                    tip: "Process test webhooks from the webhook proxy as if they were real webhooks. Enable this only if you are actively developing the integration and you know exactly what this does.",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 1
+                },
                 dangerousOperations: {
                     title: "Allow Dangerous Operations -- THIS COULD BREAK FIREBOT!",
                     tip: "Enable dangerous operations that can create and modify users in the Firebot database. THIS COULD BREAK FIREBOT! READ DOCUMENTATION CAREFULLY BEFORE ENABLING!",
