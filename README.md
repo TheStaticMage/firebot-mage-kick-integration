@@ -14,13 +14,13 @@ Use caution: this integration uses forward-incompatible workarounds and should b
 
 - Kick's public API is currently limited and incomplete. Only a small set of events is supported. (Note: Some bots use private APIs, but I purposefully avoided that route to reduce brittleness.)
 
-- This integration depends upon Kick's undocumented "pusher" WebSocket service, but that could break without warning.
+- Some features of this integration depends upon Kick's undocumented "pusher" WebSocket service, but that could break without warning.
 
 Additional considerations:
 
 - Full functionality requires a webhook proxy server to relay Kick webhooks to Firebot. I've provided instructions for [deploying such a server with Render](/server).
 
-- For partial functionality without a webhook proxy server, you can register your own Kick app and input its client ID and secret into Firebot. Some events (notably follows) are unavailable without the proxy.
+- For partial functionality without a webhook proxy server, you can register your own Kick app and input its client ID and secret into Firebot. Some events (notably follows) are unavailable without the proxy. This project prioritizes feature development with the documented public API.
 
 - Firebot only responds to events once a Kick notification is received. Kick webhook delivery can be delayed by seconds or even minutes.
 
@@ -68,8 +68,8 @@ Currently supported:
   - Viewer count (hosts)
 - Variables:
   - `$hostViewerCount` (also returns viewer count for Twitch raids)
-  - `$kickCategory` (`$kickCategory`) for your channel or another channel
-  - `$kickCategoryId` (`$kickGameId`) for your channel or another channel
+  - `$kickCategory` (alias: `$kickGame`) for your channel or another channel
+  - `$kickCategoryId` (alias: `$kickGameId`) for your channel or another channel
   - `$kickCategoryImageUrl` for your channel or another channel
   - `$kickChatMessage`
   - `$kickChannelId` for your channel or another channel
@@ -77,10 +77,10 @@ Currently supported:
   - `$kickGiftCount` (also works for Twitch events)
   - `$kickGiftGiverUsername` (also works for Twitch events)
   - `$kickGiftReceiverUsername` (also works for Twitch events)
-  - `$kickIsAnonymous` (for gift sub events; also works for Twitch events)
+  - `$kickIsAnonymous` (for gift sub events; also works for Twitch gift sub events)
   - `$kickSubMonths` (also works for Twitch events)
-  - `$kickSubStreak` (also works for Twitch events; for Kick this always equals `$kickSubMonths`)
-  - `$kickSubType` (also works for Twitch events; for Kick this always equals `"kickDefault"`)
+  - `$kickSubStreak` (compatibility shim for Twitch events; for Kick this always equals `$kickSubMonths`)
+  - `$kickSubType` (compatibility shim for Twitch events; for Kick this always equals `"kickDefault"`)
   - `$kickModerator` (for bans/timeouts)
   - `$kickModReason` (for bans/timeouts)
   - `$kickRewardId` (for redeems)
@@ -92,42 +92,46 @@ Currently supported:
   - `$kickStreamTitle` for your channel or another channel
   - `$kickTimeoutDuration` (in seconds)
   - `$kickUptime` for your channel or another channel
-  - `$kickUserDisplayName`
-  - `$platform`
-  - `$platformAwareUserDisplayName`
+  - `$kickUserDisplayName` (for Kick only; we suggest you use `$platformAwareUserDisplayName`)
+  - `$platform` (returns "kick" or "twitch" for most events)
+  - `$platformAwareUserDisplayName` (equivalent of `$userDisplayName` but works for Kick and Twitch)
 
 Planned but not yet supported:
 
-- Track subscriptions we know about to estimate which users are current subscribers
+- Best guesses at viewer subscription status, roles, etc.
 - Events when a user is unbanned or untimed-out
 - Effects to ban, unban, timeout, and untimeout users
-- Chat roles
 - Outgoing host (raid) event
 
 Limitations due to Kick:
 
-- Many user actions (e.g., custom rewards, raids, unbans) don't trigger webhooks. Some are only available via "pusher" WebSocket. Others are not provided at all. The integration can only support events that Kick provides.
+- Many user actions (e.g., custom rewards, raids, unbans) don't trigger webhooks. The integration can only support events that Kick provides.
 - Kick delivers profile image URLs that only resolve from kick.com, so these images may not display correctly elsewhere.
 - Kick's public API is lacking basic chat management options (e.g. delete message, clear chat), so we cannot implement these in Firebot's chat feed.
 - There is currently no API for fetching the viewer list, which prevents watch-time tracking and currency accrual.
-- There is currently no API to get your followers, subscribers, VIPs, moderators, etc. This limits what can be practically achieved with roles.
+- There is currently no API to list your followers, subscribers, VIPs, moderators, etc. This limits what can be practically achieved with roles.
 - Channel point redeems on Kick cannot be managed via API (creation, approval, rejection), nor can they be disabled or paused. This means that Firebot cannot control them.
+- Kick does not provide programmatic definitions of chat badges (or even publish these as plain image files). We've hard-coded in the current definitions in the Firebot chat feed. If those change on Kick, you'll still see the old badges in the Firebot chat feed until the integration is updated.
 - Configuration of the "pusher" websocket requires your channel ID and chatroom ID, which are different from your user ID. The process to determine these can be tedious. Thankfully, you'll only need to do this once.
 
 Limitations due to Firebot:
 
-- Firebot's viewer database uses Twitch user IDs as primary keys and assumes every user is from Twitch. This rigid design prevents full platform independence.
+- Firebot's viewer database uses Twitch user IDs as primary keys and assumes every user is from Twitch. This rigid design prevents many features that depend on storing information about users (e.g. currency, metadata).
 - Rate limiting (cooldowns) for commands and redeems doesn't work natively. Consider using the [Firebot Rate Limiter](https://github.com/TheStaticMage/firebot-rate-limiter) if needed.
-- Many built-in Firebot variables and effects are hard-coded to be available only to specific Twitch events. Therefore, this integration introduces Kick-specific variables like `$kickModerator`. Alternatively, you can trigger equivalent Twitch events if your effects are platform-aware.
+- Many built-in Firebot variables, filters and effects are hard-coded to be available only to specific Twitch events. This means that variables you'd expect to work just won't for the Kick events (e.g. `$moderator` is not available for ban events and `$chatMessage` will not contain the Kick chat message). We do have some workarounds in the form of Kick-specific variables like `$kickModerator` and the ability to trigger the Twitch-equivalent events when Kick events are received.
+- Slash commands in the Firebot chat (e.g. `/clear`) only apply to Twitch. (There aren't Kick API endpoints for most of these anyway.)
 
 ## Installation
 
-This integration is experimental and aimed at users comfortable with technical setup. I will reconsider broader release once:
+This integration is experimental and aimed at users comfortable with technical setup. I will reconsider broader release and support once:
 
-1. Kick offers a public WebSocket API, and
-2. Firebot evolves for cleaner multi-platform support.
+1. Kick offers a public WebSocket connection option, and
+2. Kick's public REST API is substantially more complete, and
+3. Firebot evolves for cleaner multi-platform support.
 
 [Installation instructions](/doc/installation.md) are available if you're feeling adventurous.
+
+[Upgrading instructions](/doc/upgrading.md) are available if you felt adventurous in the past and are still feeling adventurous.
 
 ## Support
 
@@ -144,7 +148,7 @@ Join our Discord community in [The Static Family](https://discord.gg/hzDYKzG9Zp)
 Please note:
 
 - I will not accept contributions relying on Kick's "private API." I'd rather just encourage you to stream on Twitch than provide fragile workarounds if you depend on certain functionality.
-- I will not accept contributions requiring Firebot modifications that haven't been upstream-approved. I run Firebot on the `v5` branch, so changes that are merged there (or are in developer-approved pull requests) are acceptable.
+- I will not accept contributions requiring Firebot modifications that haven't been upstream-approved. I run a customized version of Firebot based on the `v5` branch, so changes that are merged there (or are in developer-approved pull requests) are acceptable.
 - If you don't agree with this approach, feel free to fork the project and develop it your way.
 
 ## License
