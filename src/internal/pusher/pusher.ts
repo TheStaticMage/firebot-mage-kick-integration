@@ -113,6 +113,26 @@ export class KickPusher {
         }
     }
 
+    async dispatchTestEvent(payload: InboundPayload): Promise<void> {
+        try {
+            const channelPrefix = payload.channel.split('.')[0];
+            switch (channelPrefix) {
+                case 'channel':
+                    logger.debug(`Dispatching Pusher test event for channel: ${payload.channel}, event: ${payload.event}, data: ${JSON.stringify(payload.data)}`);
+                    await this.dispatchChannelEvent(payload.event, payload.data);
+                    return;
+                case 'chatrooms':
+                    logger.debug(`Dispatching Pusher test event for chatroom: ${payload.channel}, event: ${payload.event}, data: ${JSON.stringify(payload.data)}`);
+                    await this.dispatchChatroomEvent(payload.event, payload.data);
+                    return;
+                default:
+                    logger.error(`Unhandled Pusher test event: ${payload.event}, channel: ${payload.channel}, data: ${JSON.stringify(payload.data)}`);
+            }
+        } catch (error) {
+            logger.error(`Error handling Pusher test event: ${payload.event}, error: ${error}`);
+        }
+    }
+
     private getBroadcaster(): KickUser {
         return {
             userId: integration.kick.broadcaster?.userId.toString() || '',

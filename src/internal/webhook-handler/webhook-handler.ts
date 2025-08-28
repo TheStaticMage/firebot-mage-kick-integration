@@ -6,7 +6,7 @@ import { handleModerationBannedEvent } from "../../events/moderation-banned";
 import { handleChannelSubscriptionEvent, handleChannelSubscriptionGiftsEvent } from "../../events/sub-events";
 import { integration } from "../../integration";
 import { logger } from "../../main";
-import { parseChannelSubscriptionGiftsEvent, parseChannelSubscriptionNewEvent, parseChannelSubscriptionRenewalEvent, parseChatMessageEvent, parseFollowEvent, parseLivestreamMetadataUpdatedEvent, parseLivestreamStatusUpdatedEvent, parseModerationBannedEvent } from "./webhook-parsers";
+import { parseChannelSubscriptionGiftsEvent, parseChannelSubscriptionNewEvent, parseChannelSubscriptionRenewalEvent, parseChatMessageEvent, parseFollowEvent, parseLivestreamMetadataUpdatedEvent, parseLivestreamStatusUpdatedEvent, parseModerationBannedEvent, parsePusherTestWebhook } from "./webhook-parsers";
 
 export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
     if (integration.getSettings().logging.logWebhooks) {
@@ -27,6 +27,14 @@ export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
         return;
     }
 
+    // This is not a real event from Kick, but is rather used for testing.
+    if (webhook.is_test_event && webhook.kick_event_type === "pusher.test") {
+        const payload = parsePusherTestWebhook(webhook.raw_data);
+        await integration.pusher.dispatchTestEvent(payload);
+        return;
+    }
+
+    // Handle real webhooks
     switch (webhook.kick_event_type) {
         case "chat.message.sent": {
             const event = parseChatMessageEvent(webhook.raw_data);
