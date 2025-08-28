@@ -1,8 +1,7 @@
 export const triggerEventMock = jest.fn();
 
 export const userManagerMock = {
-    getViewerById: jest.fn(),
-    createNewViewer: jest.fn()
+    getOrCreateViewer: jest.fn()
 };
 
 jest.mock('../integration', () => ({
@@ -30,9 +29,8 @@ jest.mock('../main', () => ({
     }
 }));
 
-import { KickPusher } from '../internal/pusher/pusher';
 import { IntegrationConstants } from '../constants';
-import { FirebotViewer } from '@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database';
+import { KickPusher } from '../internal/pusher/pusher';
 
 describe('e2e stream hosted', () => {
     let pusher: KickPusher;
@@ -52,66 +50,27 @@ describe('e2e stream hosted', () => {
         viewerCount: 32,
         platform: 'kick'
     };
-    const firebotViewer: FirebotViewer = {
-        _id: 'k1234567',
-        username: 'Kicker@kick',
-        displayName: 'Kicker',
-        profilePicUrl: '',
-        twitch: false,
-        twitchRoles: [],
-        online: false,
-        onlineAt: 0,
-        lastSeen: 0,
-        joinDate: 0,
-        minutesInChannel: 0,
-        chatMessages: 0,
-        disableAutoStatAccrual: true,
-        disableActiveUserList: true,
-        disableViewerList: true,
-        metadata: {},
-        currency: {},
-        ranks: {}
-    };
 
     describe('twitch forwarding enabled', () => {
-        describe('viewer database had user', () => {
-            beforeEach(() => {
-                const integration = require('../integration').integration;
-                integration.getSettings = () => ({ triggerTwitchEvents: { raid: true } });
-                (userManagerMock.getViewerById).mockReturnValueOnce(firebotViewer);
-            });
-
-            it('triggers all expected events', async () => {
-                await expect((pusher as any).dispatchChatroomEvent(event, payload)).resolves.not.toThrow();
-                expect(userManagerMock.createNewViewer).not.toHaveBeenCalled();
-                expect(triggerEventMock).toHaveBeenCalledTimes(2);
-                expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "raid", expectedMetadata);
-                expect(triggerEventMock).toHaveBeenCalledWith("twitch", "raid", expectedMetadata);
-            });
+        beforeEach(() => {
+            const integration = require('../integration').integration;
+            integration.getSettings = () => ({ triggerTwitchEvents: { raid: true } });
         });
 
-        describe('viewer database created user', () => {
-            beforeEach(() => {
-                (userManagerMock.createNewViewer).mockReturnValueOnce(firebotViewer);
-            });
-
-            it('triggers all expected events', async () => {
-                await expect((pusher as any).dispatchChatroomEvent(event, payload)).resolves.not.toThrow();
-                expect(triggerEventMock).toHaveBeenCalledTimes(2);
-                expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "raid", expectedMetadata);
-                expect(triggerEventMock).toHaveBeenCalledWith("twitch", "raid", expectedMetadata);
-            });
-        });
-
-        describe('viewer database failed', () => {
-            it('triggers all expected events', async () => {
-                await expect((pusher as any).dispatchChatroomEvent(event, payload)).resolves.not.toThrow();
-                expect(userManagerMock.getViewerById).toHaveBeenCalledWith("k1234567");
-                expect(userManagerMock.createNewViewer).toHaveBeenCalledWith({"channelSlug": "", "displayName": "Kicker", "isVerified": true, "profilePicture": "", "userId": "1234567", "username": "Kicker"}, [], true);
-                expect(triggerEventMock).toHaveBeenCalledTimes(2);
-                expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "raid", expectedMetadata);
-                expect(triggerEventMock).toHaveBeenCalledWith("twitch", "raid", expectedMetadata);
-            });
+        it('triggers all expected events', async () => {
+            await expect((pusher as any).dispatchChatroomEvent(event, payload)).resolves.not.toThrow();
+            expect(userManagerMock.getOrCreateViewer).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    userId: '1234567',
+                    username: 'Kicker',
+                    displayName: 'Kicker'
+                }),
+                [],
+                true
+            );
+            expect(triggerEventMock).toHaveBeenCalledTimes(2);
+            expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "raid", expectedMetadata);
+            expect(triggerEventMock).toHaveBeenCalledWith("twitch", "raid", expectedMetadata);
         });
     });
 
@@ -119,12 +78,19 @@ describe('e2e stream hosted', () => {
         beforeEach(() => {
             const integration = require('../integration').integration;
             integration.getSettings = () => ({ triggerTwitchEvents: { raid: false } });
-            (userManagerMock.getViewerById).mockReturnValueOnce(firebotViewer);
         });
 
         it('triggers all expected events', async () => {
             await expect((pusher as any).dispatchChatroomEvent(event, payload)).resolves.not.toThrow();
-            expect(userManagerMock.createNewViewer).not.toHaveBeenCalled();
+            expect(userManagerMock.getOrCreateViewer).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    userId: '1234567',
+                    username: 'Kicker',
+                    displayName: 'Kicker'
+                }),
+                [],
+                true
+            );
             expect(triggerEventMock).toHaveBeenCalledTimes(1);
             expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "raid", expectedMetadata);
         });

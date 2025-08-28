@@ -6,8 +6,7 @@ jest.mock('../../integration', () => ({
     integration: {
         kick: {
             userManager: {
-                getViewerById: jest.fn().mockResolvedValue(undefined),
-                createNewViewer: jest.fn().mockResolvedValue({}),
+                getOrCreateViewer: jest.fn().mockResolvedValue(undefined),
                 recordSubscription: () => jest.fn(),
                 recordGift: () => jest.fn()
             }
