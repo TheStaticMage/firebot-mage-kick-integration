@@ -121,6 +121,27 @@ Limitations due to Firebot:
 - Many built-in Firebot variables, filters and effects are hard-coded to be available only to specific Twitch events. This means that variables you'd expect to work just won't for the Kick events (e.g. `$moderator` is not available for ban events and `$chatMessage` will not contain the Kick chat message). We do have some workarounds in the form of Kick-specific variables like `$kickModerator` and the ability to trigger the Twitch-equivalent events when Kick events are received.
 - Slash commands in the Firebot chat (e.g. `/clear`) only apply to Twitch. (There aren't Kick API endpoints for most of these anyway.)
 
+## Support Matrix
+
+| Event/Feature | Webhook Proxy | No Webhook Proxy | Notes |
+| ------------- | ------------- | ---------------- | ----- |
+| Channel data updated | :white_check_mark: | :white_check_mark: | Based on refreshing stream info from Kick API |
+| Channel points redeemed | :white_check_mark: | :white_check_mark: | Via Pusher |
+| Chat message | :white_check_mark: | :white_check_mark: |  |
+| Follow | :white_check_mark: | :x: |  |
+| Host (raid) (incoming) | :white_check_mark: | :white_check_mark: | Via Pusher |
+| Host (raid) (outgoing) | Planned | Planned |  |
+| Stream category (game) updated | :white_check_mark: | :x: |  |
+| Stream ended | :white_check_mark: | Planned |  |
+| Stream started | :white_check_mark: | Planned |  |
+| Stream title updated | :white_check_mark: | :x: |  |
+| Sub | :white_check_mark: | ? | Not evaluated for use without webhook proxy |
+| Sub (Community Gifted) | :white_check_mark: | ? | Not evaluated for use without webhook proxy |
+| Sub (Gifted) | :white_check_mark: | ? | Not evaluated for use without webhook proxy |
+| Viewer arrived | :white_check_mark: | :white_check_mark: |  |
+| Viewer banned | :white_check_mark: | ? | Not evaluated for use without webhook proxy |
+| Viewer timed out | :white_check_mark: | ? | Not evaluated for use without webhook proxy |
+
 ## Installation
 
 This integration is experimental and aimed at users comfortable with technical setup. I will reconsider broader release and support once:
