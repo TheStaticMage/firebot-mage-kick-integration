@@ -13,7 +13,9 @@ jest.mock('../../integration', () => ({
         kick: {
             userManager: {
                 getViewerById: (...args: any[]) => mockGetViewerById(...args),
-                createNewViewer: (...args: any[]) => mockCreateNewViewer(...args)
+                createNewViewer: (...args: any[]) => mockCreateNewViewer(...args),
+                recordSubscription: () => jest.fn(),
+                recordGift: () => jest.fn()
             }
         },
         getSettings: () => ({ triggerTwitchEvents: { subGift: false } })

@@ -146,3 +146,19 @@ export interface ChannelGiftSubscription {
     createdAt: Date,
     expiresAt?: Date
 }
+
+export interface KickGifter {
+    userId: string,
+    gifts: KickGiftSub[],
+    totalSubs: number,
+}
+
+export interface KickGiftSub {
+    userId: string,
+    sub: KickSubscription
+}
+
+export interface KickSubscription {
+    createdAt: Date,
+    expiresAt: Date
+}
