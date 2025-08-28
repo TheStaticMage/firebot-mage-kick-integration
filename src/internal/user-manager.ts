@@ -60,7 +60,22 @@ export class KickUserManager {
         this._subDb = null;
     }
 
-    async createNewViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<FirebotViewer | undefined> {
+    async getOrCreateViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<FirebotViewer | undefined> {
+        if (unkickifyUserId(kickUser.userId.toString()) === '') {
+            logger.warn(`getOrCreateViewer: Invalid userId for kickUser: ${JSON.stringify(kickUser)}`);
+            return undefined;
+        }
+
+        const existingViewer = await this.getViewerById(kickUser.userId);
+        if (existingViewer) {
+            return existingViewer;
+        }
+
+        logger.debug(`getOrCreateViewer: Creating new viewer for kickUser: ${JSON.stringify(kickUser)}`);
+        return await this.createNewViewer(kickUser, roles, isOnline);
+    }
+
+    private async createNewViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<FirebotViewer | undefined> {
         if (!this._db) {
             throw new Error("Viewer database is not connected.");
         }
@@ -90,6 +105,7 @@ export class KickUserManager {
             await this._db.insertAsync(firebotViewer);
         } catch (error) {
             logger.error(`ViewerDB: Error Creating Viewer: ${String(error)}`);
+            return undefined;
         }
 
         firebotViewer._id = kickifyUserId(firebotViewer._id);
@@ -100,6 +116,11 @@ export class KickUserManager {
     async getViewerById(id: string): Promise<FirebotViewer | undefined> {
         if (!this._db) {
             throw new Error("Viewer database is not connected.");
+        }
+
+        if (unkickifyUserId(id) === '') {
+            logger.warn(`getViewerById: Invalid userId!`);
+            return undefined;
         }
 
         try {

@@ -21,15 +21,9 @@ export async function handleChatMessageSentEvent(payload: ChatMessage, delay = 0
     const possibleBadges: string[] = ["broadcaster", "moderator", "vip", "og", "subscriber"];
 
     // Create user if they do not exist, and increment their chat messages
-    let viewer = await integration.kick.userManager.getViewerById(payload.sender.userId);
+    const viewer = await integration.kick.userManager.getOrCreateViewer(payload.sender, [], true);
     if (viewer) {
         await integration.kick.userManager.syncViewerRoles(viewer._id, badgeRoles, possibleBadges);
-    } else {
-        viewer = await integration.kick.userManager.createNewViewer(payload.sender, badgeRoles, true);
-        if (!viewer) {
-            logger.error(`Failed to create new viewer for userId=${payload.sender.userId}`);
-            return;
-        }
     }
 
     // This might be delayed -- the webhook contains more information than
@@ -53,7 +47,7 @@ export async function handleChatMessageSentEvent(payload: ChatMessage, delay = 0
     }
 
     // Update chat message count
-    await integration.kick.userManager.incrementDbField(viewer._id, "chatMessages");
+    await integration.kick.userManager.incrementDbField(payload.sender.userId, "chatMessages");
 
     // Command checking.
     await commandHandler.handleChatMessage(firebotChatMessage);
@@ -62,11 +56,11 @@ export async function handleChatMessageSentEvent(payload: ChatMessage, delay = 0
     triggerChatMessage(firebotChatMessage.userId, firebotChatMessage.username, firebotChatMessage);
 
     // Maybe trigger viewer arrived event
-    if (integration.kick.chatManager.checkViewerArrived(viewer._id)) {
+    if (integration.kick.chatManager.checkViewerArrived(payload.sender.userId)) {
         triggerViewerArrived(
             firebotChatMessage.username,
             firebotChatMessage.userId,
-            firebotChatMessage.userDisplayName || viewer.username || firebotChatMessage.username,
+            firebotChatMessage.userDisplayName || viewer?.username || firebotChatMessage.username,
             firebotChatMessage.rawText,
             firebotChatMessage
         );

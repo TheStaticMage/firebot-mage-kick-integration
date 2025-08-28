@@ -1,26 +1,19 @@
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
-import { firebot, logger } from "../main";
+import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
+import { firebot } from "../main";
 import { KickFollower } from "../shared/types";
 
 export async function handleFollowerEvent(payload: KickFollower): Promise<void> {
     // Create the user if they don't exist
-    let viewer = await integration.kick.userManager.getViewerById(payload.follower.userId);
-    if (!viewer) {
-        viewer = await integration.kick.userManager.createNewViewer(payload.follower, [], true);
-        if (!viewer) {
-            logger.error(`Failed to create new viewer for userId=${payload.follower.userId}`);
-            return;
-        }
-    }
+    const viewer = await integration.kick.userManager.getOrCreateViewer(payload.follower, [], true);
 
     // Trigger the follow event
     const { eventManager } = firebot.modules;
     const metadata = {
-        username: viewer.username,
-        userId: viewer._id,
-        userDisplayName: viewer.displayName,
-        profilePicture: viewer.profilePicUrl,
+        username: kickifyUsername(payload.follower.username),
+        userId: kickifyUserId(payload.follower.userId),
+        userDisplayName: viewer && viewer.displayName ? viewer.displayName : unkickifyUsername(payload.follower.username),
         platform: "kick"
     };
     eventManager.triggerEvent(IntegrationConstants.INTEGRATION_ID, "follow", metadata);

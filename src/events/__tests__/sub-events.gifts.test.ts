@@ -1,9 +1,7 @@
-import { handleChannelSubscriptionGiftsEvent } from '../sub-events';
 import { IntegrationConstants } from '../../constants';
 import { ChannelGiftSubscription } from '../../shared/types';
+import { handleChannelSubscriptionGiftsEvent } from '../sub-events';
 
-const mockGetViewerById = jest.fn().mockResolvedValue(undefined);
-const mockCreateNewViewer = jest.fn().mockResolvedValue({ displayName: 'DisplayName' });
 const mockTriggerEvent = jest.fn();
 const mockLoggerDebug = jest.fn();
 const mockLoggerWarn = jest.fn();
@@ -12,8 +10,7 @@ jest.mock('../../integration', () => ({
     integration: {
         kick: {
             userManager: {
-                getViewerById: (...args: any[]) => mockGetViewerById(...args),
-                createNewViewer: (...args: any[]) => mockCreateNewViewer(...args),
+                getOrCreateViewer: jest.fn().mockResolvedValue(undefined),
                 recordSubscription: () => jest.fn(),
                 recordGift: () => jest.fn()
             }

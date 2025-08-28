@@ -1,15 +1,14 @@
-import { FirebotViewer } from "@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { ChannelSubscription, ChannelGiftSubscription, KickUser } from "../shared/types";
+import { ChannelGiftSubscription, ChannelSubscription } from "../shared/types";
 
 export async function handleChannelSubscriptionEvent(payload: ChannelSubscription): Promise<void> {
     const userId = kickifyUserId(payload.subscriber.userId.toString());
     const username = kickifyUsername(payload.subscriber.username);
 
-    await getOrCreateViewer(userId, payload.subscriber);
+    await integration.kick.userManager.getOrCreateViewer(payload.subscriber, [], true);
     await integration.kick.userManager.recordSubscription(
         userId,
         payload.createdAt,
@@ -46,11 +45,11 @@ export async function handleChannelSubscriptionGiftsEvent(payload: ChannelGiftSu
     if (payload.gifter.isAnonymous) {
         logger.debug("Skipping anonymous gifter for Kick gift subscription event.");
     } else {
-        await getOrCreateViewer(payload.gifter.userId, payload.gifter);
+        await integration.kick.userManager.getOrCreateViewer(payload.gifter, [], true);
     }
 
     for (const giftee of payload.giftees) {
-        await getOrCreateViewer(giftee.userId, giftee);
+        await integration.kick.userManager.getOrCreateViewer(giftee, [], true);
         await integration.kick.userManager.recordSubscription(
             giftee.userId,
             payload.createdAt,
@@ -120,12 +119,4 @@ function plusThirtyDays(date: Date): Date {
     const newDate = new Date(date);
     newDate.setDate(newDate.getDate() + 30);
     return newDate;
-}
-
-async function getOrCreateViewer(userId: string, user: KickUser): Promise<FirebotViewer | undefined> {
-    let viewer = await integration.kick.userManager.getViewerById(userId);
-    if (!viewer) {
-        viewer = await integration.kick.userManager.createNewViewer(user, [], true);
-    }
-    return viewer;
 }
