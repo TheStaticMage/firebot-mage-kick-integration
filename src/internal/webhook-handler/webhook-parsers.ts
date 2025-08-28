@@ -179,3 +179,12 @@ export function parseChannelSubscriptionGiftsEvent(rawData: string): ChannelGift
         expiresAt: parseDate(data.expires_at) || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
     };
 }
+
+export function parsePusherTestWebhook(rawData: string): InboundPayload {
+    const data: InboundPayload = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    return {
+        event: data.event,
+        channel: data.channel,
+        data: data.data
+    };
+}
