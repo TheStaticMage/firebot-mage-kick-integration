@@ -137,74 +137,81 @@ export const definition: IntegrationDefinition = {
                     sortRank: 2
                 },
                 raid: {
-                    title: "Host (Raid)",
+                    title: "Host - Incoming",
                     tip: "Trigger the 'Twitch:Raid' event when someone hosts (raids) your stream on Kick",
                     type: "boolean",
                     default: false,
                     sortRank: 3
+                },
+                raidSentOff: {
+                    title: "Host - Outgoing",
+                    tip: "Trigger the 'Twitch:Raid Sent Off' event when you send a host (raid) to another channel on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 4
                 },
                 streamOffline: {
                     title: "Stream Ended",
                     tip: "Trigger the 'Twitch:Stream Ended' event when the Kick stream goes offline",
                     type: "boolean",
                     default: false,
-                    sortRank: 4
+                    sortRank: 5
                 },
                 streamOnline: {
                     title: "Stream Started",
                     tip: "Trigger the 'Twitch:Stream Started' event when the Kick stream goes online",
                     type: "boolean",
                     default: false,
-                    sortRank: 5
+                    sortRank: 6
                 },
                 sub: {
                     title: "Sub",
                     tip: "Trigger the 'Twitch:Sub' event when someone subscribes or resubscribes on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 6
+                    sortRank: 7
                 },
                 subCommunityGift: {
                     title: "Sub Community Gift",
                     tip: "Trigger the 'Twitch:Community Subs Gifted' event when someone gifts community subscriptions on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 7
+                    sortRank: 8
                 },
                 subGift: {
                     title: "Sub Gifted",
                     tip: "Trigger the 'Twitch:Sub Gifted' event when someone gifts a subscription on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 8
+                    sortRank: 9
                 },
                 titleChanged: {
                     title: "Title Changed",
                     tip: "Trigger the 'Twitch:Title Changed' event when the Kick stream title changes",
                     type: "boolean",
                     default: false,
-                    sortRank: 9
+                    sortRank: 10
                 },
                 viewerArrived: {
                     title: "Viewer Arrived",
                     tip: "Trigger the 'Twitch:Viewer Arrived' event when a viewer arrives on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 10
+                    sortRank: 11
                 },
                 viewerBanned: {
                     title: "Viewer Banned",
                     tip: "Trigger the 'Twitch:Viewer Banned' event when a viewer is banned on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 11
+                    sortRank: 12
                 },
                 viewerTimeout: {
                     title: "Viewer Timeout",
                     tip: "Trigger the 'Twitch:Viewer Timeout' event when a viewer is timed out on Kick",
                     type: "boolean",
                     default: false,
-                    sortRank: 12
+                    sortRank: 13
                 }
             }
         },

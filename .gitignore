@@ -23,3 +23,6 @@ node_modules/
 
 # Coverage
 /coverage/
+
+# For local testing
+/test-payloads/

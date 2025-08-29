@@ -1,10 +1,11 @@
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
+import { handleRaidSentOffEvent } from "../../events/raid-sent-off-event";
 import { handleRewardRedeemedEvent } from "../../events/reward-redeemed-event";
 import { handleStreamHostedEvent } from "../../events/stream-hosted-event";
 import { integration } from "../../integration";
 import { logger } from "../../main";
 import { KickUser } from "../../shared/types";
-import { parseChatMessageEvent, parseRewardRedeemedEvent, parseStreamHostedEvent } from "./pusher-parsers";
+import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStreamHostedEvent } from "./pusher-parsers";
 
 const Pusher = require('pusher-js');
 
@@ -77,6 +78,9 @@ export class KickPusher {
     private async dispatchChannelEvent(event: string, data: any): Promise<void> {
         try {
             switch (event) {
+                case "App\\Events\\ChatMoveToSupportedChannelEvent":
+                    await handleRaidSentOffEvent(parseChatMoveToSupportedChannelEvent(data));
+                    break;
                 case 'pusher:subscription_succeeded':
                     logger.info("Pusher subscribed successfully to channel events.");
                     break;
