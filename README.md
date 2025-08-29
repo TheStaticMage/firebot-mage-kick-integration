@@ -131,19 +131,22 @@ Limitations due to Firebot:
 | Channel data updated | :white_check_mark: | :white_check_mark: | Based on refreshing stream info from Kick API |
 | Channel points redeemed | :white_check_mark: | :white_check_mark: | Via Pusher |
 | Chat message | :white_check_mark: | :white_check_mark: |  |
-| Follow | :white_check_mark: | :x: |  |
+| Follow | :white_check_mark: | :x: | Requires webhook proxy |
 | Host (raid) (incoming) | :white_check_mark: | :white_check_mark: | Via Pusher |
 | Host (raid) (outgoing) | :white_check_mark: | :white_check_mark: | Via Pusher |
-| Stream category (game) updated | :white_check_mark: | :x: |  |
+| Message deleted | Planned | Planned | Via Pusher |
+| Stream category (game) updated | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
 | Stream ended | :white_check_mark: | Planned |  |
 | Stream started | :white_check_mark: | Planned |  |
-| Stream title updated | :white_check_mark: | :x: |  |
-| Sub | :white_check_mark: | ? | Not evaluated for use without webhook proxy |
-| Sub (Community Gifted) | :white_check_mark: | ? | Not evaluated for use without webhook proxy |
-| Sub (Gifted) | :white_check_mark: | ? | Not evaluated for use without webhook proxy |
+| Stream title updated | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
+| Sub | :white_check_mark: | Planned | |
+| Sub (Community Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
+| Sub (Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
 | Viewer arrived | :white_check_mark: | :white_check_mark: |  |
-| Viewer banned | :white_check_mark: | ? | Not evaluated for use without webhook proxy |
-| Viewer timed out | :white_check_mark: | ? | Not evaluated for use without webhook proxy |
+| Viewer banned | :white_check_mark: | Planned | |
+| Viewer timed out | :white_check_mark: | Planned | |
+| Viewer unbanned | Planned | Planned | Via Pusher |
+| Viewer un-timed out | Planned | Planned | Via Pusher |
 
 ## Installation
 
