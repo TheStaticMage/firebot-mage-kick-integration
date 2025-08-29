@@ -48,6 +48,9 @@ import { kickIsAnonymousVariable } from "./variables/subs/is-anonymous";
 import { kickSubStreakVariable } from "./variables/subs/sub-streak";
 import { kickSubMonthsVariable } from "./variables/subs/sub-months";
 import { kickGiftCountVariable } from "./variables/subs/gift-count";
+import { hostTargetUserDisplayName } from "./variables/host-target-user-display-name";
+import { hostTargetUserId } from "./variables/host-target-user-id";
+import { hostTargetUsername } from "./variables/host-target-username";
 
 type IntegrationParameters = {
     connectivity: {
@@ -75,6 +78,7 @@ type IntegrationParameters = {
         chatMessage: boolean;
         follower: boolean;
         raid: boolean;
+        raidSentOff: boolean;
         streamOnline: boolean;
         streamOffline: boolean;
         sub: boolean;
@@ -153,6 +157,7 @@ export class KickIntegration extends EventEmitter {
             chatMessage: false,
             follower: false,
             raid: false,
+            raidSentOff: false,
             streamOffline: false,
             streamOnline: false,
             sub: false,
@@ -230,8 +235,13 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.registerReplaceVariable(kickStreamerIdVariable);
         replaceVariableManager.registerReplaceVariable(kickStreamerVariable);
 
-        // Stream variables
+        // Hosts (raids)
         replaceVariableManager.registerReplaceVariable(hostViewerCount);
+        replaceVariableManager.registerReplaceVariable(hostTargetUserId);
+        replaceVariableManager.registerReplaceVariable(hostTargetUserDisplayName);
+        replaceVariableManager.registerReplaceVariable(hostTargetUsername);
+
+        // Stream variables
         replaceVariableManager.registerReplaceVariable(kickCurrentViewerCountVariable);
         replaceVariableManager.registerReplaceVariable(kickStreamIsLiveVariable);
         replaceVariableManager.registerReplaceVariable(kickStreamTitleVariable);

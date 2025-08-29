@@ -1,5 +1,6 @@
 import { EventSource } from '@crowbartools/firebot-custom-scripts-types/types/modules/event-manager';
 import { unkickifyUsername } from './internal/util';
+import { getNumberFromUnknown } from './util/util';
 
 export const eventSource: EventSource = {
     id: "mage-kick-integration",
@@ -131,8 +132,9 @@ export const eventSource: EventSource = {
                     const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
                     const moderator = typeof eventData.moderator === "string" ? unkickifyUsername(eventData.moderator) : "Unknown Moderator";
                     const modReason = typeof eventData.modReason === "string" ? eventData.modReason : "";
+                    const timeoutDuration = getNumberFromUnknown(eventData.timeoutDuration, "Unknown");
 
-                    let message = `**${userDisplayName}** was timed out for **${eventData.timeoutDuration} sec(s)** by **${moderator}** on Kick.`;
+                    let message = `**${userDisplayName}** was timed out for **${timeoutDuration} sec(s)** by **${moderator}** on Kick.`;
                     if (modReason) {
                         message = `${message} Reason: **${modReason}**`;
                     }
@@ -191,7 +193,8 @@ export const eventSource: EventSource = {
                 getMessage: (eventData) => {
                     const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
                     const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
-                    return `**${userDisplayName}** hosted on Kick with **${eventData.viewerCount}** viewer(s)`;
+                    const viewerCount = getNumberFromUnknown(eventData.viewerCount, "Unknown");
+                    return `**${userDisplayName}** hosted on Kick with **${viewerCount}** viewer(s)`;
                 }
             }
         },
@@ -244,7 +247,7 @@ export const eventSource: EventSource = {
                 getMessage: (eventData) => {
                     const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
                     const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
-                    const totalMonths = typeof eventData.totalMonths === "number" ? eventData.totalMonths : parseInt(String(eventData.totalMonths), 10) || 1;
+                    const totalMonths = getNumberFromUnknown(eventData.totalMonths, "1");
                     const durationString = eventData.isResub ? ` for **${totalMonths}** month(s)` : "";
                     return `**${userDisplayName}** ${eventData.isResub ? "resubscribed" : "subscribed"} on Kick${durationString}`;
                 }
@@ -294,7 +297,32 @@ export const eventSource: EventSource = {
                 getMessage: (eventData) => {
                     const username = eventData.isAnonymous ? "An Anonymous Gifter" : typeof eventData.gifterUsername === "string" ? unkickifyUsername(eventData.gifterUsername) : "Unknown User";
                     const userDisplayName = eventData.isAnonymous ? "An Anonymous Gifter" : typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
-                    return `**${userDisplayName}** gifted **${eventData.subCount}** sub(s) to the community on Kick`;
+                    const subCount = getNumberFromUnknown(eventData.subCount, "Unknown Number");
+                    return `**${userDisplayName}** gifted **${subCount}** sub(s) to the community on Kick`;
+                }
+            }
+        },
+        {
+            id: "raid-sent-off",
+            name: "Outgoing Host (Raid)",
+            description: "When your outgoing host (raid) is completed on Kick.",
+            cached: false,
+            manualMetadata: {
+                username: "firebot@kick",
+                userId: "k1234567",
+                userDisplayName: "Firebot",
+                raidTargetUsername: "user@kick",
+                raidTargetUserId: "k7654321",
+                raidTargetUserDisplayName: "User",
+                viewerCount: 5
+            },
+            activityFeed: {
+                icon: "fad fa-inbox-out",
+                getMessage: (eventData) => {
+                    const username = typeof eventData.raidTargetUsername === "string" ? unkickifyUsername(eventData.raidTargetUsername) : "Unknown User";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    const viewerCount = getNumberFromUnknown(eventData.viewerCount, "Unknown");
+                    return `Hosted **${userDisplayName}** with **${viewerCount}** viewer(s)`;
                 }
             }
         }

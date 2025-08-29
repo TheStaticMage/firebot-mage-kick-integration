@@ -67,6 +67,9 @@ Currently supported:
   - Platform
   - Viewer count (hosts)
 - Variables:
+  - `$hostTargetUserDisplayName` (also works for Twitch raids)
+  - `$hostTargetUserId` (also works for Twitch raids)
+  - `$hostTargetUsername` (also works for Twitch raids)
   - `$hostViewerCount` (also returns viewer count for Twitch raids)
   - `$kickCategory` (alias: `$kickGame`) for your channel or another channel
   - `$kickCategoryId` (alias: `$kickGameId`) for your channel or another channel
@@ -130,7 +133,7 @@ Limitations due to Firebot:
 | Chat message | :white_check_mark: | :white_check_mark: |  |
 | Follow | :white_check_mark: | :x: |  |
 | Host (raid) (incoming) | :white_check_mark: | :white_check_mark: | Via Pusher |
-| Host (raid) (outgoing) | Planned | Planned |  |
+| Host (raid) (outgoing) | :white_check_mark: | :white_check_mark: | Via Pusher |
 | Stream category (game) updated | :white_check_mark: | :x: |  |
 | Stream ended | :white_check_mark: | Planned |  |
 | Stream started | :white_check_mark: | Planned |  |

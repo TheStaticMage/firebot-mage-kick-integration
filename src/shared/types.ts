@@ -162,3 +162,9 @@ export interface KickSubscription {
     createdAt: Date,
     expiresAt: Date
 }
+
+export interface RaidSentOffEvent {
+    targetUser: KickUser
+    targetSlug: string
+    numberOfViewers: number;
+}

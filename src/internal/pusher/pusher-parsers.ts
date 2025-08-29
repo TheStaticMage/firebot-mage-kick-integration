@@ -1,5 +1,5 @@
-import { ChatMessage, KickUser, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
-import { parseDate } from "../util";
+import { ChatMessage, KickUser, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
+import { kickifyUserId, kickifyUsername, parseDate, unkickifyUsername } from "../util";
 
 export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMessage {
     const d = data as ChatMessageEvent;
@@ -65,5 +65,21 @@ export function parseStreamHostedEvent(data: any): StreamHostedEvent {
         numberOfViewers: d.message.numberOfViewers,
         optionalMessage: d.message.optionalMessage,
         createdAt: parseDate(d.message.createdAt)
+    };
+}
+
+export function parseChatMoveToSupportedChannelEvent(data: any): RaidSentOffEvent {
+    const d = data as ChatMoveToSupportedChannelEventPayload;
+    return {
+        targetUser: {
+            userId: kickifyUserId(d.hosted.id.toString()),
+            username: kickifyUsername(d.hosted.username),
+            displayName: unkickifyUsername(d.hosted.username),
+            profilePicture: d.hosted.profile_pic,
+            isVerified: false, // Not provided in event
+            channelSlug: d.hosted.slug
+        },
+        targetSlug: d.slug,
+        numberOfViewers: d.hosted.viewers_count
     };
 }

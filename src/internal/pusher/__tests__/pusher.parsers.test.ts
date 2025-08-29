@@ -1,5 +1,5 @@
 import { KickUser } from "../../../shared/types";
-import { parseChatMessageEvent, parseRewardRedeemedEvent, parseStreamHostedEvent } from "../pusher-parsers";
+import { parseChatMessageEvent, parseRewardRedeemedEvent, parseStreamHostedEvent, parseChatMoveToSupportedChannelEvent } from "../pusher-parsers";
 
 describe('KickPusher.parseChatMessageEvent', () => {
     const broadcaster: KickUser = {
@@ -172,6 +172,25 @@ describe('KickPusher.parseStreamHostedEvent', () => {
             numberOfViewers: 32,
             optionalMessage: "",
             createdAt: new Date("2025-08-20T20:26:31.231698Z")
+        });
+    });
+});
+
+describe('parseChatMoveToSupportedChannelEvent', () => {
+    it('parses a valid move-to-supported-channel event', () => {
+        const jsonInput = `{"channel":{"id":12345678,"user_id":23456789,"slug":"slug","is_banned":false,"playback_url":"https://playback_url","name_updated_at":null,"vod_enabled":true,"subscription_enabled":true,"is_affiliate":true,"can_host":false,"current_livestream":{"id":3456789,"slug":"stream-slug","channel_id":12345678,"created_at":"2025-08-21 17:06:41","session_title":"Title of my stream","is_live":true,"risk_level_id":null,"start_time":"2025-08-21 17:06:40","source":null,"twitch_channel":null,"duration":0,"language":"English","is_mature":false,"viewer_count":14}},"slug":"target-slug","hosted":{"id":87654321,"username":"Target_User","slug":"target-slug","viewers_count":19,"is_live":true,"profile_pic":"https://profile_pic","category":"Games","preview_thumbnail":{"srcset":"https://thumbnail_srcset","src":"https://thumbnail_src"}}}`;
+        const result = parseChatMoveToSupportedChannelEvent(JSON.parse(jsonInput));
+        expect(result).toEqual({
+            targetUser: {
+                userId: 'k87654321',
+                username: 'Target_User@kick',
+                displayName: 'Target_User',
+                profilePicture: 'https://profile_pic',
+                isVerified: false,
+                channelSlug: 'target-slug'
+            },
+            targetSlug: 'target-slug',
+            numberOfViewers: 19
         });
     });
 });
