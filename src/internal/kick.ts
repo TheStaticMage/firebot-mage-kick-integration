@@ -9,6 +9,7 @@ import { IKick } from "./kick-interface";
 import { KickUserApi } from "./user-api";
 import { KickUserManager } from "./user-manager";
 import { parseBasicKickUser } from "./webhook-handler/webhook-parsers";
+import { WebhookSubscriptionManager } from "./webhook-subscription-manager";
 
 export class Kick implements IKick {
     private apiAborter = new AbortController();
@@ -18,14 +19,17 @@ export class Kick implements IKick {
     broadcaster: BasicKickUser | null = null;
     channelManager: KickChannelManager;
     chatManager: ChatManager;
+    webhookSubscriptionManager: WebhookSubscriptionManager;
     userApi: KickUserApi;
     userManager: KickUserManager;
+    webhooksInitialized = false;
 
     constructor() {
         this.channelManager = new KickChannelManager(this);
         this.chatManager = new ChatManager(this);
         this.userApi = new KickUserApi(this);
         this.userManager = new KickUserManager(this);
+        this.webhookSubscriptionManager = new WebhookSubscriptionManager(this);
     }
 
     async connect(token: string, botToken: string): Promise<void> {
@@ -70,12 +74,14 @@ export class Kick implements IKick {
             this.bot = null;
         }
 
-        try {
-            await this.subscribeToEvents();
-        } catch (error) {
-            logger.error(`Failed to subscribe to events: ${error}`);
-            await this.disconnect();
-            throw error;
+        if (integration.getSettings().webhookProxy) {
+            try {
+                await this.webhookSubscriptionManager.subscribeToEvents();
+                this.webhooksInitialized = true;
+            } catch (error) {
+                logger.error(`Failed to subscribe to events: ${error}`);
+                await this.disconnect();
+            }
         }
 
         this.channelManager.start();
@@ -87,7 +93,10 @@ export class Kick implements IKick {
 
     async disconnect(): Promise<void> {
         logger.debug("Kick API integration disconnecting...");
-        await this.deleteExistingSubscriptions();
+        if (this.webhooksInitialized) {
+            await this.webhookSubscriptionManager.unsubscribeFromEvents();
+            this.webhooksInitialized = false;
+        }
         this.apiAborter.abort();
         this.channelManager.stop();
         await this.chatManager.stop();
@@ -120,92 +129,6 @@ export class Kick implements IKick {
         } else {
             logger.debug("Kick bot auth token cleared.");
         }
-    }
-
-    private async deleteExistingSubscriptions(): Promise<void> {
-        if (!integration.getSettings().webhookProxy.webhookProxyUrl) {
-            logger.debug("Webhook proxy URL not set, skipping event unsubscription.");
-            return;
-        }
-
-        interface webhookSubscriptionResponse {
-            data: {
-                id: string;
-                event: string;
-            }[];
-        }
-
-        try {
-            const response: webhookSubscriptionResponse = await this.httpCallWithTimeout('/public/v1/events/subscriptions', "GET");
-            const unsubscribePromises = response.data.map((subscription) => {
-                const params = new URLSearchParams({ id: subscription.id });
-                logger.debug(`Unsubscribing from event subscription with ID: ${subscription.id}`);
-                return this.httpCallWithTimeout(`/public/v1/events/subscriptions?${params.toString()}`, "DELETE");
-            });
-
-            await Promise.all(unsubscribePromises);
-            logger.info("Successfully deleted existing event subscriptions.");
-        } catch (error) {
-            logger.error(`Failed to delete existing event subscriptions: ${error}`);
-        }
-    }
-
-    private async subscribeToEvents(): Promise<void> {
-        if (!integration.getSettings().webhookProxy.webhookProxyUrl) {
-            logger.debug("Webhook proxy URL not set, skipping event subscription.");
-            return;
-        }
-
-        await this.deleteExistingSubscriptions();
-
-        const payload = {
-            events: [
-                {
-                    name: "chat.message.sent",
-                    version: 1
-                },
-                {
-                    name: "channel.followed",
-                    version: 1
-                },
-                {
-                    name: "livestream.metadata.updated",
-                    version: 1
-                },
-                {
-                    name: "livestream.status.updated",
-                    version: 1
-                },
-                {
-                    name: "channel.subscription.renewal",
-                    version: 1
-                },
-                {
-                    name: "channel.subscription.gifts",
-                    version: 1
-                },
-                {
-                    name: "channel.subscription.new",
-                    version: 1
-                },
-                {
-                    name: "moderation.banned",
-                    version: 1
-                }
-            ],
-            method: "webhook"
-        };
-
-        return new Promise((resolve, reject) => {
-            this.httpCallWithTimeout('/public/v1/events/subscriptions', "POST", JSON.stringify(payload))
-                .then((response) => {
-                    logger.debug("Successfully subscribed to Kick events.");
-                    resolve(response);
-                })
-                .catch((error) => {
-                    reject(error);
-                });
-        });
     }
 
     async httpCallWithTimeout(uri: string, method: string, body = '', signal: AbortSignal | null = null, timeout = 10000, authToken = this.authToken): Promise<any> {
