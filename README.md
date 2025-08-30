@@ -94,7 +94,7 @@ Currently supported:
   - `$kickStreamIsLive` for your channel or another channel
   - `$kickStreamTitle` for your channel or another channel
   - `$kickTimeoutDuration` (in seconds)
-  - `$kickUnbanType` (resolves to "timeout" or "ban")
+  - `$kickUnbanType` (resolves to "timeout" or "permanent")
   - `$kickUptime` for your channel or another channel
   - `$kickUserDisplayName` (for Kick only; we suggest you use `$platformAwareUserDisplayName`)
   - `$platform` (returns "kick" or "twitch" for most events)
