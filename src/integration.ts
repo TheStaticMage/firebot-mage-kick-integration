@@ -212,6 +212,13 @@ export const definition: IntegrationDefinition = {
                     type: "boolean",
                     default: false,
                     sortRank: 13
+                },
+                viewerUnbanned: {
+                    title: "Viewer Unbanned",
+                    tip: "Trigger the 'Twitch:Viewer Unbanned' event when a viewer is unbanned on Kick",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 14
                 }
             }
         },

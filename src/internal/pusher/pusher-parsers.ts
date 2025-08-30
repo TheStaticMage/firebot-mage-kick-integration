@@ -1,4 +1,4 @@
-import { ChatMessage, KickUser, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
+import { ChatMessage, KickUser, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
 import { kickifyUserId, kickifyUsername, parseDate, unkickifyUsername } from "../util";
 
 export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMessage {
@@ -81,5 +81,28 @@ export function parseChatMoveToSupportedChannelEvent(data: any): RaidSentOffEven
         },
         targetSlug: d.slug,
         numberOfViewers: d.hosted.viewers_count
+    };
+}
+
+export function parseViewerUnbannedEvent(data: any): ModerationUnbannedEvent {
+    const d = data as ViewerUnbannedEventData;
+    return {
+        user: {
+            userId: kickifyUserId(d.user.id.toString()),
+            username: kickifyUsername(d.user.username),
+            displayName: unkickifyUsername(d.user.username),
+            profilePicture: '', // Not provided in event
+            isVerified: false, // Not provided in event
+            channelSlug: '' // Not provided in event
+        },
+        moderator: {
+            userId: kickifyUserId(d.unbanned_by.id.toString()),
+            username: kickifyUsername(d.unbanned_by.username),
+            displayName: unkickifyUsername(d.unbanned_by.username),
+            profilePicture: '', // Not provided in event
+            isVerified: false, // Not provided in event
+            channelSlug: '' // Not provided in event
+        },
+        banType: d.permanent ? "permanent" : "timeout"
     };
 }

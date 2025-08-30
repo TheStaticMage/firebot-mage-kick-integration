@@ -27,7 +27,7 @@ import { kickChatMessageVariable } from "./variables/chat-message";
 import { kickCurrentViewerCountVariable } from "./variables/current-viewer-count";
 import { hostViewerCount } from "./variables/host-viewer-count";
 import { kickModReason } from "./variables/mod-reason";
-import { kickModerator } from "./variables/moderator";
+import { kickModeratorVariable } from "./variables/moderator";
 import { platformVariable } from "./variables/platform";
 import { platformAwareUserDisplayNameVariable } from "./variables/platform-aware-user-display-name";
 import { kickRewardIdVariable } from "./variables/reward-id";
@@ -51,6 +51,7 @@ import { kickGiftCountVariable } from "./variables/subs/gift-count";
 import { hostTargetUserDisplayName } from "./variables/host-target-user-display-name";
 import { hostTargetUserId } from "./variables/host-target-user-id";
 import { hostTargetUsername } from "./variables/host-target-username";
+import { kickUnbanTypeVariable } from "./variables/unban-type";
 
 type IntegrationParameters = {
     connectivity: {
@@ -88,6 +89,7 @@ type IntegrationParameters = {
         viewerArrived: boolean;
         viewerBanned: boolean;
         viewerTimeout: boolean;
+        viewerUnbanned: boolean;
     };
     logging: {
         logWebhooks: boolean;
@@ -166,7 +168,8 @@ export class KickIntegration extends EventEmitter {
             titleChanged: false,
             viewerArrived: false,
             viewerBanned: false,
-            viewerTimeout: false
+            viewerTimeout: false,
+            viewerUnbanned: false
         },
         logging: {
             logWebhooks: false,
@@ -253,8 +256,9 @@ export class KickIntegration extends EventEmitter {
 
         // Ban and timeout variables
         replaceVariableManager.registerReplaceVariable(kickModReason);
-        replaceVariableManager.registerReplaceVariable(kickModerator);
+        replaceVariableManager.registerReplaceVariable(kickModeratorVariable);
         replaceVariableManager.registerReplaceVariable(kickTimeoutDurationVariable);
+        replaceVariableManager.registerReplaceVariable(kickUnbanTypeVariable);
 
         // Reward variables
         replaceVariableManager.registerReplaceVariable(kickRewardIdVariable);

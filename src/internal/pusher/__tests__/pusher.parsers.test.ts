@@ -1,3 +1,55 @@
+import { parseViewerUnbannedEvent } from "../pusher-parsers";
+describe('parseViewerUnbannedEvent', () => {
+    it('parses a permanent unban event correctly', () => {
+        const jsonInput = `{"user":{"id":111,"username":"unbanneduser"},"unbanned_by":{"id":222,"username":"moduser"},"permanent":true}`;
+        const input = JSON.parse(jsonInput);
+        const result = parseViewerUnbannedEvent(input);
+        expect(result).toEqual({
+            user: {
+                userId: "k111",
+                username: "unbanneduser@kick",
+                displayName: "unbanneduser",
+                profilePicture: '',
+                isVerified: false,
+                channelSlug: ''
+            },
+            moderator: {
+                userId: "k222",
+                username: "moduser@kick",
+                displayName: "moduser",
+                profilePicture: '',
+                isVerified: false,
+                channelSlug: ''
+            },
+            banType: "permanent"
+        });
+    });
+
+    it('parses a timeout unban event correctly', () => {
+        const jsonInput = `{"user":{"id":333,"username":"timeoutuser"},"unbanned_by":{"id":444,"username":"mod2"},"permanent":false}`;
+        const input = JSON.parse(jsonInput);
+        const result = parseViewerUnbannedEvent(input);
+        expect(result).toEqual({
+            user: {
+                userId: "k333",
+                username: "timeoutuser@kick",
+                displayName: "timeoutuser",
+                profilePicture: '',
+                isVerified: false,
+                channelSlug: ''
+            },
+            moderator: {
+                userId: "k444",
+                username: "mod2@kick",
+                displayName: "mod2",
+                profilePicture: '',
+                isVerified: false,
+                channelSlug: ''
+            },
+            banType: "timeout"
+        });
+    });
+});
 import { KickUser } from "../../../shared/types";
 import { parseChatMessageEvent, parseRewardRedeemedEvent, parseStreamHostedEvent, parseChatMoveToSupportedChannelEvent } from "../pusher-parsers";
 

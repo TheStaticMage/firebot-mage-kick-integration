@@ -168,3 +168,9 @@ export interface RaidSentOffEvent {
     targetSlug: string
     numberOfViewers: number;
 }
+
+export interface ModerationUnbannedEvent {
+    user: KickUser;
+    moderator: KickUser;
+    banType: "timeout" | "permanent";
+}
