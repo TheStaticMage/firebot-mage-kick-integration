@@ -25,6 +25,7 @@ const script: Firebot.CustomScript = {
     run: (runRequest: RunRequest<any>) => {
         firebot = runRequest;
         logger = new LogWrapper(runRequest.modules.logger);
+        logger.info(`Mage Kick Integration v${scriptVersion} initializing...`);
 
         const { integrationManager } = runRequest.modules;
         integrationManager.registerIntegration({ definition, integration });
