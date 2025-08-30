@@ -26,112 +26,26 @@ Additional considerations:
 
 ## Introduction
 
-This [Firebot](https://firebot.app) integration provides events and effects for the [kick.com](https://kick.com) streaming platform.
+This [Firebot](https://firebot.app) integration provides chat feed integration, events and effects for the [kick.com](https://kick.com) streaming platform. This allows you to handle events in Firebot from the Kick platform, such as chat messages, commands, follows, subscriptions, and the like. This also provides effects to send messages to Kick, change the title or category of your stream, and ban and unban users (planned).
 
-Currently supported:
+### Effects
 
-- Accounts:
-  - Chat as the streamer or as a separate bot account
-- Chat feed integration:
-  - Kick messages appear in Firebot's chat feed (Dashboard), displaying Kick usernames
-  - Kick emotes in Kick messages are supported
-  - Ban user from the context menu in the chat feed
-  - Badges: broadcaster, moderator, VIP, OG, subscriber
-- Commands:
-  - Standard commands mostly work, including restriction logic (with a custom Platform restriction)
-- Conditions:
-  - Platform
-- Effects:
-  - Chat message (Kick)
-  - Chat message (Platform aware)
-  - Set stream game
-  - Set stream title
-  - Trigger Custom Channel Reward Handler
-- Events:
-  - Channel data updated
-  - Channel points redeemed
-  - Chat message
-  - Follow
-  - Host (raid)
-  - Stream category (game) updated
-  - Stream ended
-  - Stream started
-  - Stream title updated
-  - Sub
-  - Sub (Community Gifted)
-  - Sub (Gifted)
-  - Viewer arrived
-  - Viewer banned
-  - Viewer timed out
-- Filters:
-  - Platform
-  - Viewer count (hosts)
-- Variables:
-  - `$hostTargetUserDisplayName` (also works for Twitch raids)
-  - `$hostTargetUserId` (also works for Twitch raids)
-  - `$hostTargetUsername` (also works for Twitch raids)
-  - `$hostViewerCount` (also returns viewer count for Twitch raids)
-  - `$kickCategory` (alias: `$kickGame`) for your channel or another channel
-  - `$kickCategoryId` (alias: `$kickGameId`) for your channel or another channel
-  - `$kickCategoryImageUrl` for your channel or another channel
-  - `$kickChatMessage`
-  - `$kickChannelId` for your channel or another channel
-  - `$kickCurrentViewerCount` for your channel or another channel
-  - `$kickGiftCount` (also works for Twitch events)
-  - `$kickGiftGiverUsername` (also works for Twitch events)
-  - `$kickGiftReceiverUsername` (also works for Twitch events)
-  - `$kickIsAnonymous` (for gift sub events; also works for Twitch gift sub events)
-  - `$kickSubMonths` (also works for Twitch events)
-  - `$kickSubStreak` (compatibility shim for Twitch events; for Kick this always equals `$kickSubMonths`)
-  - `$kickSubType` (compatibility shim for Twitch events; for Kick this always equals `"kickDefault"`)
-  - `$kickModerator` (for bans/timeouts)
-  - `$kickModReason` (for bans/timeouts)
-  - `$kickRewardId` (for redeems)
-  - `$kickRewardMessage` (for redeems)
-  - `$kickRewardName` (for redeems)
-  - `$kickStreamer`
-  - `$kickStreamerId`
-  - `$kickStreamIsLive` for your channel or another channel
-  - `$kickStreamTitle` for your channel or another channel
-  - `$kickTimeoutDuration` (in seconds)
-  - `$kickUnbanType` (resolves to "timeout" or "permanent")
-  - `$kickUptime` for your channel or another channel
-  - `$kickUserDisplayName` (for Kick only; we suggest you use `$platformAwareUserDisplayName`)
-  - `$platform` (returns "kick" or "twitch" for most events)
-  - `$platformAwareUserDisplayName` (equivalent of `$userDisplayName` but works for Kick and Twitch)
+| Effect | Supported | Notes |
+| ------ | --------- | ----- |
+| Ban viewer | Planned | |
+| Chat message send | :white_check_mark: | Can chat as streamer or second "bot" account |
+| Stream category change | :white_check_mark: | |
+| Stream title change | :white_check_mark: | |
+| Time out viewer | Planned | |
+| Unban/Untimeout viewer | Planned | |
 
-Planned but not yet supported:
+### Events
 
-- Best guesses at viewer subscription status, roles, etc.
-- Events when a user is unbanned or untimed-out
-- Effects to ban, unban, timeout, and untimeout users
-- Outgoing host (raid) event
-
-Limitations due to Kick:
-
-- Many user actions (e.g., custom rewards, raids, unbans) don't trigger webhooks. The integration can only support events that Kick provides.
-- Kick delivers profile image URLs that only resolve from kick.com, so these images may not display correctly elsewhere.
-- Kick's public API is lacking basic chat management options (e.g. delete message, clear chat), so we cannot implement these in Firebot's chat feed.
-- There is currently no API for fetching the viewer list, which prevents watch-time tracking and currency accrual.
-- There is currently no API to list your followers, subscribers, VIPs, moderators, etc. This limits what can be practically achieved with roles.
-- Channel point redeems on Kick cannot be managed via API (creation, approval, rejection), nor can they be disabled or paused. This means that Firebot cannot control them.
-- Kick does not provide programmatic definitions of chat badges (or even publish these as plain image files). We've hard-coded in the current definitions in the Firebot chat feed. If those change on Kick, you'll still see the old badges in the Firebot chat feed until the integration is updated.
-- Configuration of the "pusher" websocket requires your channel ID and chatroom ID, which are different from your user ID. The process to determine these can be tedious. Thankfully, you'll only need to do this once.
-
-Limitations due to Firebot:
-
-- Firebot's viewer database uses Twitch user IDs as primary keys and assumes every user is from Twitch. This rigid design prevents many features that depend on storing information about users (e.g. currency, metadata).
-- Rate limiting (cooldowns) for commands and redeems doesn't work natively. Consider using the [Firebot Rate Limiter](https://github.com/TheStaticMage/firebot-rate-limiter) if needed.
-- Many built-in Firebot variables, filters and effects are hard-coded to be available only to specific Twitch events. This means that variables you'd expect to work just won't for the Kick events (e.g. `$moderator` is not available for ban events and `$chatMessage` will not contain the Kick chat message). We do have some workarounds in the form of Kick-specific variables like `$kickModerator` and the ability to trigger the Twitch-equivalent events when Kick events are received.
-- Slash commands in the Firebot chat (e.g. `/clear`) only apply to Twitch. (There aren't Kick API endpoints for most of these anyway.)
-
-## Support Matrix
-
-| Event/Feature | Webhook Proxy | No Webhook Proxy | Notes |
-| ------------- | ------------- | ---------------- | ----- |
+| Event | With Webhook Proxy | No Webhook Proxy | Notes |
+| ----- | ------------------ | ---------------- | ----- |
 | Channel data updated | :white_check_mark: | :white_check_mark: | Based on refreshing stream info from Kick API |
 | Channel points redeemed | :white_check_mark: &#42; | :white_check_mark: &#42; | |
-| Chat message | :white_check_mark: | :white_check_mark: &#42; |  |
+| Chat message (incoming) | :white_check_mark: | :white_check_mark: &#42; |  |
 | Follow | :white_check_mark: | :x: | Requires webhook proxy |
 | Host (raid) (incoming) | :white_check_mark: &#42; | :white_check_mark: &#42; | |
 | Host (raid) (outgoing) | :white_check_mark: &#42; | :white_check_mark: &#42; | |
@@ -149,6 +63,24 @@ Limitations due to Firebot:
 | Viewer unbanned | :white_check_mark: &#42; | :white_check_mark: &#42; | Also handles un-timeout |
 
 &#42; = Depends on undocumented "Pusher" functionality
+
+### Limitations due to Kick
+
+- Many user actions (e.g., custom rewards, raids, unbans) don't trigger webhooks. The integration can only support events that Kick provides.
+- Kick delivers profile image URLs that only resolve from kick.com, so these images may not display correctly elsewhere.
+- Kick's public API is lacking basic chat management options (e.g. delete message, clear chat), so we cannot implement these in Firebot's chat feed.
+- There is currently no API for fetching the viewer list, which prevents watch-time tracking and currency accrual.
+- There is currently no API to list your followers, subscribers, VIPs, moderators, etc. This limits what can be practically achieved with roles.
+- Channel point redeems on Kick cannot be managed via API (creation, approval, rejection), nor can they be disabled or paused. This means that Firebot cannot control them.
+- Kick does not provide programmatic definitions of chat badges (or even publish these as plain image files). We've hard-coded in the current definitions in the Firebot chat feed. If those change on Kick, you'll still see the old badges in the Firebot chat feed until the integration is updated.
+- Configuration of the "pusher" websocket requires your channel ID and chatroom ID, which are different from your user ID. The process to determine these can be tedious. Thankfully, you'll only need to do this once.
+
+### Limitations due to Firebot
+
+- Firebot's viewer database uses Twitch user IDs as primary keys and assumes every user is from Twitch. This rigid design prevents many features that depend on storing information about users (e.g. currency, metadata).
+- Rate limiting (cooldowns) for commands and redeems doesn't work natively. Consider using the [Firebot Rate Limiter](https://github.com/TheStaticMage/firebot-rate-limiter) if needed.
+- Many built-in Firebot variables, filters and effects are hard-coded to be available only to specific Twitch events. This means that variables you'd expect to work just won't for the Kick events (e.g. `$moderator` is not available for ban events and `$chatMessage` will not contain the Kick chat message). We do have some workarounds in the form of Kick-specific variables like `$kickModerator` and the ability to trigger the Twitch-equivalent events when Kick events are received.
+- Slash commands in the Firebot chat (e.g. `/clear`) only apply to Twitch. (There aren't Kick API endpoints for most of these anyway.)
 
 ## Installation
 
