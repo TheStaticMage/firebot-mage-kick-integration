@@ -1,6 +1,6 @@
 import { firebot, logger } from "../main";
 import { Kick } from "./kick";
-import { unkickifyUsername, userIdToCleanNumber } from "./util";
+import { userIdToCleanNumber } from "./util";
 
 interface UserBanRequest {
     username: string;
@@ -30,11 +30,6 @@ export class KickUserApi {
     async banUserByUsername(username: string, duration: number, shouldBeBanned: boolean, reason = ''): Promise<boolean> {
         if (username.trim() === '') {
             logger.warn("banUserByUsername: No username provided.");
-            return false;
-        }
-
-        if (unkickifyUsername(username) === username) {
-            logger.warn(`banUserByUsername: Username provided that does not seem to be a kick user (${username}).`);
             return false;
         }
 
@@ -81,6 +76,9 @@ export class KickUserApi {
             }
             if (reason) {
                 payload.reason = reason;
+                if (payload.reason.length > 100) {
+                    payload.reason = payload.reason.slice(0, 100);
+                }
             }
 
             logger.debug(`banUser: Sending ${operation} request: ${JSON.stringify(payload)}`);
