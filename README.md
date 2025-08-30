@@ -94,6 +94,7 @@ Currently supported:
   - `$kickStreamIsLive` for your channel or another channel
   - `$kickStreamTitle` for your channel or another channel
   - `$kickTimeoutDuration` (in seconds)
+  - `$kickUnbanType` (resolves to "timeout" or "ban")
   - `$kickUptime` for your channel or another channel
   - `$kickUserDisplayName` (for Kick only; we suggest you use `$platformAwareUserDisplayName`)
   - `$platform` (returns "kick" or "twitch" for most events)
@@ -145,8 +146,7 @@ Limitations due to Firebot:
 | Viewer arrived | :white_check_mark: | :white_check_mark: |  |
 | Viewer banned | :white_check_mark: | Planned | |
 | Viewer timed out | :white_check_mark: | Planned | |
-| Viewer unbanned | Planned | Planned | Via Pusher |
-| Viewer un-timed out | Planned | Planned | Via Pusher |
+| Viewer unbanned | :white_check_mark: | :white_check_mark: | Via Pusher; Also handles un-timeout |
 
 ## Installation
 

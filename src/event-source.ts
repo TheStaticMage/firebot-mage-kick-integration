@@ -325,6 +325,29 @@ export const eventSource: EventSource = {
                     return `Hosted **${userDisplayName}** with **${viewerCount}** viewer(s)`;
                 }
             }
+        },
+        {
+            id: "unbanned",
+            name: "Viewer Unbanned",
+            description: "When someone is unbanned or un-timed out in your channel on Kick",
+            cached: false,
+            manualMetadata: {
+                username: "cavemobster@kick",
+                userDisplayName: "CaveMobster",
+                userId: "k12345678",
+                moderator: "Firebot@kick",
+                banType: "permanent"
+            },
+            activityFeed: {
+                icon: "fad fa-gavel",
+                getMessage: (eventData) => {
+                    const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    const moderator = typeof eventData.moderator === "string" ? unkickifyUsername(eventData.moderator) : "Unknown Moderator";
+                    const action = eventData.banType === "permanent" ? "unbanned" : "un-timed out";
+                    return `**${userDisplayName}** was **${action}** by **${moderator}**.`;
+                }
+            }
         }
     ]
 };
