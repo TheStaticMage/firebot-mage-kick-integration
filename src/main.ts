@@ -6,7 +6,7 @@ import { definition, integration } from './integration';
 export let firebot: RunRequest<any>;
 export let logger: LogWrapper;
 
-const scriptVersion = '0.4.0';
+const scriptVersion = '0.4.1';
 
 const script: Firebot.CustomScript = {
     getScriptManifest: () => {
