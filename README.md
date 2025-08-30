@@ -130,12 +130,12 @@ Limitations due to Firebot:
 | Event/Feature | Webhook Proxy | No Webhook Proxy | Notes |
 | ------------- | ------------- | ---------------- | ----- |
 | Channel data updated | :white_check_mark: | :white_check_mark: | Based on refreshing stream info from Kick API |
-| Channel points redeemed | :white_check_mark: | :white_check_mark: | Via Pusher |
-| Chat message | :white_check_mark: | :white_check_mark: |  |
+| Channel points redeemed | :white_check_mark: &#42; | :white_check_mark: &#42; | |
+| Chat message | :white_check_mark: | :white_check_mark: &#42; |  |
 | Follow | :white_check_mark: | :x: | Requires webhook proxy |
-| Host (raid) (incoming) | :white_check_mark: | :white_check_mark: | Via Pusher |
-| Host (raid) (outgoing) | :white_check_mark: | :white_check_mark: | Via Pusher |
-| Message deleted | Planned | Planned | Via Pusher |
+| Host (raid) (incoming) | :white_check_mark: &#42; | :white_check_mark: &#42; | |
+| Host (raid) (outgoing) | :white_check_mark: &#42; | :white_check_mark: &#42; | |
+| Message deleted | Planned | Planned | |
 | Stream category (game) updated | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
 | Stream ended | :white_check_mark: | Planned |  |
 | Stream started | :white_check_mark: | Planned |  |
@@ -143,10 +143,12 @@ Limitations due to Firebot:
 | Sub | :white_check_mark: | Planned | |
 | Sub (Community Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
 | Sub (Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
-| Viewer arrived | :white_check_mark: | :white_check_mark: |  |
+| Viewer arrived | :white_check_mark: | :white_check_mark: &#42; |  |
 | Viewer banned | :white_check_mark: | Planned | |
 | Viewer timed out | :white_check_mark: | Planned | |
-| Viewer unbanned | :white_check_mark: | :white_check_mark: | Via Pusher; Also handles un-timeout |
+| Viewer unbanned | :white_check_mark: &#42; | :white_check_mark: &#42; | Also handles un-timeout |
+
+&#42; = Depends on undocumented "Pusher" functionality
 
 ## Installation
 
