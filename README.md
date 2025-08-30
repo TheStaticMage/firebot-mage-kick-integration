@@ -32,12 +32,11 @@ This [Firebot](https://firebot.app) integration provides chat feed integration, 
 
 | Effect | Supported | Notes |
 | ------ | --------- | ----- |
-| Ban viewer | Planned | |
-| Chat message send | :white_check_mark: | Can chat as streamer or second "bot" account |
+| Ban/Unban viewer | :white_check_mark: | |
+| Chat (send message) | :white_check_mark: | Can chat as streamer or second "bot" account |
 | Stream category change | :white_check_mark: | |
 | Stream title change | :white_check_mark: | |
-| Time out viewer | Planned | |
-| Unban/Untimeout viewer | Planned | |
+| Timeout viewer | :white_check_mark: | Unban the viewer to un-timeout |
 
 ### Events
 
