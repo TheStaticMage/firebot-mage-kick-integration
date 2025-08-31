@@ -39,7 +39,6 @@ export class KickPusher {
 
         this.pusher.connection.bind('error', (err: any) => {
             logger.error(`Pusher error: ${JSON.stringify(err)}`);
-            this.disconnect();
         });
 
         if (chatroomId) {
