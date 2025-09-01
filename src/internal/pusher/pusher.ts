@@ -1,4 +1,5 @@
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
+import { moderationBannedEventHandler } from "../../events/moderation-banned";
 import { handleModerationUnbannedEvent } from "../../events/moderation-unbanned";
 import { handleRaidSentOffEvent } from "../../events/raid-sent-off-event";
 import { handleRewardRedeemedEvent } from "../../events/reward-redeemed-event";
@@ -6,7 +7,7 @@ import { handleStreamHostedEvent } from "../../events/stream-hosted-event";
 import { integration } from "../../integration";
 import { logger } from "../../main";
 import { KickUser } from "../../shared/types";
-import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStreamHostedEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
+import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStreamHostedEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
 
 const Pusher = require('pusher-js');
 
@@ -101,6 +102,9 @@ export class KickPusher {
                     break;
                 case 'App\\Events\\StreamHostedEvent':
                     await handleStreamHostedEvent(parseStreamHostedEvent(data));
+                    break;
+                case 'App\\Events\\UserBannedEvent':
+                    await moderationBannedEventHandler.handleModerationBannedEvent(parseViewerBannedOrTimedOutEvent(data));
                     break;
                 case 'App\\Events\\UserUnbannedEvent':
                     await handleModerationUnbannedEvent(parseViewerUnbannedEvent(data));

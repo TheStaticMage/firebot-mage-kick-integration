@@ -2,7 +2,7 @@ import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleFollowerEvent } from "../../events/follower";
 import { handleLivestreamMetadataUpdatedEvent } from "../../events/livestream-metadata-updated";
 import { handleLivestreamStatusUpdatedEvent } from "../../events/livestream-status-updated";
-import { handleModerationBannedEvent } from "../../events/moderation-banned";
+import { moderationBannedEventHandler } from "../../events/moderation-banned";
 import { handleChannelSubscriptionEvent, handleChannelSubscriptionGiftsEvent } from "../../events/sub-events";
 import { integration } from "../../integration";
 import { logger } from "../../main";
@@ -89,7 +89,7 @@ export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
         }
         case "moderation.banned": {
             const event = parseModerationBannedEvent(webhook.raw_data);
-            handleModerationBannedEvent(event);
+            moderationBannedEventHandler.handleModerationBannedEvent(event);
             break;
         }
         default: {

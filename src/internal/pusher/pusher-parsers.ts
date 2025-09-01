@@ -1,4 +1,4 @@
-import { ChatMessage, KickUser, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
+import { ChatMessage, KickUser, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
 import { kickifyUserId, kickifyUsername, parseDate, unkickifyUsername } from "../util";
 
 export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMessage {
@@ -104,5 +104,32 @@ export function parseViewerUnbannedEvent(data: any): ModerationUnbannedEvent {
             channelSlug: '' // Not provided in event
         },
         banType: d.permanent ? "permanent" : "timeout"
+    };
+}
+
+export function parseViewerBannedOrTimedOutEvent(data: any): ModerationBannedEvent {
+    const d = data as ViewerBannedEventData;
+    return {
+        bannedUser: {
+            userId: kickifyUserId(d.user.id.toString()),
+            username: kickifyUsername(d.user.username),
+            displayName: unkickifyUsername(d.user.username),
+            profilePicture: '', // Not provided in event
+            isVerified: false, // Not provided in event
+            channelSlug: d.user.slug
+        },
+        moderator: {
+            userId: kickifyUserId(d.banned_by.id.toString()),
+            username: kickifyUsername(d.banned_by.username),
+            displayName: unkickifyUsername(d.banned_by.username),
+            profilePicture: '', // Not provided in event
+            isVerified: false, // Not provided in event
+            channelSlug: d.banned_by.slug
+        },
+        metadata: {
+            reason: 'No reason provided', // Not provided in event
+            createdAt: new Date(),
+            expiresAt: parseDate(d.expires_at) || undefined
+        }
     };
 }

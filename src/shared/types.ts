@@ -108,7 +108,7 @@ export interface ModerationBannedMetadata {
 }
 
 export interface ModerationBannedEvent {
-    broadcaster: KickUser;
+    broadcaster?: KickUser;
     moderator: KickUser;
     bannedUser: KickUser;
     metadata: ModerationBannedMetadata;
