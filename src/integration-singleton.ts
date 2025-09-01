@@ -4,6 +4,7 @@ import { platformCondition } from "./conditions/platform";
 import { IntegrationConstants } from "./constants";
 import { chatEffect } from "./effects/chat";
 import { chatPlatformEffect } from "./effects/chat-platform";
+import { maintenanceEffect } from "./effects/maintenance";
 import { moderatorBanEffect } from "./effects/moderator-ban";
 import { moderatorTimeoutEffect } from "./effects/moderator-timeout";
 import { streamGameEffect } from "./effects/stream-game";
@@ -100,6 +101,7 @@ type IntegrationParameters = {
     };
     advanced: {
         allowTestWebhooks: boolean;
+        suppressChatFeedNotifications: boolean;
         dangerousOperations: boolean;
     };
 };
@@ -180,6 +182,7 @@ export class KickIntegration extends EventEmitter {
         },
         advanced: {
             allowTestWebhooks: false,
+            suppressChatFeedNotifications: false,
             dangerousOperations: false
         }
     };
@@ -209,6 +212,7 @@ export class KickIntegration extends EventEmitter {
         const { effectManager } = firebot.modules;
         effectManager.registerEffect(chatEffect);
         effectManager.registerEffect(chatPlatformEffect);
+        effectManager.registerEffect(maintenanceEffect);
         effectManager.registerEffect(moderatorBanEffect);
         effectManager.registerEffect(moderatorTimeoutEffect);
         effectManager.registerEffect(streamGameEffect);
@@ -304,6 +308,8 @@ export class KickIntegration extends EventEmitter {
             return;
         }
 
+        this.emit("connecting", IntegrationConstants.INTEGRATION_ID);
+
         // Refresh the auth token (we always do this upon connecting)
         try {
             await this.authManager.connect();
@@ -346,6 +352,7 @@ export class KickIntegration extends EventEmitter {
 
     async disconnect() {
         logger.debug("Kick integration disconnecting...");
+        this.emit("disconnecting", IntegrationConstants.INTEGRATION_ID);
         this.connected = false;
         this.authManager.disconnect();
         await this.kick.disconnect();
@@ -435,6 +442,22 @@ export class KickIntegration extends EventEmitter {
     sendCriticalErrorNotification(message: string) {
         const { frontendCommunicator } = firebot.modules;
         frontendCommunicator.send("error", `Kick Integration: ${message}`);
+        logger.info(`Pop-up critical notification sent: ${JSON.stringify(message)}`);
+    }
+
+    sendChatFeedErrorNotification(message: string) {
+        if (this.settings.advanced.suppressChatFeedNotifications) {
+            logger.warn(`Chat feed notifications suppressed. Not sending this message: ${JSON.stringify(message)}`);
+            return;
+        }
+
+        const { frontendCommunicator } = firebot.modules;
+        frontendCommunicator.send("chatUpdate", {
+            fbEvent: "ChatAlert",
+            message: `Kick Integration: ${message}`,
+            icon: "fas fa-exclamation-triangle"
+        });
+        logger.info(`Chat feed notification sent: ${JSON.stringify(message)}`);
     }
 
     private loadIntegrationData(): integrationFileData | null {
