@@ -57,8 +57,8 @@ This [Firebot](https://firebot.app) integration provides chat feed integration, 
 | Sub (Community Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
 | Sub (Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
 | Viewer arrived | :white_check_mark: | :white_check_mark: &#42; |  |
-| Viewer banned | :white_check_mark: | Planned | |
-| Viewer timed out | :white_check_mark: | Planned | |
+| Viewer banned | :white_check_mark: | :white_check_mark: &#42; | |
+| Viewer timed out | :white_check_mark: | :white_check_mark: &#42; | |
 | Viewer unbanned | :white_check_mark: &#42; | :white_check_mark: &#42; | Also handles un-timeout |
 
 &#42; = Depends on undocumented "Pusher" functionality

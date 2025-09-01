@@ -1,4 +1,6 @@
-import { parseViewerUnbannedEvent } from "../pusher-parsers";
+import { KickUser } from "../../../shared/types";
+import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStreamHostedEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "../pusher-parsers";
+
 describe('parseViewerUnbannedEvent', () => {
     it('parses a permanent unban event correctly', () => {
         const jsonInput = `{"user":{"id":111,"username":"unbanneduser"},"unbanned_by":{"id":222,"username":"moduser"},"permanent":true}`;
@@ -50,8 +52,6 @@ describe('parseViewerUnbannedEvent', () => {
         });
     });
 });
-import { KickUser } from "../../../shared/types";
-import { parseChatMessageEvent, parseRewardRedeemedEvent, parseStreamHostedEvent, parseChatMoveToSupportedChannelEvent } from "../pusher-parsers";
 
 describe('KickPusher.parseChatMessageEvent', () => {
     const broadcaster: KickUser = {
@@ -243,6 +243,71 @@ describe('parseChatMoveToSupportedChannelEvent', () => {
             },
             targetSlug: 'target-slug',
             numberOfViewers: 19
+        });
+    });
+});
+
+describe('parseViewerBannedOrTimedOutEvent', () => {
+    // The banned_by user ID is always reported as 0 when the banning is done
+    // via the web UI by the broadcaster, and possibly under other
+    // circumstances. :shrug:
+    it('parses a timeout event correctly', () => {
+        const jsonInput = `{"id":"0207bd89-e15c-4bf9-ba1e-129f937639a7","user":{"id":23498234,"username":"timeoutuser","slug":"timeoutuser"},"banned_by":{"id":0,"username":"TheStaticMage","slug":"thestaticmage"},"permanent":false,"duration":5,"expires_at":"2025-09-01T18:16:58+00:00"}`;
+        const input = JSON.parse(jsonInput);
+        const result = parseViewerBannedOrTimedOutEvent(input);
+
+        expect(result).toEqual({
+            bannedUser: {
+                userId: "k23498234",
+                username: "timeoutuser@kick",
+                displayName: "timeoutuser",
+                profilePicture: '',
+                isVerified: false,
+                channelSlug: 'timeoutuser'
+            },
+            moderator: {
+                userId: "k0",
+                username: "TheStaticMage@kick",
+                displayName: "TheStaticMage",
+                profilePicture: '',
+                isVerified: false,
+                channelSlug: 'thestaticmage'
+            },
+            metadata: {
+                reason: 'No reason provided',
+                createdAt: expect.any(Date),
+                expiresAt: new Date("2025-09-01T18:16:58+00:00")
+            }
+        });
+    });
+
+    it('parses a permanent ban event correctly', () => {
+        const jsonInput = `{"id":"517e2dcb-7637-4482-af68-1bfba32ba2a7","user":{"id":23498234,"username":"timeoutuser","slug":"timeoutuser"},"banned_by":{"id":0,"username":"TheStaticMage","slug":"thestaticmage"},"permanent":true}`;
+        const input = JSON.parse(jsonInput);
+        const result = parseViewerBannedOrTimedOutEvent(input);
+
+        expect(result).toEqual({
+            bannedUser: {
+                userId: "k23498234",
+                username: "timeoutuser@kick",
+                displayName: "timeoutuser",
+                profilePicture: '',
+                isVerified: false,
+                channelSlug: 'timeoutuser'
+            },
+            moderator: {
+                userId: "k0",
+                username: "TheStaticMage@kick",
+                displayName: "TheStaticMage",
+                profilePicture: '',
+                isVerified: false,
+                channelSlug: 'thestaticmage'
+            },
+            metadata: {
+                reason: 'No reason provided',
+                createdAt: expect.any(Date),
+                expiresAt: undefined
+            }
         });
     });
 });
