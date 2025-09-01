@@ -1,6 +1,4 @@
 /* eslint-disable camelcase */
-import { WebhookSubscriptionManager } from '../webhook-subscription-manager';
-
 jest.mock('../../main', () => ({
     logger: {
         debug: jest.fn(),
@@ -10,7 +8,15 @@ jest.mock('../../main', () => ({
     }
 }));
 
-describe('WebhookSubscriptionManager.subscribeToEvents', () => {
+jest.mock('../../integration', () => ({
+    integration: {
+        sendCriticalErrorNotification: jest.fn()
+    }
+}));
+
+import { WebhookSubscriptionManager } from '../webhook-subscription-manager';
+
+describe('WebhookSubscriptionManager.initialize', () => {
     let manager: WebhookSubscriptionManager;
     let kick: any;
 
@@ -29,7 +35,7 @@ describe('WebhookSubscriptionManager.subscribeToEvents', () => {
     it('creates subscriptions if needed', async () => {
         jest.spyOn(manager as any, 'getSubscriptions').mockResolvedValue([]);
         kick.httpCallWithTimeout.mockResolvedValue({ data: [{ subscription_id: 'sub1' }], message: 'ok' });
-        await expect(manager.subscribeToEvents()).resolves.toBeUndefined();
+        await expect(manager.initialize()).resolves.toBeUndefined();
         expect(kick.httpCallWithTimeout).toHaveBeenCalledWith(
             '/public/v1/events/subscriptions',
             'POST',
@@ -42,7 +48,7 @@ describe('WebhookSubscriptionManager.subscribeToEvents', () => {
         // Simulate a reconciliation with delete
         jest.spyOn(manager as any, 'reconcileSubscriptions').mockReturnValue({ create: [], delete: ['sub1', 'sub2'] });
         kick.httpCallWithTimeout.mockResolvedValue({});
-        await expect(manager.subscribeToEvents()).resolves.toBeUndefined();
+        await expect(manager.initialize()).resolves.toBeUndefined();
         expect(kick.httpCallWithTimeout).toHaveBeenCalledWith(
             '/public/v1/events/subscriptions?id=sub1',
             'DELETE'
@@ -56,7 +62,7 @@ describe('WebhookSubscriptionManager.subscribeToEvents', () => {
     it('does nothing if no create or delete needed', async () => {
         jest.spyOn(manager as any, 'getSubscriptions').mockResolvedValue([]);
         jest.spyOn(manager as any, 'reconcileSubscriptions').mockReturnValue({ create: [], delete: [] });
-        await expect(manager.subscribeToEvents()).resolves.toBeUndefined();
+        await expect(manager.initialize()).resolves.toBeUndefined();
         expect(kick.httpCallWithTimeout).not.toHaveBeenCalled();
     });
 
@@ -64,6 +70,6 @@ describe('WebhookSubscriptionManager.subscribeToEvents', () => {
         jest.spyOn(manager as any, 'getSubscriptions').mockResolvedValue([]);
         jest.spyOn(manager as any, 'reconcileSubscriptions').mockReturnValue({ create: [{ name: 'foo', version: 1 }], delete: [] });
         kick.httpCallWithTimeout.mockRejectedValue(new Error('fail'));
-        await expect(manager.subscribeToEvents()).rejects.toThrow('fail');
+        await expect(manager.initialize()).rejects.toThrow('fail');
     });
 });

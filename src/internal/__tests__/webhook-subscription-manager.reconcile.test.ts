@@ -1,5 +1,3 @@
-import { WebhookSubscriptionManager } from '../webhook-subscription-manager';
-
 jest.mock('../../main', () => ({
     logger: {
         debug: jest.fn(),
@@ -8,6 +6,14 @@ jest.mock('../../main', () => ({
         error: jest.fn()
     }
 }));
+
+jest.mock('../../integration', () => ({
+    integration: {
+        sendCriticalErrorNotification: jest.fn()
+    }
+}));
+
+import { WebhookSubscriptionManager } from '../webhook-subscription-manager';
 
 describe('WebhookSubscriptionManager.reconcileSubscriptions', () => {
     let manager: WebhookSubscriptionManager;

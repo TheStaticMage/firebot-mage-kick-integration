@@ -260,6 +260,13 @@ export const definition: IntegrationDefinition = {
                     default: false,
                     sortRank: 1
                 },
+                suppressChatFeedNotifications: {
+                    title: "Suppress Chat Feed Notifications",
+                    tip: "Check this box to suppress chat feed notifications from the Kick integration. This means you will not be informed of any connection issues or errors unless you are actively monitoring the Firebot log files.",
+                    type: "boolean",
+                    default: false,
+                    sortRank: 2
+                },
                 dangerousOperations: {
                     title: "Allow Dangerous Operations -- THIS COULD BREAK FIREBOT!",
                     tip: "Enable dangerous operations that can create and modify users in the Firebot database. THIS COULD BREAK FIREBOT! READ DOCUMENTATION CAREFULLY BEFORE ENABLING!",

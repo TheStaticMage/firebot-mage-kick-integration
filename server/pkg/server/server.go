@@ -151,6 +151,22 @@ func (s *Server) log(ctx context.Context, r *http.Request, msg string, args ...i
 		} else {
 			f["remote_addr"] = r.RemoteAddr
 		}
+		xBroadcasterUsername := r.Header.Get("X-Broadcaster-Username")
+		if xBroadcasterUsername != "" {
+			f["x_broadcaster_username"] = xBroadcasterUsername
+		}
+		xInstanceID := r.Header.Get("X-Instance-ID")
+		if xInstanceID != "" {
+			f["x_instance_id"] = xInstanceID
+		}
+		xRequestID := r.Header.Get("X-Request-ID")
+		if xRequestID != "" {
+			f["x_request_id"] = xRequestID
+		}
+		userAgent := r.Header.Get("User-Agent")
+		if userAgent != "" {
+			f["user_agent"] = userAgent
+		}
 		e = l.WithFields(f)
 	} else {
 		e = l.WithField("request", "nil")

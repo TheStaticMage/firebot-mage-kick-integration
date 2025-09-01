@@ -1,18 +1,25 @@
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
-import { logger } from "../main";
-import { httpCallWithTimeout } from "./http";
+import { logger, scriptVersion } from "../main";
+import { HttpCallRequest, httpCallWithTimeout } from "./http";
 import { handleWebhook } from "./webhook-handler/webhook-handler";
 
 export class Poller {
+    private isConnected = false;
     private isDisconnecting = false;
     private pollAborter = new AbortController();
     private pollTimeout: NodeJS.Timeout | null = null;
     private proxyPollKey = "";
     private proxyPollUrl = "";
+    private instanceId = "";
+    private isPolling = false;
 
     async connect(proxyPollKey: string): Promise<void> {
-        this.isDisconnecting = false;
+        if (this.isDisconnecting || this.isConnected) {
+            logger.warn(`Called connect() in a weird state: isDisconnecting=${this.isDisconnecting}, isConnected=${this.isConnected}.`);
+            integration.sendCriticalErrorNotification(`The webhook proxy poller has become confused. Please reconnect the Kick integration from the Connections dialog.`);
+            return;
+        }
 
         const proxyPollUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/+$/, "");
         if (!proxyPollUrl) {
@@ -28,13 +35,17 @@ export class Poller {
         this.proxyPollKey = proxyPollKey;
         this.proxyPollUrl = `${proxyPollUrl}/poll`;
         this.pollAborter = new AbortController();
+        this.instanceId = crypto.randomUUID();
+
         const started = this.startPoller();
         if (!started) {
             logger.warn("Failed to start poller.");
             await this.disconnect(proxyPollKey);
             return;
         }
+
         logger.debug(`Poller connected with proxy poll key: ${this.proxyPollKey}`);
+        this.isConnected = true;
     }
 
     async disconnect(proxyPollKey = ''): Promise<void> {
@@ -44,8 +55,12 @@ export class Poller {
         if (this.proxyPollUrl && (proxyPollKey || this.proxyPollKey)) {
             logger.debug(`Disconnecting proxy poller with key: ${proxyPollKey || this.proxyPollKey}`);
             const url = `${this.proxyPollUrl}/${proxyPollKey || this.proxyPollKey}`;
+            const req: HttpCallRequest = {
+                url,
+                method: "DELETE"
+            };
             try {
-                await httpCallWithTimeout(url, "DELETE");
+                await httpCallWithTimeout(req);
                 logger.info("Successfully disconnected proxy poller.");
             } catch (error) {
                 logger.error(`Error disconnecting proxy poller: ${error}`);
@@ -60,6 +75,8 @@ export class Poller {
         this.pollAborter.abort();
 
         logger.debug("Poller disconnected.");
+        this.isDisconnecting = false;
+        this.isConnected = false;
     }
 
     setProxyPollKey(proxyPollKey: string): void {
@@ -77,6 +94,18 @@ export class Poller {
             return false;
         }
 
+        // Check if we're disconnecting before starting
+        if (this.isDisconnecting) {
+            logger.debug("Poller is disconnecting, not starting new poll cycle.");
+            return false;
+        }
+
+        // Check if already polling to prevent concurrent polling
+        if (this.isPolling) {
+            logger.debug("Poller is already running, not starting new poll cycle.");
+            return false;
+        }
+
         logger.debug("Starting proxy poller...");
 
         setTimeout(async () => {
@@ -84,14 +113,13 @@ export class Poller {
                 await this.poll();
                 setTimeout(() => {
                     this.startPoller(); // Restart the poller after a successful poll
-                }, 0);
+                }, 250);
             } catch (error) {
                 if (this.isDisconnecting) {
                     logger.debug(`Poller is disconnecting, ignoring error during polling. Error was: ${error}.`);
-                    return false;
+                    return; // Just return from callback, don't restart
                 }
-
-                logger.error(`Error occurred while polling: ${error}`);
+                logger.debug(`startPoller will be retried in 5 seconds due to error: ${error}`);
                 this.pollTimeout = setTimeout(() => {
                     this.pollTimeout = null;
                     this.startPoller(); // Restart the poller after an error
@@ -102,10 +130,28 @@ export class Poller {
         return true;
     }
 
-    private async poll(): Promise<void> {
+    private poll(): Promise<void> {
         const url = `${this.proxyPollUrl}/${this.proxyPollKey}`;
         return new Promise((resolve, reject) => {
-            httpCallWithTimeout(url, "GET", '', '', this.pollAborter.signal, 0)
+            if (this.isPolling) {
+                reject("Poller is already polling. Skipping this polling request.");
+                return; // Prevent further execution and rescheduling
+            }
+            this.isPolling = true;
+
+            const req: HttpCallRequest = {
+                url,
+                method: "GET",
+                signal: this.pollAborter.signal,
+                timeout: 45000, // Sanity check since poller should be redirected after 30 sec
+                headers: {
+                    "X-Broadcaster-Username": integration.kick.broadcaster?.name || "unknown",
+                    "X-Instance-ID": this.instanceId,
+                    "X-Request-ID": crypto.randomUUID()
+                },
+                userAgent: `firebot-mage-kick-integration/${scriptVersion} (+https://github.com/TheStaticMage/firebot-mage-kick-integration)`
+            };
+            httpCallWithTimeout(req)
                 .then((response): InboundWebhook[] => {
                     if (!response || !response.webhooks) {
                         logger.debug("No webhooks received from proxy poll.");
@@ -127,6 +173,9 @@ export class Poller {
                         logger.error(`Error during polling: ${error}`);
                     }
                     reject(error);
+                })
+                .finally(() => {
+                    this.isPolling = false;
                 });
         });
     }

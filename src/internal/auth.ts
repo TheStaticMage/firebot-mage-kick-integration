@@ -2,7 +2,7 @@ import { createHash, randomBytes, randomUUID } from "crypto";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger } from "../main";
-import { httpCallWithTimeout } from "./http";
+import { HttpCallRequest, httpCallWithTimeout } from "./http";
 
 export class AuthManager {
     private authAborter = new AbortController();
@@ -250,7 +250,12 @@ export class AuthManager {
         }
 
         try {
-            const response = await httpCallWithTimeout(url, 'POST', '', payloadString);
+            const req: HttpCallRequest = {
+                url,
+                method: 'POST',
+                body: payloadString
+            };
+            const response = await httpCallWithTimeout(req);
 
             if (tokenType === 'streamer') {
                 this.streamerAuthToken = response.access_token;
@@ -364,7 +369,12 @@ export class AuthManager {
         }
 
         try {
-            const response = await httpCallWithTimeout(url, 'POST', '', payloadString);
+            const req: HttpCallRequest = {
+                url,
+                method: 'POST',
+                body: payloadString
+            };
+            const response = await httpCallWithTimeout(req);
             if (tokenType === 'streamer') {
                 this.streamerAuthToken = response.access_token;
                 this.streamerRefreshToken = response.refresh_token;

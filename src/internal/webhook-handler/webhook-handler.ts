@@ -7,6 +7,9 @@ import { handleChannelSubscriptionEvent, handleChannelSubscriptionGiftsEvent } f
 import { integration } from "../../integration";
 import { logger } from "../../main";
 import { parseChannelSubscriptionGiftsEvent, parseChannelSubscriptionNewEvent, parseChannelSubscriptionRenewalEvent, parseChatMessageEvent, parseFollowEvent, parseLivestreamMetadataUpdatedEvent, parseLivestreamStatusUpdatedEvent, parseModerationBannedEvent, parsePusherTestWebhook } from "./webhook-parsers";
+import NodeCache from 'node-cache';
+
+const webhookCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // Cache for 5 minutes
 
 export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
     if (integration.getSettings().logging.logWebhooks) {
@@ -17,6 +20,19 @@ export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
         !webhook.kick_event_type || !webhook.kick_event_version || !webhook.raw_data) {
         throw new Error("Invalid webhook data");
     }
+
+    // When Kick subscriptions get messed up, it can send the same payload
+    // multiple times under different subscription IDs and message IDs. So here
+    // we hash the payload (raw_data) and then check it against a cache so that
+    // we can reject duplicate payloads.
+    const crypto = await import('crypto');
+    const payloadHash = crypto.createHash('sha256').update(webhook.raw_data).digest('hex');
+
+    if (webhookCache.has(payloadHash)) {
+        logger.warn(`Duplicate webhook payload detected (id: ${webhook.kick_event_message_id}, type: ${webhook.kick_event_type}, version: ${webhook.kick_event_version}, hash: ${payloadHash}), ignoring.`);
+        return;
+    }
+    webhookCache.set(payloadHash, true);
 
     // This is NOT intended to be for security, since you are implicitly
     // trusting the proxy owner and they could just send you fake data. Rather,

@@ -4,7 +4,7 @@ import { logger } from "../main";
 import { BasicKickUser } from "../shared/types";
 import { KickChannelManager } from "./channel-manager";
 import { ChatManager } from "./chat-manager";
-import { httpCallWithTimeout } from "./http";
+import { HttpCallRequest, httpCallWithTimeout } from "./http";
 import { IKick } from "./kick-interface";
 import { KickUserApi } from "./user-api";
 import { KickUserManager } from "./user-manager";
@@ -22,7 +22,6 @@ export class Kick implements IKick {
     webhookSubscriptionManager: WebhookSubscriptionManager;
     userApi: KickUserApi;
     userManager: KickUserManager;
-    webhooksInitialized = false;
 
     constructor() {
         this.channelManager = new KickChannelManager(this);
@@ -40,68 +39,70 @@ export class Kick implements IKick {
         this.apiAborter = new AbortController();
 
         try {
-            this.broadcaster = await this.userManager.lookupUserById();
-        } catch (error) {
-            logger.error(`Failed to get broadcaster ID: ${error}`);
-            await this.disconnect();
-            throw error;
-        }
-
-        if (botToken) {
             try {
-                const uri = `/public/v1/users`;
-                const response = await this.httpCallWithTimeout(uri, "GET", '', null, 10000, botToken);
-
-                if (!response || !response.data || response.data.length !== 1) {
-                    logger.debug(`Failed to retrieve user from Kick API response. ${JSON.stringify(response)}`);
-                    throw new Error("Failed to retrieve user from Kick API.");
-                }
-
-                const user = parseBasicKickUser(response.data[0]);
-                if (!user.userId) {
-                    logger.debug("No user ID found in Kick API response.");
-                    throw new Error("No user ID found in Kick API response.");
-                }
-
-                logger.debug(`Successfully retrieved bot user: ${user.userId} (${user.name})`);
-                this.bot = user;
+                this.broadcaster = await this.userManager.lookupUserById();
             } catch (error) {
-                logger.error(`Failed to get bot user: ${error}`);
+                logger.error(`Failed to get broadcaster ID: ${error}`);
+                throw error;
+            }
+
+            if (botToken) {
+                try {
+                    const uri = `/public/v1/users`;
+                    const response = await this.httpCallWithTimeout(uri, "GET", '', null, 10000, botToken);
+
+                    if (!response || !response.data || response.data.length !== 1) {
+                        logger.debug(`Failed to retrieve user from Kick API response. ${JSON.stringify(response)}`);
+                        throw new Error("Failed to retrieve user from Kick API.");
+                    }
+
+                    const user = parseBasicKickUser(response.data[0]);
+                    if (!user.userId) {
+                        logger.debug("No user ID found in Kick API response.");
+                        throw new Error("No user ID found in Kick API response.");
+                    }
+
+                    logger.debug(`Successfully retrieved bot user: ${user.userId} (${user.name})`);
+                    this.bot = user;
+                } catch (error) {
+                    logger.error(`Failed to get bot user: ${error}`);
+                    throw error;
+                }
+            } else {
+                logger.debug("No bot token is given.");
                 this.bot = null;
             }
-        } else {
-            logger.debug("No bot token is given.");
-            this.bot = null;
-        }
 
-        if (integration.getSettings().webhookProxy) {
-            try {
-                await this.webhookSubscriptionManager.subscribeToEvents();
-                this.webhooksInitialized = true;
-            } catch (error) {
-                logger.error(`Failed to subscribe to events: ${error}`);
-                await this.disconnect();
+            if (integration.getSettings().webhookProxy) {
+                try {
+                    await this.webhookSubscriptionManager.initialize();
+                } catch (error) {
+                    logger.error(`Failed to subscribe to events: ${error}`);
+                    throw error;
+                }
             }
-        }
 
-        this.channelManager.start();
-        await this.chatManager.start();
-        this.userApi.start();
-        await this.userManager.connectViewerDatabase();
-        logger.info("Kick API integration connected.");
+            this.channelManager.start();
+            await this.chatManager.start();
+            this.userApi.start();
+            await this.userManager.connectViewerDatabase();
+            logger.info("Kick API integration connected.");
+        } catch (error) {
+            logger.error(`Failed to connect Kick API integration: ${error}`);
+            await this.disconnect();
+            throw new Error(`Failed to connect Kick API integration: ${error}`);
+        }
     }
 
     async disconnect(): Promise<void> {
         logger.debug("Kick API integration disconnecting...");
-        if (this.webhooksInitialized) {
-            await this.webhookSubscriptionManager.unsubscribeFromEvents();
-            this.webhooksInitialized = false;
-        }
+        this.webhookSubscriptionManager.shutdown();
         this.apiAborter.abort();
         this.channelManager.stop();
         await this.chatManager.stop();
         this.userApi.stop();
         this.userManager.disconnectViewerDatabase();
+        this.apiAborter = new AbortController();
         logger.info("Kick API integration disconnected.");
     }
 
@@ -139,15 +140,15 @@ export class Kick implements IKick {
         }
 
         try {
-            const response = await httpCallWithTimeout(
-                `${IntegrationConstants.KICK_API_SERVER}${uri}`,
+            const req: HttpCallRequest = {
+                url: `${IntegrationConstants.KICK_API_SERVER}${uri}`,
                 method,
-                authToken,
-                body,
-                AbortSignal.any([this.apiAborter.signal, ...(signal ? [signal] : [])]),
+                authToken: authToken,
+                body: body,
+                signal: AbortSignal.any([this.apiAborter.signal, ...(signal ? [signal] : [])]),
                 timeout
-            );
-
+            };
+            const response = await httpCallWithTimeout(req);
             if (integration.getSettings().logging.logApiResponses) {
                 logger.debug(`[${requestId}] API call to ${method} ${uri} successful. Response: ${JSON.stringify(response)}`);
             }
