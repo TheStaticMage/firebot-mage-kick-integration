@@ -1,4 +1,5 @@
-import { ChatMessage, KickUser, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
+import { integration } from "../../integration";
+import { ChatMessage, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
 import { kickifyUserId, kickifyUsername, parseDate, unkickifyUsername } from "../util";
 
 export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMessage {
@@ -131,5 +132,42 @@ export function parseViewerBannedOrTimedOutEvent(data: any): ModerationBannedEve
             createdAt: new Date(),
             expiresAt: parseDate(d.expires_at) || undefined
         }
+    };
+}
+
+export function parseStreamerIsLiveEvent(data: any): LivestreamStatusUpdated {
+    const d = data as StreamerIsLiveEvent;
+    const b = integration.kick.broadcaster;
+    return {
+        isLive: true,
+        broadcaster: {
+            userId: kickifyUserId(b?.userId),
+            username: kickifyUsername(b?.name),
+            displayName: unkickifyUsername(b?.name),
+            profilePicture: b?.profilePicture || '',
+            isVerified: false, // Not set in event
+            channelSlug: '' // Not set in event
+        },
+        title: d.livestream.session_title,
+        startedAt: parseDate(d.livestream.created_at) || undefined,
+        endedAt: undefined
+    };
+}
+
+export function parseStopStreamBroadcast(): LivestreamStatusUpdated {
+    const b = integration.kick.broadcaster;
+    return {
+        isLive: false,
+        broadcaster: {
+            userId: kickifyUserId(b?.userId),
+            username: kickifyUsername(b?.name),
+            displayName: unkickifyUsername(b?.name),
+            profilePicture: b?.profilePicture || '',
+            isVerified: false, // Not set in event
+            channelSlug: '' // Not set in event
+        },
+        title: '',
+        startedAt: undefined, // Not set in event
+        endedAt: new Date()
     };
 }

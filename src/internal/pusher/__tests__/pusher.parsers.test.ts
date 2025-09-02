@@ -1,5 +1,18 @@
 import { KickUser } from "../../../shared/types";
-import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStreamHostedEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "../pusher-parsers";
+import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStopStreamBroadcast, parseStreamHostedEvent, parseStreamerIsLiveEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "../pusher-parsers";
+
+// Mock the integration module
+jest.mock("../../../integration", () => ({
+    integration: {
+        kick: {
+            broadcaster: {
+                userId: "123456",
+                name: "teststreamer",
+                profilePicture: "https://example.com/profile.jpg"
+            }
+        }
+    }
+}));
 
 describe('parseViewerUnbannedEvent', () => {
     it('parses a permanent unban event correctly', () => {
@@ -309,5 +322,271 @@ describe('parseViewerBannedOrTimedOutEvent', () => {
                 expiresAt: undefined
             }
         });
+    });
+});
+
+describe('parseStreamerIsLiveEvent', () => {
+    it('parses a streamer is live event correctly', () => {
+        const jsonInput = `{
+            "livestream": {
+                "id": 987654,
+                "channel_id": 123456,
+                "session_title": "Playing games with friends!",
+                "source": "rtmp",
+                "created_at": "2025-09-01T18:30:00+00:00"
+            }
+        }`;
+        const input = JSON.parse(jsonInput);
+        const result = parseStreamerIsLiveEvent(input);
+
+        expect(result).toEqual({
+            isLive: true,
+            broadcaster: {
+                userId: "k123456",
+                username: "teststreamer@kick",
+                displayName: "teststreamer",
+                profilePicture: "https://example.com/profile.jpg",
+                isVerified: false,
+                channelSlug: ""
+            },
+            title: "Playing games with friends!",
+            startedAt: new Date("2025-09-01T18:30:00+00:00"),
+            endedAt: undefined
+        });
+    });
+
+    it('parses a streamer is live event with null source correctly', () => {
+        const jsonInput = `{
+            "livestream": {
+                "id": 555777,
+                "channel_id": 123456,
+                "session_title": "Just Chatting",
+                "source": null,
+                "created_at": "2025-09-01T20:15:30+00:00"
+            }
+        }`;
+        const input = JSON.parse(jsonInput);
+        const result = parseStreamerIsLiveEvent(input);
+
+        expect(result).toEqual({
+            isLive: true,
+            broadcaster: {
+                userId: "k123456",
+                username: "teststreamer@kick",
+                displayName: "teststreamer",
+                profilePicture: "https://example.com/profile.jpg",
+                isVerified: false,
+                channelSlug: ""
+            },
+            title: "Just Chatting",
+            startedAt: new Date("2025-09-01T20:15:30+00:00"),
+            endedAt: undefined
+        });
+    });
+
+    it('parses a streamer is live event with empty title correctly', () => {
+        const jsonInput = `{
+            "livestream": {
+                "id": 111222,
+                "channel_id": 123456,
+                "session_title": "",
+                "source": "obs",
+                "created_at": "2025-09-01T19:45:15+00:00"
+            }
+        }`;
+        const input = JSON.parse(jsonInput);
+        const result = parseStreamerIsLiveEvent(input);
+
+        expect(result).toEqual({
+            isLive: true,
+            broadcaster: {
+                userId: "k123456",
+                username: "teststreamer@kick",
+                displayName: "teststreamer",
+                profilePicture: "https://example.com/profile.jpg",
+                isVerified: false,
+                channelSlug: ""
+            },
+            title: "",
+            startedAt: new Date("2025-09-01T19:45:15+00:00"),
+            endedAt: undefined
+        });
+    });
+
+    it('handles missing broadcaster data gracefully', () => {
+        // Mock the integration with undefined broadcaster
+        const integration = require("../../../integration").integration;
+        const originalBroadcaster = integration.kick.broadcaster;
+        integration.kick.broadcaster = undefined;
+
+        const jsonInput = `{
+            "livestream": {
+                "id": 333444,
+                "channel_id": 123456,
+                "session_title": "Test Stream",
+                "source": "rtmp",
+                "created_at": "2025-09-01T21:00:00+00:00"
+            }
+        }`;
+        const input = JSON.parse(jsonInput);
+        const result = parseStreamerIsLiveEvent(input);
+
+        expect(result).toEqual({
+            isLive: true,
+            broadcaster: {
+                userId: "",
+                username: "",
+                displayName: "",
+                profilePicture: "",
+                isVerified: false,
+                channelSlug: ""
+            },
+            title: "Test Stream",
+            startedAt: new Date("2025-09-01T21:00:00+00:00"),
+            endedAt: undefined
+        });
+
+        // Restore the original broadcaster
+        integration.kick.broadcaster = originalBroadcaster;
+    });
+
+    it('handles invalid date string gracefully', () => {
+        // Ensure broadcaster is properly set for this test
+        const integration = require("../../../integration").integration;
+        integration.kick.broadcaster = {
+            userId: "123456",
+            name: "teststreamer",
+            profilePicture: "https://example.com/profile.jpg"
+        };
+
+        const jsonInput = `{
+            "livestream": {
+                "id": 666777,
+                "channel_id": 123456,
+                "session_title": "Invalid Date Test",
+                "source": "rtmp",
+                "created_at": "invalid-date-string"
+            }
+        }`;
+        const input = JSON.parse(jsonInput);
+        const result = parseStreamerIsLiveEvent(input);
+
+        expect(result).toEqual({
+            isLive: true,
+            broadcaster: {
+                userId: "k123456",
+                username: "teststreamer@kick",
+                displayName: "teststreamer",
+                profilePicture: "https://example.com/profile.jpg",
+                isVerified: false,
+                channelSlug: ""
+            },
+            title: "Invalid Date Test",
+            startedAt: undefined,
+            endedAt: undefined
+        });
+    });
+});
+
+describe('parseStopStreamBroadcast', () => {
+    beforeEach(() => {
+        // Use fake timers for consistent time mocking
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date('2025-09-01T12:00:00.000Z'));
+    });
+
+    afterEach(() => {
+        // Restore real timers after each test
+        jest.useRealTimers();
+    });
+
+    it('parses a stop stream broadcast correctly', () => {
+        const result = parseStopStreamBroadcast();
+
+        expect(result).toEqual({
+            isLive: false,
+            broadcaster: {
+                userId: "k123456",
+                username: "teststreamer@kick",
+                displayName: "teststreamer",
+                profilePicture: "https://example.com/profile.jpg",
+                isVerified: false,
+                channelSlug: ""
+            },
+            title: "",
+            startedAt: undefined,
+            endedAt: new Date('2025-09-01T12:00:00.000Z')
+        });
+    });
+
+    it('handles missing broadcaster data gracefully', () => {
+        // Mock the integration with undefined broadcaster
+        const integration = require("../../../integration").integration;
+        const originalBroadcaster = integration.kick.broadcaster;
+        integration.kick.broadcaster = undefined;
+
+        const result = parseStopStreamBroadcast();
+
+        expect(result).toEqual({
+            isLive: false,
+            broadcaster: {
+                userId: "",
+                username: "",
+                displayName: "",
+                profilePicture: "",
+                isVerified: false,
+                channelSlug: ""
+            },
+            title: "",
+            startedAt: undefined,
+            endedAt: new Date('2025-09-01T12:00:00.000Z')
+        });
+
+        // Restore the original broadcaster
+        integration.kick.broadcaster = originalBroadcaster;
+    });
+
+    it('handles missing profile picture gracefully', () => {
+        // Mock the integration with broadcaster that has no profile picture
+        const integration = require("../../../integration").integration;
+        const originalBroadcaster = integration.kick.broadcaster;
+        integration.kick.broadcaster = {
+            userId: "789012",
+            name: "nopicstreamer",
+            profilePicture: undefined
+        };
+
+        const result = parseStopStreamBroadcast();
+
+        expect(result).toEqual({
+            isLive: false,
+            broadcaster: {
+                userId: "k789012",
+                username: "nopicstreamer@kick",
+                displayName: "nopicstreamer",
+                profilePicture: "",
+                isVerified: false,
+                channelSlug: ""
+            },
+            title: "",
+            startedAt: undefined,
+            endedAt: new Date('2025-09-01T12:00:00.000Z')
+        });
+
+        // Restore the original broadcaster
+        integration.kick.broadcaster = originalBroadcaster;
+    });
+
+    it('generates different endedAt times for multiple calls', () => {
+        const result1 = parseStopStreamBroadcast();
+
+        // Advance time by 5 seconds
+        jest.advanceTimersByTime(5000);
+
+        const result2 = parseStopStreamBroadcast();
+
+        expect(result1.endedAt).toEqual(new Date('2025-09-01T12:00:00.000Z'));
+        expect(result2.endedAt).toEqual(new Date('2025-09-01T12:00:05.000Z'));
+        expect(result1.endedAt?.getTime()).toBeLessThan(result2.endedAt?.getTime() || 0);
     });
 });

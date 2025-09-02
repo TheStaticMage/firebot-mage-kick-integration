@@ -1,4 +1,5 @@
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
+import { livestreamStatusUpdatedHandler } from "../../events/livestream-status-updated";
 import { moderationBannedEventHandler } from "../../events/moderation-banned";
 import { handleModerationUnbannedEvent } from "../../events/moderation-unbanned";
 import { handleRaidSentOffEvent } from "../../events/raid-sent-off-event";
@@ -7,7 +8,7 @@ import { handleStreamHostedEvent } from "../../events/stream-hosted-event";
 import { integration } from "../../integration";
 import { logger } from "../../main";
 import { KickUser } from "../../shared/types";
-import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStreamHostedEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
+import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStopStreamBroadcast, parseStreamerIsLiveEvent, parseStreamHostedEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
 
 const Pusher = require('pusher-js');
 
@@ -81,6 +82,12 @@ export class KickPusher {
             switch (event) {
                 case "App\\Events\\ChatMoveToSupportedChannelEvent":
                     await handleRaidSentOffEvent(parseChatMoveToSupportedChannelEvent(data));
+                    break;
+                case "App\\Events\\StopStreamBroadcast":
+                    await livestreamStatusUpdatedHandler.handleLivestreamStatusUpdatedEvent(parseStopStreamBroadcast());
+                    break;
+                case "App\\Events\\StreamerIsLiveEvent":
+                    await livestreamStatusUpdatedHandler.handleLivestreamStatusUpdatedEvent(parseStreamerIsLiveEvent(data));
                     break;
                 case 'pusher:subscription_succeeded':
                     logger.info("Pusher subscribed successfully to channel events.");
