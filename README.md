@@ -30,6 +30,8 @@ This [Firebot](https://firebot.app) integration provides chat feed integration, 
 
 ### Effects
 
+_Effects are calls to the Kick API made by Firebot as a result of event handlers, preset effect lists, quick actions, and the like._
+
 | Effect | Supported | Notes |
 | ------ | --------- | ----- |
 | Ban/Unban viewer | :white_check_mark: | |
@@ -38,30 +40,75 @@ This [Firebot](https://firebot.app) integration provides chat feed integration, 
 | Stream title change | :white_check_mark: | |
 | Timeout viewer | :white_check_mark: | Unban the viewer to un-timeout |
 
+Note: The integration currently has effects for all of the operations available via Kick's Public API. Any effects "missing" from this list cannot be added unless and until the Kick API is expanded with more functionality. See [Limitations due to Kick](#limitations-due-to-kick).
+
 ### Events
+
+_Events are generally trigged by receiving a webhook or a websocket event from Kick. This is Kick telling Firebot that something happened. These events are generally not triggered by Firebot, unless there is a corresponding effect above._
 
 | Event | With Webhook Proxy | No Webhook Proxy | Notes |
 | ----- | ------------------ | ---------------- | ----- |
-| Channel data updated | :white_check_mark: | :white_check_mark: | Based on refreshing stream info from Kick API |
-| Channel points redeemed | :white_check_mark: &#42; | :white_check_mark: &#42; | |
+| Channel data updated | :white_check_mark: | :white_check_mark: | Periodic refresh of info from public Kick API |
+| Channel points redeemed | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
+| Chat account age restriction | Possible * | Possible * | No public API support |
+| Chat cleared | Possible * | Possible * | No public API support |
+| Chat emote only mode on/off | Possible * | Possible * | No public API support |
+| Chat followers only mode on/off | Possible * | Possible * | No public API support |
 | Chat message (incoming) | :white_check_mark: | :white_check_mark: &#42; |  |
-| Follow | :white_check_mark: | :x: | Requires webhook proxy |
-| Host (raid) (incoming) | :white_check_mark: &#42; | :white_check_mark: &#42; | |
-| Host (raid) (outgoing) | :white_check_mark: &#42; | :white_check_mark: &#42; | |
-| Message deleted | Planned | Planned | |
-| Stream category (game) updated | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
+| Chat slow mode on/off | Possible * | Possible * | No public API support |
+| Chat sub only mode on/off | Possible * | Possible * | No public API support |
+| Follow | :white_check_mark: | :x: &dagger; | |
+| Goal created | Possible * | Possible * | No public API support |
+| Goal ended | ? | ? | No public API support, have not evaluated |
+| Goal progress | ? | ? | No public API support, have not evaluated |
+| Goal updated | Possible * | Possible * | No public API support |
+| Host (raid) (incoming) | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
+| Host (raid) (outgoing) | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
+| Message deleted | Possible * | Possible * | No public API support |
+| Message pinned | Possible * | Possible * | No public API support |
+| Message un-pinned | Possible * | Possible * | No public API support |
+| Stream category (game) updated | :white_check_mark: | :x: &dagger; | |
 | Stream ended | :white_check_mark: | :white_check_mark: &#42; |  |
 | Stream started | :white_check_mark: | :white_check_mark: &#42; |  |
-| Stream title updated | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
+| Stream title updated | :white_check_mark: | :x: &dagger; | |
 | Sub | :white_check_mark: | Planned | |
 | Sub (Community Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
 | Sub (Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
 | Viewer arrived | :white_check_mark: | :white_check_mark: &#42; |  |
 | Viewer banned | :white_check_mark: | :white_check_mark: &#42; | |
 | Viewer timed out | :white_check_mark: | :white_check_mark: &#42; | |
-| Viewer unbanned | :white_check_mark: &#42; | :white_check_mark: &#42; | Also handles un-timeout |
+| Viewer unbanned | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support; also handles un-timeout |
 
-&#42; = Depends on undocumented "Pusher" functionality
+&#42; = Denotes that this functionality depends (or would depend) on the undocumented "Pusher" websocket, which will work until it doesn't.
+
+&dagger; = Denotes that these websocket events require authentication from the "private API" to access. Support for the "private API" is not available and not planned for this integration.
+
+"Possible" indicates that based on documentation and/or actual testing, the Kick API or Pusher websocket sends a webhook or websocket message that the author believes can be used to trigger a Firebot event. However, since the author is unlikely to use this event himself, it is not currently prioritized for implementation. Feel free to reach out in Discord or a GitHub issue if you need something.
+
+### Firebot features
+
+| Feature | Support Status | Notes |
+| ------- | -------------- | ----- |
+| Channel point rewards: Create/manage | :x: | No public API endpoint &#x1F1F0; |
+| Channel point rewards: Enable/disable/pause | :x: | No public API endpoint &#x1F1F0; |
+| Channel point rewards: Trigger event | :white_check_mark: | Limited information &#x1F1F0; |
+| Chat feed: Display Kick messages | :white_check_mark: | Works! Shows badges and emotes too |
+| Chat feed: Ban user (on Kick message) | :white_check_mark: | Works! |
+| Chat feed: Timeout user | ? | May be possible &#x1F525; |
+| Chat feed: Unban user | :x: | No public API endpoint &#x1F1F0; |
+| Chat feed: User profile | :x: | Firebot assumes all users are Twitch users &#x1F525; |
+| Chat feed: All other context menu items | :x: | Various limitations &#x1F1F0; &#x1F525; |
+| Commands | :white_check_mark: | Cooldowns do not work &#x1F525; |
+| Currency | :x: | Firebot assumes all users are Twitch users &#x1F525; |
+| Currency: Watch time | :x: | No viewer list API endpoint on Kick &#x1F1F0; |
+| Moderation: Banned words / URLs | :x: | Kick API lacks ability to delete messages &#x1F1F0; |
+| Ranks | :x: | Pointless without proper currency support |
+| Roles | :white_check_mark: | Seems to mostly work |
+| Viewer database | :x: | Firebot assumes all users are Twitch users &#x1F525; |
+
+&#x1F1F0; = Denotes that the feature cannot be fully supported due to [Kick limitations](#limitations-due-to-kick)
+
+&#x1F525; = Denotes that the feature cannot be fully supported due to [Firebot limitations](#limitations-due-to-firebot)
 
 ### Limitations due to Kick
 
