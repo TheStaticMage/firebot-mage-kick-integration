@@ -1,7 +1,7 @@
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleFollowerEvent } from "../../events/follower";
 import { handleLivestreamMetadataUpdatedEvent } from "../../events/livestream-metadata-updated";
-import { handleLivestreamStatusUpdatedEvent } from "../../events/livestream-status-updated";
+import { livestreamStatusUpdatedHandler } from "../../events/livestream-status-updated";
 import { moderationBannedEventHandler } from "../../events/moderation-banned";
 import { handleChannelSubscriptionEvent, handleChannelSubscriptionGiftsEvent } from "../../events/sub-events";
 import { integration } from "../../integration";
@@ -84,7 +84,7 @@ export async function handleWebhook(webhook: InboundWebhook): Promise<void> {
         }
         case "livestream.status.updated": {
             const event = parseLivestreamStatusUpdatedEvent(webhook.raw_data);
-            handleLivestreamStatusUpdatedEvent(event);
+            livestreamStatusUpdatedHandler.handleLivestreamStatusUpdatedEvent(event);
             break;
         }
         case "moderation.banned": {

@@ -50,8 +50,8 @@ This [Firebot](https://firebot.app) integration provides chat feed integration, 
 | Host (raid) (outgoing) | :white_check_mark: &#42; | :white_check_mark: &#42; | |
 | Message deleted | Planned | Planned | |
 | Stream category (game) updated | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
-| Stream ended | :white_check_mark: | Planned |  |
-| Stream started | :white_check_mark: | Planned |  |
+| Stream ended | :white_check_mark: | :white_check_mark: &#42; |  |
+| Stream started | :white_check_mark: | :white_check_mark: &#42; |  |
 | Stream title updated | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
 | Sub | :white_check_mark: | Planned | |
 | Sub (Community Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
