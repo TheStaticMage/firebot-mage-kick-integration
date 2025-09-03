@@ -50,11 +50,7 @@ describe('WebhookSubscriptionManager.initialize', () => {
         kick.httpCallWithTimeout.mockResolvedValue({});
         await expect(manager.initialize()).resolves.toBeUndefined();
         expect(kick.httpCallWithTimeout).toHaveBeenCalledWith(
-            '/public/v1/events/subscriptions?id=sub1',
-            'DELETE'
-        );
-        expect(kick.httpCallWithTimeout).toHaveBeenCalledWith(
-            '/public/v1/events/subscriptions?id=sub2',
+            '/public/v1/events/subscriptions?id=sub1&id=sub2',
             'DELETE'
         );
     });

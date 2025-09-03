@@ -49,12 +49,7 @@ export class WebhookSubscriptionManager {
 
     async initialize(): Promise<void> {
         const subscriptions = await this.getSubscriptions();
-        if (subscriptions.length > subscriptionsToRequest.length) {
-            logger.warn(`Webhook subscription count exceeded: ${subscriptions.length} found, expected ${subscriptionsToRequest.length} (or fewer)`);
-            this.kickIsBroken = true;
-        } else {
-            this.kickIsBroken = false;
-        }
+        this.kickIsBroken = this.isKickBroken(subscriptions, subscriptionsToRequest);
 
         const reconciliation = this.reconcileSubscriptions(subscriptions);
         await this.subscribeToEvents(reconciliation);
@@ -113,27 +108,63 @@ export class WebhookSubscriptionManager {
         logger.debug("Webhook subscriptions verified as correct.");
     }
 
+    private isKickBroken(subscriptions: WebhookSubscription[], referenceSubscriptions: { name: string; version: number; }[]): boolean {
+        // Check for duplicates
+        const eventVersionMap = new Map<string, number>();
+        for (const sub of subscriptions) {
+            const key = `${sub.event}|${sub.version}`;
+            eventVersionMap.set(key, (eventVersionMap.get(key) || 0) + 1);
+        }
+        for (const [key, count] of eventVersionMap.entries()) {
+            if (count > 1) {
+                logger.debug(`Duplicate subscription found for event "${key}"`);
+                return true;
+            }
+        }
+
+        // Check for unknown subscriptions
+        const validEvents = new Set(referenceSubscriptions.map(s => `${s.name}|${s.version}`));
+        for (const sub of subscriptions) {
+            const key = `${sub.event}|${sub.version}`;
+            if (!validEvents.has(key)) {
+                logger.debug(`Unknown subscription found for event "${key}"`);
+                return true;
+            }
+        }
+
+        logger.debug(`Webhook subscription validation complete. Checked ${subscriptions.length} subscriptions.`);
+        return false;
+    }
+
     private async subscribeToEvents(reconciliation: WebhookSubscriptionReconcileResponse): Promise<void> {
         try {
-            // Sequentially delete subscriptions with 500ms delay
-            for (const subscriptionId of reconciliation.delete) {
-                const params = new URLSearchParams({ id: subscriptionId });
-                logger.debug(`Unsubscribing from event subscription with ID: ${subscriptionId}`);
-                // This API call will sometimes fail or get rate limited. Since
-                // things generally seem to be OK even if the subscriptions are
-                // not correctly deleted, we will warn but not fail.
+            // Delete subscriptions
+            if (reconciliation.delete.length > 0) {
+                const params = new URLSearchParams();
+                for (const id of reconciliation.delete) {
+                    params.append('id', id);
+                }
                 try {
                     await this.kick.httpCallWithTimeout(`/public/v1/events/subscriptions?${params.toString()}`, "DELETE");
                 } catch (error) {
-                    logger.warn(`Failed to unsubscribe from event subscription with ID: ${subscriptionId}. Error: ${error}`);
+                    logger.warn(`Failed to unsubscribe from event subscription with ID: ${reconciliation.delete.join(', ')}. Error: ${error}`);
                 }
+            }
+
+            // Pause between calls
+            if (reconciliation.delete.length > 0 && reconciliation.create.length > 0) {
                 await new Promise(res => setTimeout(res, 100));
             }
-            // Create subscriptions (all at once, or sequentially if needed)
+
+            // Create subscriptions
             if (reconciliation.create.length > 0) {
+                if (!this.kick.broadcaster) {
+                    throw new Error("Broadcaster information is missing");
+                }
+
                 const createPayload: WebhookSubscriptionCreatePayload = {
                     // eslint-disable-next-line camelcase
-                    broadcaster_user_id: this.kick.broadcaster?.userId || 0,
+                    broadcaster_user_id: this.kick.broadcaster.userId,
                     events: reconciliation.create,
                     method: "webhook"
                 };
