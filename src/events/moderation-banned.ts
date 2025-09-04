@@ -35,7 +35,8 @@ export class ModerationBannedEventHandler {
             ...metadata,
             expiresAt: payload.metadata.expiresAt ? payload.metadata.expiresAt.toISOString() : undefined,
             timeoutDuration: undefined, // Remove timeoutDuration from key computation
-            moderatorId: "" // Remove moderatorId from key computation
+            moderatorId: "", // Remove moderatorId from key computation because it's unreliable in Pusher
+            modReason: "" // Remove modReason from key computation because it's not reported in Pusher
         };
         delete metadataForKey.timeoutDuration;
 

@@ -43,10 +43,10 @@ export const moderatorTimeoutEffect: Firebot.EffectType<{
     },
     optionsValidator: (effect) => {
         const errors = [];
-        if (effect.username == null && effect.username !== "") {
+        if (effect.username == null || effect.username === "") {
             errors.push("Please enter a username.");
         }
-        if (effect.time == null && (effect.time !== "" || effect.time < 0)) {
+        if (effect.time == null) {
             errors.push("Please enter an amount of time.");
         }
         return errors;

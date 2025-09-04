@@ -144,7 +144,7 @@ describe('e2e moderation banned', () => {
     const webhookTimeoutData = Buffer.from(JSON.stringify({
         "broadcaster": { "user_id": 2346570, "username": "thestaticmage", "is_verified": false, "profile_picture": "pic.jpg", "channel_slug": "thestaticmage" },
         "moderator": { "user_id": 2408714, "username": "TheStaticMage", "is_verified": false, "profile_picture": "mod_pic.jpg", "channel_slug": "thestaticmage" },
-        "banned_user": { "user_id": 23498234, "username": "timeoutuser", "is_verified": false, "profile_picture": "user_pic.jpg", "channel_slug": "timeoutuser" },
+        "banned_user": { "user_id": 23498240, "username": "webhooktimeoutuser", "is_verified": false, "profile_picture": "user_pic.jpg", "channel_slug": "webhooktimeoutuser" },
         "metadata": { "reason": "Timeout reason", "created_at": "2025-09-01T18:11:58+00:00", "expires_at": "2025-09-01T18:16:58+00:00" }
     })).toString('base64');
 
@@ -184,7 +184,7 @@ describe('e2e moderation banned', () => {
     const webhookBanData = Buffer.from(JSON.stringify({
         "broadcaster": { "user_id": 2346570, "username": "thestaticmage", "is_verified": false, "profile_picture": "pic.jpg", "channel_slug": "thestaticmage" },
         "moderator": { "user_id": 2408714, "username": "TheStaticMage", "is_verified": false, "profile_picture": "mod_pic.jpg", "channel_slug": "thestaticmage" },
-        "banned_user": { "user_id": 23498234, "username": "timeoutuser", "is_verified": false, "profile_picture": "user_pic.jpg", "channel_slug": "timeoutuser" },
+        "banned_user": { "user_id": 23498241, "username": "webhookbanuser", "is_verified": false, "profile_picture": "user_pic.jpg", "channel_slug": "webhookbanuser" },
         "metadata": { "reason": "Ban reason", "created_at": "2025-09-01T18:11:58+00:00" }
     })).toString('base64');
 
@@ -354,9 +354,9 @@ describe('e2e moderation banned', () => {
 
     describe('timeout via webhook', () => {
         const expectedWebhookTimeoutMetadata = {
-            username: 'timeoutuser@kick',
-            userId: 'k23498234',
-            userDisplayName: 'timeoutuser',
+            username: 'webhooktimeoutuser@kick',
+            userId: 'k23498240',
+            userDisplayName: 'webhooktimeoutuser',
             moderatorUsername: 'TheStaticMage@kick',
             moderatorId: 'k2408714',
             moderatorDisplayName: 'TheStaticMage',
@@ -420,9 +420,9 @@ describe('e2e moderation banned', () => {
 
     describe('permanent ban via webhook', () => {
         const expectedWebhookBanMetadata = {
-            username: 'timeoutuser@kick',
-            userId: 'k23498234',
-            userDisplayName: 'timeoutuser',
+            username: 'webhookbanuser@kick',
+            userId: 'k23498241',
+            userDisplayName: 'webhookbanuser',
             moderatorUsername: 'TheStaticMage@kick',
             moderatorId: 'k2408714',
             moderatorDisplayName: 'TheStaticMage',
