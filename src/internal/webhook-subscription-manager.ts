@@ -193,7 +193,10 @@ export class WebhookSubscriptionManager {
 
         if (this.kickIsBroken) {
             logger.warn(`Kick is broken, not reconciling subscriptions.`);
-            return { create: subscriptionsToRequest, delete: current.map(sub => sub.id).filter((id): id is string => !!id) };
+            return {
+                create: subscriptionsToRequest.map(sub => ({ name: sub.name, version: sub.version })),
+                delete: current.map(sub => sub.id).filter((id): id is string => !!id)
+            };
         }
 
         for (const subToRequest of subscriptionsToRequest) {

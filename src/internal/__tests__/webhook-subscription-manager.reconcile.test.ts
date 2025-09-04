@@ -94,4 +94,33 @@ describe('WebhookSubscriptionManager.reconcileSubscriptions', () => {
         expect(result.create).toEqual([]);
         expect(result.delete).toEqual([]);
     });
+
+    it('returns all subscriptions to create and all current to delete when kick is broken', () => {
+        // Set kickIsBroken to true
+        (manager as any).kickIsBroken = true;
+
+        const current = [
+            { id: '1', event: 'chat.message.sent', version: 1 },
+            { id: '2', event: 'channel.followed', version: 1 },
+            { id: '3', event: 'some.other.event', version: 1 }
+        ];
+
+        const result = reconcile(current);
+
+        // Should create all 8 subscriptions
+        expect(result.create.length).toBe(8);
+        expect(result.create).toEqual([
+            { name: 'chat.message.sent', version: 1 },
+            { name: 'channel.followed', version: 1 },
+            { name: 'livestream.metadata.updated', version: 1 },
+            { name: 'livestream.status.updated', version: 1 },
+            { name: 'channel.subscription.renewal', version: 1 },
+            { name: 'channel.subscription.gifts', version: 1 },
+            { name: 'channel.subscription.new', version: 1 },
+            { name: 'moderation.banned', version: 1 }
+        ]);
+
+        // Should delete all current subscriptions
+        expect(result.delete).toEqual(['1', '2', '3']);
+    });
 });
