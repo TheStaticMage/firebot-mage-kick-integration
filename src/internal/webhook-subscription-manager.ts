@@ -75,7 +75,7 @@ export class WebhookSubscriptionManager {
         logger.debug("Resetting webhook subscriptions...");
         const subscriptions = await this.getSubscriptions();
         const req: WebhookSubscriptionReconcileResponse = {
-            delete: subscriptions.map(sub => sub.id),
+            delete: subscriptions.map(sub => sub.id).filter((id): id is string => !!id),
             create: [] // We are just deleting, not creating. That can get done upon reconnection.
         };
         await this.subscribeToEvents(req);
@@ -193,7 +193,10 @@ export class WebhookSubscriptionManager {
 
         if (this.kickIsBroken) {
             logger.warn(`Kick is broken, not reconciling subscriptions.`);
-            return { create: subscriptionsToRequest, delete: current.map(sub => sub.id).filter((id): id is string => !!id) };
+            return {
+                create: subscriptionsToRequest.map(sub => ({ name: sub.name, version: sub.version })),
+                delete: current.map(sub => sub.id).filter((id): id is string => !!id)
+            };
         }
 
         for (const subToRequest of subscriptionsToRequest) {

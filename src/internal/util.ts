@@ -26,8 +26,8 @@ export function unkickifyUsername(username: string | undefined): string {
     return username.endsWith("@kick") ? username.substring(0, username.length - 5) : username;
 }
 
-export function parseDate(dateString: string | undefined): Date | undefined {
-    if (!dateString) {
+export function parseDate(dateString: string | undefined | null): Date | undefined {
+    if (!dateString || dateString === null || dateString === undefined) {
         return undefined;
     }
 

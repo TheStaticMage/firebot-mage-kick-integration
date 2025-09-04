@@ -104,9 +104,15 @@ export class KickPusher {
     private async dispatchChatroomEvent(event: string, data: any): Promise<void> {
         try {
             switch (event) {
-                case 'App\\Events\\ChatMessageEvent':
-                    await handleChatMessageSentEvent(parseChatMessageEvent(data, this.getBroadcaster()), 2); // Delay by 2 seconds in hopes webhook arrives first
+                case 'App\\Events\\ChatMessageEvent': {
+                    const broadcaster = this.getBroadcaster();
+                    if (broadcaster) {
+                        await handleChatMessageSentEvent(parseChatMessageEvent(data, broadcaster), 2); // Delay by 2 seconds in hopes webhook arrives first
+                    } else {
+                        logger.warn("Skipping chat message event: broadcaster information not available");
+                    }
                     break;
+                }
                 case 'App\\Events\\StreamHostedEvent':
                     await handleStreamHostedEvent(parseStreamHostedEvent(data));
                     break;
@@ -151,14 +157,19 @@ export class KickPusher {
         }
     }
 
-    private getBroadcaster(): KickUser {
+    private getBroadcaster(): KickUser | null {
+        const broadcaster = integration.kick.broadcaster;
+        if (!broadcaster) {
+            return null;
+        }
+
         return {
-            userId: integration.kick.broadcaster?.userId.toString() || '',
-            username: integration.kick.broadcaster?.name || '',
-            displayName: integration.kick.broadcaster?.name || '',
-            profilePicture: integration.kick.broadcaster?.profilePicture || '',
+            userId: broadcaster.userId.toString(),
+            username: broadcaster.name,
+            displayName: broadcaster.name,
+            profilePicture: broadcaster.profilePicture || '',
             isVerified: false, // Worth checking?
-            channelSlug: integration.kick.broadcaster?.name || ''
+            channelSlug: broadcaster.name
         };
     }
 }

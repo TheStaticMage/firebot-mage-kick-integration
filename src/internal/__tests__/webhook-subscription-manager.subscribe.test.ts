@@ -69,3 +69,58 @@ describe('WebhookSubscriptionManager.initialize', () => {
         await expect(manager.initialize()).rejects.toThrow('fail');
     });
 });
+
+describe('WebhookSubscriptionManager.resetWebhookSubscriptions', () => {
+    let manager: WebhookSubscriptionManager;
+    let kick: any;
+
+    beforeEach(() => {
+        kick = {
+            broadcaster: { userId: 42 },
+            httpCallWithTimeout: jest.fn()
+        };
+        manager = new WebhookSubscriptionManager(kick);
+    });
+
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    it('filters out undefined/null subscription IDs', async () => {
+        // Mock subscriptions with some undefined/null IDs
+        jest.spyOn(manager as any, 'getSubscriptions').mockResolvedValue([
+            { id: 'sub1', event: 'event1', version: 1 },
+            { id: undefined, event: 'event2', version: 1 },
+            { id: 'sub3', event: 'event3', version: 1 },
+            { id: null, event: 'event4', version: 1 },
+            { id: '', event: 'event5', version: 1 }, // empty string should also be filtered
+            { id: 'sub6', event: 'event6', version: 1 }
+        ]);
+
+        // Mock successful delete response
+        kick.httpCallWithTimeout.mockResolvedValue({});
+
+        // Spy on subscribeToEvents to check what gets passed to it
+        const subscribeToEventsSpy = jest.spyOn(manager as any, 'subscribeToEvents').mockResolvedValue(undefined);
+
+        await manager.resetWebhookSubscriptions();
+
+        // Check that only valid IDs are passed to delete
+        expect(subscribeToEventsSpy).toHaveBeenCalledWith({
+            create: [],
+            delete: ['sub1', 'sub3', 'sub6'] // Only valid IDs
+        });
+    });
+
+    it('handles empty subscriptions list', async () => {
+        jest.spyOn(manager as any, 'getSubscriptions').mockResolvedValue([]);
+        const subscribeToEventsSpy = jest.spyOn(manager as any, 'subscribeToEvents').mockResolvedValue(undefined);
+
+        await manager.resetWebhookSubscriptions();
+
+        expect(subscribeToEventsSpy).toHaveBeenCalledWith({
+            create: [],
+            delete: []
+        });
+    });
+});
