@@ -106,6 +106,8 @@ export class Poller {
             return false;
         }
 
+        // Set isPolling immediately to prevent race condition
+        this.isPolling = true;
         logger.debug("Starting proxy poller...");
 
         setTimeout(async () => {
@@ -117,6 +119,7 @@ export class Poller {
             } catch (error) {
                 if (this.isDisconnecting) {
                     logger.debug(`Poller is disconnecting, ignoring error during polling. Error was: ${error}.`);
+                    this.isPolling = false; // Reset flag on disconnection
                     return; // Just return from callback, don't restart
                 }
                 logger.debug(`startPoller will be retried in 5 seconds due to error: ${error}`);
@@ -133,12 +136,6 @@ export class Poller {
     private poll(): Promise<void> {
         const url = `${this.proxyPollUrl}/${this.proxyPollKey}`;
         return new Promise((resolve, reject) => {
-            if (this.isPolling) {
-                reject("Poller is already polling. Skipping this polling request.");
-                return; // Prevent further execution and rescheduling
-            }
-            this.isPolling = true;
-
             const req: HttpCallRequest = {
                 url,
                 method: "GET",
