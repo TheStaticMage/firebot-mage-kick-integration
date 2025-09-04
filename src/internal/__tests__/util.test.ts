@@ -1,4 +1,4 @@
-import { userIdToCleanNumber, userIdToCleanString } from '../util';
+import { userIdToCleanNumber, userIdToCleanString, parseDate } from '../util';
 
 describe('userIdToCleanString', () => {
     it('returns string for positive number', () => {
@@ -81,5 +81,53 @@ describe('userIdToCleanNumber', () => {
 
     it('returns 0 for undefined', () => {
         expect(userIdToCleanNumber(undefined as any)).toBe(0);
+    });
+});
+
+describe('parseDate', () => {
+    it('returns undefined for undefined input', () => {
+        expect(parseDate(undefined)).toBeUndefined();
+    });
+
+    it('returns undefined for null input', () => {
+        expect(parseDate(null)).toBeUndefined();
+    });
+
+    it('returns undefined for empty string', () => {
+        expect(parseDate('')).toBeUndefined();
+    });
+
+    it('returns undefined for whitespace string', () => {
+        expect(parseDate('   ')).toBeUndefined();
+    });
+
+    it('returns undefined for zero date string', () => {
+        expect(parseDate('0001-01-01T00:00:00Z')).toBeUndefined();
+    });
+
+    it('returns undefined for invalid date string', () => {
+        expect(parseDate('invalid-date')).toBeUndefined();
+    });
+
+    it('returns Date object for valid ISO date string', () => {
+        const result = parseDate('2025-08-20T07:05:42+00:00');
+        expect(result).toBeInstanceOf(Date);
+        expect(result?.getTime()).toBe(new Date('2025-08-20T07:05:42+00:00').getTime());
+    });
+
+    it('returns Date object for valid date string', () => {
+        const result = parseDate('2025-12-25T12:00:00Z');
+        expect(result).toBeInstanceOf(Date);
+        expect(result?.getTime()).toBe(new Date('2025-12-25T12:00:00Z').getTime());
+    });
+
+    it('returns undefined for malformed date string', () => {
+        expect(parseDate('2025-13-45T25:70:90Z')).toBeUndefined();
+    });
+
+    it('handles partial date strings gracefully', () => {
+        expect(parseDate('2025')).toBeInstanceOf(Date);
+        expect(parseDate('2025-01')).toBeInstanceOf(Date);
+        expect(parseDate('2025-01-01')).toBeInstanceOf(Date);
     });
 });
