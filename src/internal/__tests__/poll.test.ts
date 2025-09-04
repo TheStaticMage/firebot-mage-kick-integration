@@ -208,6 +208,78 @@ describe('Poller', () => {
             // pollTimeout should be cleared
             expect((poller as any).pollTimeout).toBeNull();
         });
+
+        it('handles error flow correctly with proper timeout management and flag reset', async () => {
+            // Set up poller
+            (poller as any).proxyPollKey = 'test-key';
+            (poller as any).proxyPollUrl = 'http://test-proxy.com/poll';
+            (poller as any).instanceId = 'test-instance';
+
+            const networkError = new Error('Network timeout');
+            mockHttpCallWithTimeout.mockRejectedValue(networkError);
+
+            // Track retry attempts
+            const startPollerSpy = jest.spyOn(poller as any, 'startPoller');
+
+            // Start the poller (first call)
+            const result = (poller as any).startPoller();
+            expect(result).toBe(true);
+            expect((poller as any).isPolling).toBe(true);
+            expect(startPollerSpy).toHaveBeenCalledTimes(1);
+
+            // Initially no timeout should be set
+            expect((poller as any).pollTimeout).toBeNull();
+
+            // Execute the initial setTimeout to start polling and let the error occur
+            await jest.runOnlyPendingTimersAsync();
+
+            // After error, pollTimeout should be set
+            expect((poller as any).pollTimeout).not.toBeNull();
+
+            // Verify the 5-second delay timing
+            jest.advanceTimersByTime(4999); // Just before 5 seconds
+            expect(startPollerSpy).toHaveBeenCalledTimes(1); // Should not have retried yet
+
+            jest.advanceTimersByTime(1); // Complete the 5 seconds
+            expect(startPollerSpy).toHaveBeenCalledTimes(2); // Should have retried now
+
+            // After retry attempt, pollTimeout should be cleared
+            expect((poller as any).pollTimeout).toBeNull();
+        });
+
+        it('resets isPolling flag after error occurs and logs appropriate messages', async () => {
+            // Set up poller
+            (poller as any).proxyPollKey = 'test-key';
+            (poller as any).proxyPollUrl = 'http://test-proxy.com/poll';
+            (poller as any).instanceId = 'test-instance';
+
+            const networkError = new Error('Connection refused');
+            mockHttpCallWithTimeout.mockRejectedValue(networkError);
+
+            // Mock logger to verify error messages
+            const { logger } = require('../../main');
+            jest.clearAllMocks();
+
+            // Start the poller
+            const result = (poller as any).startPoller();
+            expect(result).toBe(true);
+            expect((poller as any).isPolling).toBe(true);
+
+            // Execute the initial setTimeout and let the error occur
+            await jest.runOnlyPendingTimersAsync();
+
+            // Verify error logging
+            expect(logger.debug).toHaveBeenCalledWith(
+                'startPoller will be retried in 5 seconds due to error: Error: Connection refused'
+            );
+
+            // The isPolling flag should be reset after the error (by the finally block in poll())
+            expect((poller as any).isPolling).toBe(false);
+
+            // Should be able to start a new poller now
+            const result2 = (poller as any).startPoller();
+            expect(result2).toBe(true);
+        });
     });
 
     describe('poll', () => {
