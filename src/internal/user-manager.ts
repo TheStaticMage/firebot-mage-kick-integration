@@ -61,6 +61,10 @@ export class KickUserManager {
     }
 
     async getOrCreateViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<FirebotViewer | undefined> {
+        if (!this._db) {
+            throw new Error("Viewer database is not connected.");
+        }
+
         if (unkickifyUserId(kickUser.userId.toString()) === '') {
             logger.warn(`getOrCreateViewer: Invalid userId for kickUser: ${JSON.stringify(kickUser)}`);
             return undefined;
@@ -156,34 +160,28 @@ export class KickUserManager {
     }
 
     async lookupUserById(userId: string | number = ""): Promise<BasicKickUser> {
-        return new Promise((resolve, reject) => {
-            const formVariables = new URLSearchParams();
-            const unkickifiedUserId = userIdToCleanString(userId);
-            if (unkickifiedUserId !== "") {
-                formVariables.append("id", unkickifiedUserId);
-            }
+        const formVariables = new URLSearchParams();
+        const unkickifiedUserId = userIdToCleanString(userId);
+        if (unkickifiedUserId !== "") {
+            formVariables.append("id", unkickifiedUserId);
+        }
 
-            const uri = `/public/v1/users${formVariables.toString().length > 0 ? `?${formVariables.toString()}` : ''}`;
-            this.kick.httpCallWithTimeout(uri, "GET")
-                .then((response) => {
-                    if (!response || !response.data || response.data.length !== 1) {
-                        logger.debug(`Failed to retrieve user from Kick API response. ${JSON.stringify(response)}`);
-                        reject(new Error("Failed to retrieve user from Kick API."));
-                    }
+        const uri = `/public/v1/users${formVariables.toString().length > 0 ? `?${formVariables.toString()}` : ''}`;
+        const response = await this.kick.httpCallWithTimeout(uri, "GET");
 
-                    const user = parseBasicKickUser(response.data[0]);
-                    if (!user.userId) {
-                        logger.debug("No user ID found in Kick API response.");
-                        reject(new Error("No user ID found in Kick API response."));
-                    }
+        if (!response || !response.data || response.data.length !== 1) {
+            logger.debug(`Failed to retrieve user from Kick API response. ${JSON.stringify(response)}`);
+            throw new Error("Failed to retrieve user from Kick API.");
+        }
 
-                    logger.debug(`Successfully retrieved user: ${user.userId} (${user.name})`);
-                    resolve(user);
-                })
-                .catch((error) => {
-                    reject(error);
-                });
-        });
+        const user = parseBasicKickUser(response.data[0]);
+        if (!user.userId) {
+            logger.debug("No user ID found in Kick API response.");
+            throw new Error("No user ID found in Kick API response.");
+        }
+
+        logger.debug(`Successfully retrieved user: ${user.userId} (${user.name})`);
+        return user;
     }
 
     async syncViewerRoles(userId: string, roles: string[], rolesToDeleteIfNotPresent: string[] = []): Promise<void> {

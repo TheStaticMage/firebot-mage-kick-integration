@@ -55,5 +55,16 @@ export function userIdToCleanString(userId: string | number = ""): string {
 
 export function userIdToCleanNumber(userId: string | number = ""): number {
     const cleanedId = userIdToCleanString(userId);
-    return cleanedId !== "" ? Number(cleanedId) : 0;
+    if (cleanedId === "") {
+        return 0;
+    }
+
+    const numericValue = Number(cleanedId);
+
+    // Check for integer overflow - numbers larger than MAX_SAFE_INTEGER lose precision
+    if (numericValue > Number.MAX_SAFE_INTEGER) {
+        throw new Error(`userId number ${cleanedId} exceeds maximum safe integer value (${Number.MAX_SAFE_INTEGER})`);
+    }
+
+    return numericValue;
 }
