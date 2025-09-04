@@ -149,7 +149,8 @@ export class Poller {
                     "X-Instance-ID": this.instanceId,
                     "X-Request-ID": crypto.randomUUID()
                 },
-                userAgent: `firebot-mage-kick-integration/${scriptVersion} (+https://github.com/TheStaticMage/firebot-mage-kick-integration)`
+                userAgent: `firebot-mage-kick-integration/${scriptVersion} (+https://github.com/TheStaticMage/firebot-mage-kick-integration)`,
+                maxRedirects: 1000
             };
             httpCallWithTimeout(req)
                 .then((response): InboundWebhook[] => {
