@@ -218,24 +218,29 @@ describe('Poller', () => {
             (poller as any).instanceId = 'test-instance';
         });
 
-        it('rejects if already polling', async () => {
+        it('can be called when isPolling is already set by startPoller', async () => {
+            // Simulate the state when called from startPoller (isPolling already true)
             (poller as any).isPolling = true;
 
-            await expect((poller as any).poll()).rejects.toEqual(
-                'Poller is already polling. Skipping this polling request.'
-            );
+            mockHttpCallWithTimeout.mockResolvedValue({ webhooks: [] });
+
+            // Should not reject when called with isPolling already true (normal case from startPoller)
+            await expect((poller as any).poll()).resolves.toBeUndefined();
         });
 
-        it('sets isPolling flag during execution', async () => {
+        it('maintains isPolling flag during execution', async () => {
             let wasPollingDuringExecution = false;
             mockHttpCallWithTimeout.mockImplementation(() => {
-                // Check that isPolling is true during execution
+                // Check that isPolling remains true during execution
                 wasPollingDuringExecution = (poller as any).isPolling;
                 return Promise.resolve({ webhooks: [] });
             });
 
-            // Expect the flag to be set during execution
-            expect(wasPollingDuringExecution).toBe(false); // Initially false
+            // Start with isPolling false
+            expect((poller as any).isPolling).toBe(false);
+
+            // Set isPolling to true (as startPoller would do)
+            (poller as any).isPolling = true;
 
             const pollPromise = (poller as any).poll();
 
@@ -349,6 +354,86 @@ describe('Poller', () => {
 
             // The important part is that the second startPoller call returned false
             // This proves concurrent polling prevention is working
+        });
+
+        it('prevents race condition when multiple startPoller calls happen rapidly', () => {
+            // Set up poller
+            (poller as any).proxyPollKey = 'test-key';
+            (poller as any).proxyPollUrl = 'http://test-proxy.com/poll';
+            (poller as any).instanceId = 'test-instance';
+
+            // Mock HTTP to return immediately but don't advance timers
+            mockHttpCallWithTimeout.mockResolvedValue({ webhooks: [] });
+
+            // Make multiple rapid calls to startPoller
+            const result1 = (poller as any).startPoller();
+            const result2 = (poller as any).startPoller();
+            const result3 = (poller as any).startPoller();
+
+            // Only the first call should succeed
+            expect(result1).toBe(true);
+            expect(result2).toBe(false);
+            expect(result3).toBe(false);
+
+            // Verify the isPolling flag was set immediately
+            expect((poller as any).isPolling).toBe(true);
+        });
+
+        it('resets isPolling flag on disconnection during error', async () => {
+            // Set up poller
+            (poller as any).proxyPollKey = 'test-key';
+            (poller as any).proxyPollUrl = 'http://test-proxy.com/poll';
+            (poller as any).instanceId = 'test-instance';
+
+            // Mock HTTP error
+            mockHttpCallWithTimeout.mockRejectedValue(new Error('Network error'));
+
+            // Start polling
+            const result = (poller as any).startPoller();
+            expect(result).toBe(true);
+            expect((poller as any).isPolling).toBe(true);
+
+            // Set disconnecting flag
+            (poller as any).isDisconnecting = true;
+
+            // Execute the setTimeout and let error handling complete
+            await jest.runOnlyPendingTimersAsync();
+
+            // isPolling should be reset to false after disconnection error handling
+            expect((poller as any).isPolling).toBe(false);
+        });
+
+        it('properly serializes concurrent startPoller calls during active polling', () => {
+            // Set up poller
+            (poller as any).proxyPollKey = 'test-key';
+            (poller as any).proxyPollUrl = 'http://test-proxy.com/poll';
+            (poller as any).instanceId = 'test-instance';
+
+            let httpCallCount = 0;
+
+            mockHttpCallWithTimeout.mockImplementation(() => {
+                httpCallCount++;
+                // Return a never-resolving promise to simulate long-running request
+                return new Promise(() => { /* never resolves */ });
+            });
+
+            // Start first poller - should succeed and set isPolling immediately
+            const result1 = (poller as any).startPoller();
+            expect(result1).toBe(true);
+            expect((poller as any).isPolling).toBe(true);
+
+            // Subsequent calls should fail immediately due to isPolling flag
+            const result2 = (poller as any).startPoller();
+            const result3 = (poller as any).startPoller();
+
+            expect(result2).toBe(false);
+            expect(result3).toBe(false);
+
+            // Execute the setTimeout to trigger the HTTP call
+            jest.advanceTimersByTime(1);
+
+            // Still should only have one HTTP call
+            expect(httpCallCount).toBe(1);
         });
     });
 });
