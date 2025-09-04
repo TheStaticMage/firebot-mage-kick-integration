@@ -82,6 +82,32 @@ describe('userIdToCleanNumber', () => {
     it('returns 0 for undefined', () => {
         expect(userIdToCleanNumber(undefined as any)).toBe(0);
     });
+
+    it('handles large numbers within safe integer range', () => {
+        const maxSafeInteger = Number.MAX_SAFE_INTEGER; // 9007199254740991
+        expect(userIdToCleanNumber(maxSafeInteger.toString())).toBe(maxSafeInteger);
+        expect(userIdToCleanNumber(maxSafeInteger)).toBe(maxSafeInteger);
+    });
+
+    it('throws for numbers exceeding MAX_SAFE_INTEGER', () => {
+        const unsafeInteger = '9007199254740992'; // MAX_SAFE_INTEGER + 1
+        expect(() => userIdToCleanNumber(unsafeInteger)).toThrow('userId number 9007199254740992 exceeds maximum safe integer value (9007199254740991)');
+    });
+
+    it('throws for very large numbers', () => {
+        const veryLargeNumber = '99999999999999999999999999999';
+        expect(() => userIdToCleanNumber(veryLargeNumber)).toThrow('exceeds maximum safe integer value');
+    });
+
+    it('throws for kickified numbers exceeding MAX_SAFE_INTEGER', () => {
+        const unsafeKickifiedId = 'k9007199254740992'; // MAX_SAFE_INTEGER + 1 with k prefix
+        expect(() => userIdToCleanNumber(unsafeKickifiedId)).toThrow('userId number 9007199254740992 exceeds maximum safe integer value (9007199254740991)');
+    });
+
+    it('handles edge case near MAX_SAFE_INTEGER', () => {
+        const nearMaxSafe = (Number.MAX_SAFE_INTEGER - 1).toString();
+        expect(userIdToCleanNumber(nearMaxSafe)).toBe(Number.MAX_SAFE_INTEGER - 1);
+    });
 });
 
 describe('parseDate', () => {
