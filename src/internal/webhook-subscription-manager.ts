@@ -75,7 +75,7 @@ export class WebhookSubscriptionManager {
         logger.debug("Resetting webhook subscriptions...");
         const subscriptions = await this.getSubscriptions();
         const req: WebhookSubscriptionReconcileResponse = {
-            delete: subscriptions.map(sub => sub.id),
+            delete: subscriptions.map(sub => sub.id).filter((id): id is string => !!id),
             create: [] // We are just deleting, not creating. That can get done upon reconnection.
         };
         await this.subscribeToEvents(req);
