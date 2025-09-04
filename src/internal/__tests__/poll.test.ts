@@ -313,7 +313,8 @@ describe('Poller', () => {
                     'X-Instance-ID': 'test-instance',
                     'X-Request-ID': expect.any(String)
                 },
-                userAgent: 'firebot-mage-kick-integration/1.0.0 (+https://github.com/TheStaticMage/firebot-mage-kick-integration)'
+                userAgent: 'firebot-mage-kick-integration/1.0.0 (+https://github.com/TheStaticMage/firebot-mage-kick-integration)',
+                maxRedirects: 1000
             });
         });
     });

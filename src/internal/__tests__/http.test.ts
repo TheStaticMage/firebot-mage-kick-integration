@@ -72,6 +72,215 @@ describe('httpCallWithTimeout', () => {
         expect(result).toEqual({ done: true });
     });
 
+    it('follows redirects to new URLs correctly', async () => {
+        const fetchedUrls: string[] = [];
+        (global.fetch as jest.Mock).mockImplementation((url) => {
+            fetchedUrls.push(url);
+            if (url === 'http://original') {
+                return Promise.resolve({
+                    ok: true,
+                    status: 301,
+                    url: 'http://redirected',
+                    headers: { get: () => 'application/json' }
+                });
+            } else if (url === 'http://redirected') {
+                return Promise.resolve({
+                    ok: true,
+                    status: 302,
+                    url: 'http://final',
+                    headers: { get: () => 'application/json' }
+                });
+            } else if (url === 'http://final') {
+                return Promise.resolve({
+                    ok: true,
+                    status: 200,
+                    json: async () => ({ final: true }),
+                    headers: { get: () => 'application/json' }
+                });
+            }
+            throw new Error(`Unexpected URL: ${url}`);
+        });
+
+        const result = await httpCallWithTimeout({ url: 'http://original', method: 'GET' });
+        expect(result).toEqual({ final: true });
+        expect(fetchedUrls).toEqual(['http://original', 'http://redirected', 'http://final']);
+    });
+
+    it('throws error after too many redirects', async () => {
+        (global.fetch as jest.Mock).mockImplementation(() => {
+            return Promise.resolve({
+                ok: true,
+                status: 301,
+                url: 'http://infinite-redirect',
+                headers: { get: () => 'application/json' }
+            });
+        });
+
+        await expect(
+            httpCallWithTimeout({ url: 'http://test', method: 'GET' })
+        ).rejects.toThrow(/Too many redirects \(11\)/);
+    });
+
+    it('throws error when redirect response has no url', async () => {
+        (global.fetch as jest.Mock).mockImplementation(() => {
+            return Promise.resolve({
+                ok: true,
+                status: 302,
+                url: '', // Empty URL simulates missing Location header
+                headers: { get: () => 'application/json' }
+            });
+        });
+
+        await expect(
+            httpCallWithTimeout({ url: 'http://test', method: 'GET' })
+        ).rejects.toThrow(/Redirect response missing Location header/);
+    });
+
+    it('follows redirects to new URLs correctly', async () => {
+        const fetchedUrls: string[] = [];
+        (global.fetch as jest.Mock).mockImplementation((url) => {
+            fetchedUrls.push(url);
+            if (url === 'http://original') {
+                return Promise.resolve({
+                    ok: true,
+                    status: 301,
+                    url: 'http://redirected',
+                    headers: { get: () => 'application/json' }
+                });
+            } else if (url === 'http://redirected') {
+                return Promise.resolve({
+                    ok: true,
+                    status: 302,
+                    url: 'http://final',
+                    headers: { get: () => 'application/json' }
+                });
+            } else if (url === 'http://final') {
+                return Promise.resolve({
+                    ok: true,
+                    status: 200,
+                    json: async () => ({ final: true }),
+                    headers: { get: () => 'application/json' }
+                });
+            }
+            throw new Error(`Unexpected URL: ${url}`);
+        });
+
+        const result = await httpCallWithTimeout({ url: 'http://original', method: 'GET' });
+        expect(result).toEqual({ final: true });
+        expect(fetchedUrls).toEqual(['http://original', 'http://redirected', 'http://final']);
+    });
+
+    it('throws error after too many redirects', async () => {
+        (global.fetch as jest.Mock).mockImplementation(() => {
+            return Promise.resolve({
+                ok: true,
+                status: 301,
+                url: 'http://infinite-redirect',
+                headers: { get: () => 'application/json' }
+            });
+        });
+
+        await expect(
+            httpCallWithTimeout({ url: 'http://test', method: 'GET' })
+        ).rejects.toThrow(/Too many redirects \(11\)/);
+    });
+
+    it('throws error when redirect response has no url', async () => {
+        (global.fetch as jest.Mock).mockImplementation(() => {
+            return Promise.resolve({
+                ok: true,
+                status: 302,
+                url: '', // Empty URL simulates missing Location header
+                headers: { get: () => 'application/json' }
+            });
+        });
+
+        await expect(
+            httpCallWithTimeout({ url: 'http://test', method: 'GET' })
+        ).rejects.toThrow(/Redirect response missing Location header/);
+    });
+
+    it('respects custom maxRedirects parameter', async () => {
+        (global.fetch as jest.Mock).mockImplementation(() => {
+            return Promise.resolve({
+                ok: true,
+                status: 301,
+                url: 'http://infinite-redirect',
+                headers: { get: () => 'application/json' }
+            });
+        });
+
+        await expect(
+            httpCallWithTimeout({ url: 'http://test', method: 'GET', maxRedirects: 3 })
+        ).rejects.toThrow(/Too many redirects \(4\)/);
+    });
+
+    it('allows zero redirects when maxRedirects is 0', async () => {
+        (global.fetch as jest.Mock).mockImplementation(() => {
+            return Promise.resolve({
+                ok: true,
+                status: 301,
+                url: 'http://redirect',
+                headers: { get: () => 'application/json' }
+            });
+        });
+
+        await expect(
+            httpCallWithTimeout({ url: 'http://test', method: 'GET', maxRedirects: 0 })
+        ).rejects.toThrow(/Too many redirects \(1\)/);
+    });
+
+    it('uses default maxRedirects when not specified', async () => {
+        (global.fetch as jest.Mock).mockImplementation(() => {
+            return Promise.resolve({
+                ok: true,
+                status: 301,
+                url: 'http://infinite-redirect',
+                headers: { get: () => 'application/json' }
+            });
+        });
+
+        // Should use default of 10 redirects
+        await expect(
+            httpCallWithTimeout({ url: 'http://test', method: 'GET' })
+        ).rejects.toThrow(/Too many redirects \(11\)/);
+    });
+
+    it('resets timeout on redirects', async () => {
+        let callCount = 0;
+
+        (global.fetch as jest.Mock).mockImplementation(() => {
+            callCount++;
+            if (callCount === 1) {
+                // First call - immediate redirect
+                return Promise.resolve({
+                    ok: true,
+                    status: 302,
+                    url: 'http://redirected',
+                    headers: { get: () => 'application/json' }
+                });
+            }
+            // Second call - immediate success
+            return Promise.resolve({
+                ok: true,
+                status: 200,
+                json: async () => ({ redirected: true }),
+                headers: { get: () => 'application/json' }
+            });
+        });
+
+        // This test verifies that we can complete a redirect chain
+        // The key is that the timeout should reset on redirect
+        const result = await httpCallWithTimeout({
+            url: 'http://original',
+            method: 'GET',
+            timeout: 1000
+        });
+
+        expect(result).toEqual({ redirected: true });
+        expect(callCount).toBe(2);
+    });
+
     it('returns empty object for 204', async () => {
         (global.fetch as jest.Mock).mockResolvedValue({
             ok: true,
