@@ -325,7 +325,7 @@ export class AuthManager {
     }
 
     private async refreshBotToken(): Promise<boolean> {
-        if (!integration.getSettings().accounts.authorizeBotAccount || !this.botRefreshToken) {
+        if (!integration.getSettings().accounts.authorizeBotAccount) {
             return true; // There wasn't an error so we indicate success
         }
 
@@ -335,9 +335,14 @@ export class AuthManager {
             return true;
         } catch (error) {
             logger.error(`Error refreshing bot auth token: ${error}`);
-            this.botRefreshToken = "";
-            this.botAuthToken = "";
-            integration.sendCriticalErrorNotification(`You need to re-authorize (or disable) the bot account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+
+            if (!this.botRefreshToken) {
+                logger.error("Bot refresh token is missing. Disconnecting integration.");
+                this.disconnect();
+                integration.sendCriticalErrorNotification(`You need to re-authorize (or disable) the bot account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+            } else {
+                this.scheduleNextBotTokenRenewal(10000); // Try again in 10 seconds if there's an error
+            }
         }
         return false;
     }
@@ -413,7 +418,11 @@ export class AuthManager {
             clearTimeout(this.streamerAuthRenewer);
         }
         this.streamerAuthRenewer = setTimeout(async () => {
-            await this.refreshStreamerToken();
+            try {
+                await this.refreshStreamerToken();
+            } catch (error) {
+                logger.error(`Uncaught error in scheduled streamer token renewal: ${error}`);
+            }
         }, delay);
         logger.debug(`Next streamer auth token renewal scheduled at ${new Date(Date.now() + delay).toISOString()}.`);
     }
@@ -423,7 +432,11 @@ export class AuthManager {
             clearTimeout(this.botAuthRenewer);
         }
         this.botAuthRenewer = setTimeout(async () => {
-            await this.refreshBotToken();
+            try {
+                await this.refreshBotToken();
+            } catch (error) {
+                logger.error(`Uncaught error in scheduled bot token renewal: ${error}`);
+            }
         }, delay);
         logger.debug(`Next bot auth token renewal scheduled at ${new Date(Date.now() + delay).toISOString()}.`);
     }
