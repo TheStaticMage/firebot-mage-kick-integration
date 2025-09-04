@@ -38,27 +38,21 @@ export class KickChannelManager {
     }
 
     async getCategoryInfo(categoryId: number): Promise<CategoryInfo> {
-        return new Promise((resolve, reject) => {
-            const fromCache = this.categoryCache.get(categoryId);
-            if (fromCache) {
-                resolve(fromCache);
-            }
+        const fromCache = this.categoryCache.get(categoryId);
+        if (fromCache) {
+            return fromCache;
+        }
 
-            this.kick.httpCallWithTimeout(`/public/v1/categories/${categoryId}`, "GET")
-                .then((response) => {
-                    if (!response || !response.data || response.data.length !== 1) {
-                        logger.debug(`Failed to retrieve category from Kick API response. ${JSON.stringify(response)}`);
-                        reject(new Error("Failed to retrieve category from Kick API."));
-                    }
+        const response = await this.kick.httpCallWithTimeout(`/public/v1/categories/${categoryId}`, "GET");
 
-                    const result: CategoryInfo = response.data[0];
-                    this.categoryCache.set(categoryId, result);
-                    resolve(result);
-                })
-                .catch((error) => {
-                    reject(error);
-                });
-        });
+        if (!response || !response.data || response.data.length !== 1) {
+            logger.debug(`Failed to retrieve category from Kick API response. ${JSON.stringify(response)}`);
+            throw new Error("Failed to retrieve category from Kick API.");
+        }
+
+        const result: CategoryInfo = response.data[0];
+        this.categoryCache.set(categoryId, result);
+        return result;
     }
 
     async getChannel(username: string | number = 0): Promise<Channel> {
@@ -103,25 +97,19 @@ export class KickChannelManager {
     }
 
     private async getChannelReal(username: string | number = 0): Promise<Channel> {
-        return new Promise((resolve, reject) => {
-            const formVariables = new URLSearchParams();
-            if (typeof username === "string" && username.length > 0) {
-                formVariables.append("slug", username);
-            } else if (typeof username === "number" && username > 0) {
-                formVariables.append("broadcaster_user_id", username.toString());
-            }
+        const formVariables = new URLSearchParams();
+        if (typeof username === "string" && username.length > 0) {
+            formVariables.append("slug", username);
+        } else if (typeof username === "number" && username > 0) {
+            formVariables.append("broadcaster_user_id", username.toString());
+        }
 
-            const uri = `/public/v1/channels${formVariables.toString().length > 0 ? `?${formVariables.toString()}` : ''}`;
-            this.kick.httpCallWithTimeout(uri, "GET", "", this.channelRefresherAborter.signal)
-                .then((response) => {
-                    logger.debug(`Successfully retrieved channel status for ${username || '(you)'}`);
-                    const channel = parseChannel(response);
-                    resolve(channel);
-                })
-                .catch((error) => {
-                    reject(error);
-                });
-        });
+        const uri = `/public/v1/channels${formVariables.toString().length > 0 ? `?${formVariables.toString()}` : ''}`;
+        const response = await this.kick.httpCallWithTimeout(uri, "GET", "", this.channelRefresherAborter.signal);
+
+        logger.debug(`Successfully retrieved channel status for ${username || '(you)'}`);
+        const channel = parseChannel(response);
+        return channel;
     }
 
     private refreshChannel(): void {
