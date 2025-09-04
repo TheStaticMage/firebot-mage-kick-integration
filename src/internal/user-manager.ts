@@ -61,6 +61,10 @@ export class KickUserManager {
     }
 
     async getOrCreateViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<FirebotViewer | undefined> {
+        if (!this._db) {
+            throw new Error("Viewer database is not connected.");
+        }
+
         if (unkickifyUserId(kickUser.userId.toString()) === '') {
             logger.warn(`getOrCreateViewer: Invalid userId for kickUser: ${JSON.stringify(kickUser)}`);
             return undefined;
