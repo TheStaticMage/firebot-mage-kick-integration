@@ -2,7 +2,7 @@ import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger, scriptVersion } from "../main";
 import { HttpCallRequest, httpCallWithTimeout } from "./http";
-import { handleWebhook } from "./webhook-handler/webhook-handler";
+import { webhookHandler } from "./webhook-handler/webhook-handler";
 
 export class Poller {
     private isConnected = false;
@@ -180,7 +180,7 @@ export class Poller {
 
     private async handleResponse(response: InboundWebhook): Promise<void> {
         try {
-            await handleWebhook(response);
+            await webhookHandler.handleWebhook(response);
         } catch (error) {
             logger.error(`Error parsing webhook: ${error}`);
             return;

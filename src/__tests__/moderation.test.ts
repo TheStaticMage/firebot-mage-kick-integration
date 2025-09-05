@@ -27,7 +27,7 @@ jest.mock('../main', () => ({
 
 import { IntegrationConstants } from '../constants';
 import { KickPusher } from '../internal/pusher/pusher';
-import { handleWebhook } from '../internal/webhook-handler/webhook-handler';
+import { webhookHandler } from '../internal/webhook-handler/webhook-handler';
 
 describe('e2e moderation unbanned', () => {
     let pusher: KickPusher;
@@ -379,7 +379,7 @@ describe('e2e moderation banned', () => {
             });
 
             it('triggers all expected events', async () => {
-                await expect(handleWebhook(webhookTimeoutPayload)).resolves.not.toThrow();
+                await expect(webhookHandler.handleWebhook(webhookTimeoutPayload)).resolves.not.toThrow();
                 expect(triggerEventMock).toHaveBeenCalledTimes(2);
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "timeout", expectedWebhookTimeoutMetadata);
                 expect(triggerEventMock).toHaveBeenCalledWith("twitch", "timeout", expectedWebhookTimeoutMetadata);
@@ -411,7 +411,7 @@ describe('e2e moderation banned', () => {
                     timeoutDuration: expect.any(Number),
                     platform: 'kick'
                 };
-                await expect(handleWebhook(webhookTimeoutPayloadDisabled)).resolves.not.toThrow();
+                await expect(webhookHandler.handleWebhook(webhookTimeoutPayloadDisabled)).resolves.not.toThrow();
                 expect(triggerEventMock).toHaveBeenCalledTimes(1);
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "timeout", expectedWebhookTimeoutMetadataDisabled);
             });
@@ -445,7 +445,7 @@ describe('e2e moderation banned', () => {
             });
 
             it('triggers all expected events', async () => {
-                await expect(handleWebhook(webhookBanPayload)).resolves.not.toThrow();
+                await expect(webhookHandler.handleWebhook(webhookBanPayload)).resolves.not.toThrow();
                 expect(triggerEventMock).toHaveBeenCalledTimes(2);
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "banned", expectedWebhookBanMetadata);
                 expect(triggerEventMock).toHaveBeenCalledWith("twitch", "banned", expectedWebhookBanMetadata);
@@ -477,7 +477,7 @@ describe('e2e moderation banned', () => {
                     timeoutDuration: undefined,
                     platform: 'kick'
                 };
-                await expect(handleWebhook(webhookBanPayloadDisabled)).resolves.not.toThrow();
+                await expect(webhookHandler.handleWebhook(webhookBanPayloadDisabled)).resolves.not.toThrow();
                 expect(triggerEventMock).toHaveBeenCalledTimes(1);
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "banned", expectedWebhookBanMetadataDisabled);
             });
