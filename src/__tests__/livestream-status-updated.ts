@@ -37,7 +37,7 @@ jest.mock('../main', () => ({
 
 import { IntegrationConstants } from '../constants';
 import { KickPusher } from '../internal/pusher/pusher';
-import { handleWebhook } from '../internal/webhook-handler/webhook-handler';
+import { webhookHandler } from '../internal/webhook-handler/webhook-handler';
 
 describe('e2e livestream status updated', () => {
     let pusher: KickPusher;
@@ -315,7 +315,7 @@ describe('e2e livestream status updated', () => {
             });
 
             it('triggers all expected events', async () => {
-                await expect(handleWebhook(webhookStreamStartPayload)).resolves.not.toThrow();
+                await expect(webhookHandler.handleWebhook(webhookStreamStartPayload)).resolves.not.toThrow();
                 expect(triggerEventMock).toHaveBeenCalledTimes(2);
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-online", expectedStreamOnlineMetadata);
                 expect(triggerEventMock).toHaveBeenCalledWith("twitch", "stream-online", expectedStreamOnlineMetadata);
@@ -335,7 +335,7 @@ describe('e2e livestream status updated', () => {
             });
 
             it('triggers only kick events', async () => {
-                await expect(handleWebhook(webhookStreamStartPayloadDisabled)).resolves.not.toThrow();
+                await expect(webhookHandler.handleWebhook(webhookStreamStartPayloadDisabled)).resolves.not.toThrow();
                 const expectedMetadata = {
                     username: 'teststreamer2@kick',
                     userId: 'k123457',
@@ -369,7 +369,7 @@ describe('e2e livestream status updated', () => {
             });
 
             it('triggers all expected events', async () => {
-                await expect(handleWebhook(webhookStreamStopPayload)).resolves.not.toThrow();
+                await expect(webhookHandler.handleWebhook(webhookStreamStopPayload)).resolves.not.toThrow();
                 expect(triggerEventMock).toHaveBeenCalledTimes(2);
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-offline", expectedStreamOfflineMetadata);
                 expect(triggerEventMock).toHaveBeenCalledWith("twitch", "stream-offline", expectedStreamOfflineMetadata);
@@ -389,7 +389,7 @@ describe('e2e livestream status updated', () => {
             });
 
             it('triggers only kick events', async () => {
-                await expect(handleWebhook(webhookStreamStopPayloadDisabled)).resolves.not.toThrow();
+                await expect(webhookHandler.handleWebhook(webhookStreamStopPayloadDisabled)).resolves.not.toThrow();
                 const expectedMetadata = {
                     username: 'teststreamer3@kick',
                     userId: 'k123458',
@@ -427,12 +427,12 @@ describe('e2e livestream status updated', () => {
         });
 
         it('does not trigger events when status unchanged via webhook stream start', async () => {
-            await expect(handleWebhook(webhookStreamStartPayload)).resolves.not.toThrow();
+            await expect(webhookHandler.handleWebhook(webhookStreamStartPayload)).resolves.not.toThrow();
             expect(triggerEventMock).not.toHaveBeenCalled();
         });
 
         it('does not trigger events when status unchanged via webhook stream stop', async () => {
-            await expect(handleWebhook(webhookStreamStopPayload)).resolves.not.toThrow();
+            await expect(webhookHandler.handleWebhook(webhookStreamStopPayload)).resolves.not.toThrow();
             expect(triggerEventMock).not.toHaveBeenCalled();
         });
     });
