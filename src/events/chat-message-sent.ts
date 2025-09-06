@@ -17,13 +17,12 @@ export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<
     const firebotChatMessage = await helpers.buildFirebotChatMessage(payload, payload.content);
 
     // Are there more badges we need to support?
-    const badgeRoles: string[] = helpers.getBadges(payload.sender.identity).map(b => b.title);
-    const possibleBadges: string[] = ["broadcaster", "moderator", "vip", "og", "subscriber"];
+    const twitchBadgeRoles: string[] = helpers.getTwitchRoles(payload.sender.identity);
 
     // Create user if they do not exist, and increment their chat messages
     const viewer = await integration.kick.userManager.getOrCreateViewer(payload.sender, [], true);
     if (viewer) {
-        await integration.kick.userManager.syncViewerRoles(viewer._id, badgeRoles, possibleBadges);
+        await integration.kick.userManager.setViewerRoles(viewer._id, twitchBadgeRoles);
     }
 
     // Skip duplicate messages here
@@ -66,7 +65,7 @@ function triggerChatMessage(userId: string, username: string, firebotChatMessage
         username: username,
         userId: userId,
         userDisplayName: firebotChatMessage.userDisplayName,
-        twitchUserRoles: [],
+        twitchUserRoles: firebotChatMessage.roles,
         messageText: firebotChatMessage.rawText,
         messageId: firebotChatMessage.id,
         chatMessage: firebotChatMessage,
@@ -102,7 +101,7 @@ export function triggerViewerArrived(
     }
 }
 
-class FirebotChatHelpers {
+export class FirebotChatHelpers {
     getBadges(identity: KickIdentity): chatBadge[] {
         return identity.badges
             .map(badge => ({
@@ -110,6 +109,21 @@ class FirebotChatHelpers {
                 url: IntegrationConstants.KICK_BADGE_DATA[badge.type] ? `data:image/svg+xml;base64,${btoa(IntegrationConstants.KICK_BADGE_DATA[badge.type])}` : ""
             }))
             .filter(badge => badge.url !== "");
+    }
+
+    getTwitchRoles(identity: KickIdentity): string[] {
+        const roles = new Set<string>();
+
+        identity.badges.forEach((badge) => {
+            const twitchRoles = IntegrationConstants.KICK_ROLES_TO_TWITCH_ROLES[badge.type];
+            if (twitchRoles) {
+                for (const role of twitchRoles) {
+                    roles.add(role);
+                }
+            }
+        });
+
+        return Array.from(roles);
     }
 
     async buildFirebotChatMessage(msg: ChatMessage, msgText: string) {
@@ -190,27 +204,14 @@ class FirebotChatHelpers {
         }
         firebotChatMessage.parts = messageParts;
 
-        firebotChatMessage.isFounder = msg.sender.identity.badges.some(b => b.type === "og");
+        firebotChatMessage.isFounder = msg.sender.identity.badges.some(b => b.type === "founder");
         firebotChatMessage.isBroadcaster = msg.sender.identity.badges.some(b => b.type === "broadcaster");
-        firebotChatMessage.isBot = false; // We can maybe determine this later
+        firebotChatMessage.isBot = kickifyUserId(msg.sender.userId) === kickifyUserId(integration.kick.bot?.userId || "");
         firebotChatMessage.isMod = msg.sender.identity.badges.some(b => b.type === "moderator");
         firebotChatMessage.isSubscriber = msg.sender.identity.badges.some(b => b.type === "subscriber");
         firebotChatMessage.isVip = msg.sender.identity.badges.some(b => b.type === "vip");
 
-        if (firebotChatMessage.isFounder) {
-            firebotChatMessage.roles.push("founder");
-            firebotChatMessage.roles.push("sub");
-        } else if (firebotChatMessage.isSubscriber) {
-            firebotChatMessage.roles.push("sub");
-        }
-
-        if (firebotChatMessage.isMod) {
-            firebotChatMessage.roles.push("mod");
-        }
-
-        if (firebotChatMessage.isVip) {
-            firebotChatMessage.roles.push("vip");
-        }
+        firebotChatMessage.roles = this.getTwitchRoles(msg.sender.identity);
 
         firebotChatMessage.isCheer = false; // No equivalent on Kick at the moment
 

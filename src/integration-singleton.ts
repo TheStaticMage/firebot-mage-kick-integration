@@ -1,6 +1,7 @@
 import { IntegrationData, ScriptModules } from "@crowbartools/firebot-custom-scripts-types";
 import { EventEmitter } from "events";
 import { platformCondition } from "./conditions/platform";
+import { viewerRolesCondition } from "./conditions/viewer-roles";
 import { IntegrationConstants } from "./constants";
 import { chatEffect } from "./effects/chat";
 import { chatPlatformEffect } from "./effects/chat-platform";
@@ -16,6 +17,8 @@ import { platformFilter } from "./filters/platform";
 import { rewardTitleFilter } from "./filters/reward-title";
 import { streamerOrBotFilter } from "./filters/streamer-or-bot";
 import { usernameFilter } from "./filters/username";
+import { viewerRolesFilter } from "./filters/viewer-roles";
+import { webhookReceivedEventTypeFilter, webhookReceivedLatencyFilter } from "./filters/webhook-received";
 import { AuthManager } from "./internal/auth";
 import { Kick } from "./internal/kick";
 import { Poller } from "./internal/poll";
@@ -56,7 +59,6 @@ import { kickUnbanTypeVariable } from "./variables/unban-type";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
 import { webhookReceivedEventTypeVariable, webhookReceivedEventVersionVariable, webhookReceivedLatencyVariable } from "./variables/webhook-received";
-import { webhookReceivedEventTypeFilter, webhookReceivedLatencyFilter } from "./filters/webhook-received";
 
 type IntegrationParameters = {
     connectivity: {
@@ -210,6 +212,7 @@ export class KickIntegration extends EventEmitter {
 
         const { conditionManager } = firebot.modules;
         conditionManager.registerConditionType(platformCondition);
+        conditionManager.registerConditionType(viewerRolesCondition);
 
         const { effectManager } = firebot.modules;
         effectManager.registerEffect(chatEffect);
@@ -230,6 +233,7 @@ export class KickIntegration extends EventEmitter {
         eventFilterManager.registerFilter(rewardTitleFilter);
         eventFilterManager.registerFilter(streamerOrBotFilter);
         eventFilterManager.registerFilter(usernameFilter);
+        eventFilterManager.registerFilter(viewerRolesFilter);
         eventFilterManager.registerFilter(webhookReceivedEventTypeFilter);
         eventFilterManager.registerFilter(webhookReceivedLatencyFilter);
 
