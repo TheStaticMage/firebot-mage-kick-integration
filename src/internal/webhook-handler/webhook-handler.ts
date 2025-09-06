@@ -4,8 +4,10 @@ import { handleLivestreamMetadataUpdatedEvent } from "../../events/livestream-me
 import { livestreamStatusUpdatedHandler } from "../../events/livestream-status-updated";
 import { moderationBannedEventHandler } from "../../events/moderation-banned";
 import { handleChannelSubscriptionEvent, handleChannelSubscriptionGiftsEvent } from "../../events/sub-events";
+import { handleWebhookReceivedEvent } from "../../events/webhook-received";
 import { integration } from "../../integration";
 import { logger } from "../../main";
+import { parseDate } from "../util";
 import { parseChannelSubscriptionGiftsEvent, parseChannelSubscriptionNewEvent, parseChannelSubscriptionRenewalEvent, parseChatMessageEvent, parseFollowEvent, parseLivestreamMetadataUpdatedEvent, parseLivestreamStatusUpdatedEvent, parseModerationBannedEvent, parsePusherTestWebhook } from "./webhook-parsers";
 import NodeCache from 'node-cache';
 
@@ -34,6 +36,15 @@ export class WebhookHandler {
             return;
         }
         this.webhookCache.set(payloadHash, true);
+
+        // For performance checks and other debugging on webhooks
+        const webhookReceivedEvent = {
+            kickEventType: webhook.kick_event_type,
+            kickEventVersion: webhook.kick_event_version,
+            isTestEvent: webhook.is_test_event || false,
+            timestamp: parseDate(webhook.kick_event_message_timestamp) || null
+        };
+        handleWebhookReceivedEvent(webhookReceivedEvent);
 
         // This is NOT intended to be for security, since you are implicitly
         // trusting the proxy owner and they could just send you fake data. Rather,

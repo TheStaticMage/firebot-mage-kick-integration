@@ -254,7 +254,7 @@ describe('e2e gift subscription events', () => {
                 expect(mockRecordSubscription).toHaveBeenCalledTimes(2); // 2 giftees
                 expect(mockRecordGift).toHaveBeenCalledTimes(2); // 2 gifts recorded
 
-                expect(triggerEventMock).toHaveBeenCalledTimes(3); // 1 community + 2 individual
+                expect(triggerEventMock).toHaveBeenCalledTimes(4); // 1 community + 2 individual + 1 webhook-received
             });
         });
 
@@ -302,7 +302,7 @@ describe('e2e gift subscription events', () => {
                     expectedIndividualKickMetadata2
                 );
 
-                expect(triggerEventMock).toHaveBeenCalledTimes(5); // 1 community + 2 kick individual + 2 twitch individual
+                expect(triggerEventMock).toHaveBeenCalledTimes(6); // 1 community + 2 kick individual + 2 twitch individual + 1 webhook-received
             });
         });
     });
@@ -577,7 +577,7 @@ describe('e2e gift subscription events', () => {
             // Verify both events were processed
             const subGiftedCalls = triggerEventMock.mock.calls.filter(call => call[1] === "subs-gifted");
             expect(subGiftedCalls).toHaveLength(1);
-            expect(triggerEventMock).toHaveBeenCalledTimes(1); // Only webhook should trigger
+            expect(triggerEventMock).toHaveBeenCalledTimes(2); // Only webhook should trigger + 1 webhook-received
             const hasWebhookEvent = subGiftedCalls.some(call =>
                 call[2].gifteeUsername === 'recipient1@kick');
             expect(hasWebhookEvent).toBe(true);
@@ -690,7 +690,7 @@ describe('e2e gift subscription events', () => {
             expect(hasWebhookEvent).toBe(true);
 
             // This test verifies that different events can be processed separately
-            expect(triggerEventMock).toHaveBeenCalledTimes(subGiftedCalls.length);
+            expect(triggerEventMock).toHaveBeenCalledTimes(subGiftedCalls.length + 1); // +1 for webhook-received
         });
     });
 });
