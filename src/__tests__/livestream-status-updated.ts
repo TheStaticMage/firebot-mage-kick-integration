@@ -202,7 +202,7 @@ describe('e2e livestream status updated', () => {
         const expectedStreamOnlineMetadata = {
             username: 'teststreamer@kick',
             userId: 'k123456',
-            userDisplayName: 'teststreamer@kick',
+            userDisplayName: 'teststreamer',
             platform: 'kick'
         };
 
@@ -250,7 +250,7 @@ describe('e2e livestream status updated', () => {
         const expectedStreamOfflineMetadata = {
             username: 'teststreamer@kick',
             userId: 'k123456',
-            userDisplayName: 'teststreamer@kick',
+            userDisplayName: 'teststreamer',
             platform: 'kick'
         };
 

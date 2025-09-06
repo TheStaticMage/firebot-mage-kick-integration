@@ -2,15 +2,28 @@ import { KickUser } from "../../../shared/types";
 import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStopStreamBroadcast, parseStreamHostedEvent, parseStreamerIsLiveEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "../pusher-parsers";
 
 // Mock the integration module
-jest.mock("../../../integration", () => ({
-    integration: {
-        kick: {
-            broadcaster: {
-                userId: "123456",
-                name: "teststreamer",
-                profilePicture: "https://example.com/profile.jpg"
+jest.mock("../../../integration", () => {
+    const mockGetViewerByUsername = jest.fn();
+    return {
+        integration: {
+            kick: {
+                broadcaster: {
+                    userId: "123456",
+                    name: "teststreamer",
+                    profilePicture: "https://example.com/profile.jpg"
+                },
+                userManager: {
+                    getViewerByUsername: mockGetViewerByUsername
+                }
             }
         }
+    };
+});
+
+// Mock the logger
+jest.mock("../../../main", () => ({
+    logger: {
+        error: jest.fn()
     }
 }));
 
@@ -21,16 +34,16 @@ describe('parseViewerUnbannedEvent', () => {
         const result = parseViewerUnbannedEvent(input);
         expect(result).toEqual({
             user: {
-                userId: "k111",
-                username: "unbanneduser@kick",
+                userId: "111",
+                username: "unbanneduser",
                 displayName: "unbanneduser",
                 profilePicture: '',
                 isVerified: false,
                 channelSlug: ''
             },
             moderator: {
-                userId: "k222",
-                username: "moduser@kick",
+                userId: "222",
+                username: "moduser",
                 displayName: "moduser",
                 profilePicture: '',
                 isVerified: false,
@@ -46,16 +59,16 @@ describe('parseViewerUnbannedEvent', () => {
         const result = parseViewerUnbannedEvent(input);
         expect(result).toEqual({
             user: {
-                userId: "k333",
-                username: "timeoutuser@kick",
+                userId: "333",
+                username: "timeoutuser",
                 displayName: "timeoutuser",
                 profilePicture: '',
                 isVerified: false,
                 channelSlug: ''
             },
             moderator: {
-                userId: "k444",
-                username: "mod2@kick",
+                userId: "444",
+                username: "mod2",
                 displayName: "mod2",
                 profilePicture: '',
                 isVerified: false,
@@ -247,8 +260,8 @@ describe('parseChatMoveToSupportedChannelEvent', () => {
         const result = parseChatMoveToSupportedChannelEvent(JSON.parse(jsonInput));
         expect(result).toEqual({
             targetUser: {
-                userId: 'k87654321',
-                username: 'Target_User@kick',
+                userId: '87654321',
+                username: 'Target_User',
                 displayName: 'Target_User',
                 profilePicture: 'https://profile_pic',
                 isVerified: false,
@@ -271,16 +284,16 @@ describe('parseViewerBannedOrTimedOutEvent', () => {
 
         expect(result).toEqual({
             bannedUser: {
-                userId: "k23498234",
-                username: "timeoutuser@kick",
+                userId: "23498234",
+                username: "timeoutuser",
                 displayName: "timeoutuser",
                 profilePicture: '',
                 isVerified: false,
                 channelSlug: 'timeoutuser'
             },
             moderator: {
-                userId: "k0",
-                username: "TheStaticMage@kick",
+                userId: "0",
+                username: "TheStaticMage",
                 displayName: "TheStaticMage",
                 profilePicture: '',
                 isVerified: false,
@@ -301,16 +314,16 @@ describe('parseViewerBannedOrTimedOutEvent', () => {
 
         expect(result).toEqual({
             bannedUser: {
-                userId: "k23498234",
-                username: "timeoutuser@kick",
+                userId: "23498234",
+                username: "timeoutuser",
                 displayName: "timeoutuser",
                 profilePicture: '',
                 isVerified: false,
                 channelSlug: 'timeoutuser'
             },
             moderator: {
-                userId: "k0",
-                username: "TheStaticMage@kick",
+                userId: "0",
+                username: "TheStaticMage",
                 displayName: "TheStaticMage",
                 profilePicture: '',
                 isVerified: false,
@@ -342,8 +355,8 @@ describe('parseStreamerIsLiveEvent', () => {
         expect(result).toEqual({
             isLive: true,
             broadcaster: {
-                userId: "k123456",
-                username: "teststreamer@kick",
+                userId: "123456",
+                username: "teststreamer",
                 displayName: "teststreamer",
                 profilePicture: "https://example.com/profile.jpg",
                 isVerified: false,
@@ -371,8 +384,8 @@ describe('parseStreamerIsLiveEvent', () => {
         expect(result).toEqual({
             isLive: true,
             broadcaster: {
-                userId: "k123456",
-                username: "teststreamer@kick",
+                userId: "123456",
+                username: "teststreamer",
                 displayName: "teststreamer",
                 profilePicture: "https://example.com/profile.jpg",
                 isVerified: false,
@@ -400,8 +413,8 @@ describe('parseStreamerIsLiveEvent', () => {
         expect(result).toEqual({
             isLive: true,
             broadcaster: {
-                userId: "k123456",
-                username: "teststreamer@kick",
+                userId: "123456",
+                username: "teststreamer",
                 displayName: "teststreamer",
                 profilePicture: "https://example.com/profile.jpg",
                 isVerified: false,
@@ -474,8 +487,8 @@ describe('parseStreamerIsLiveEvent', () => {
         expect(result).toEqual({
             isLive: true,
             broadcaster: {
-                userId: "k123456",
-                username: "teststreamer@kick",
+                userId: "123456",
+                username: "teststreamer",
                 displayName: "teststreamer",
                 profilePicture: "https://example.com/profile.jpg",
                 isVerified: false,
@@ -506,8 +519,8 @@ describe('parseStopStreamBroadcast', () => {
         expect(result).toEqual({
             isLive: false,
             broadcaster: {
-                userId: "k123456",
-                username: "teststreamer@kick",
+                userId: "123456",
+                username: "teststreamer",
                 displayName: "teststreamer",
                 profilePicture: "https://example.com/profile.jpg",
                 isVerified: false,
@@ -561,8 +574,8 @@ describe('parseStopStreamBroadcast', () => {
         expect(result).toEqual({
             isLive: false,
             broadcaster: {
-                userId: "k789012",
-                username: "nopicstreamer@kick",
+                userId: "789012",
+                username: "nopicstreamer",
                 displayName: "nopicstreamer",
                 profilePicture: "",
                 isVerified: false,

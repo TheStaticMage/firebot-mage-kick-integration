@@ -1,6 +1,6 @@
 import { integration } from "../../integration";
 import { ChatMessage, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
-import { kickifyUserId, kickifyUsername, parseDate, unkickifyUsername } from "../util";
+import { parseDate } from "../util";
 
 export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMessage {
     const d = data as ChatMessageEvent;
@@ -73,9 +73,9 @@ export function parseChatMoveToSupportedChannelEvent(data: any): RaidSentOffEven
     const d = data as ChatMoveToSupportedChannelEventPayload;
     return {
         targetUser: {
-            userId: kickifyUserId(d.hosted.id.toString()),
-            username: kickifyUsername(d.hosted.username),
-            displayName: unkickifyUsername(d.hosted.username),
+            userId: d.hosted.id.toString(),
+            username: d.hosted.username,
+            displayName: d.hosted.username,
             profilePicture: d.hosted.profile_pic,
             isVerified: false, // Not provided in event
             channelSlug: d.hosted.slug
@@ -89,17 +89,17 @@ export function parseViewerUnbannedEvent(data: any): ModerationUnbannedEvent {
     const d = data as ViewerUnbannedEventData;
     return {
         user: {
-            userId: kickifyUserId(d.user.id.toString()),
-            username: kickifyUsername(d.user.username),
-            displayName: unkickifyUsername(d.user.username),
+            userId: String(d.user.id),
+            username: d.user.username,
+            displayName: d.user.username,
             profilePicture: '', // Not provided in event
             isVerified: false, // Not provided in event
             channelSlug: '' // Not provided in event
         },
         moderator: {
-            userId: kickifyUserId(d.unbanned_by.id.toString()),
-            username: kickifyUsername(d.unbanned_by.username),
-            displayName: unkickifyUsername(d.unbanned_by.username),
+            userId: String(d.unbanned_by.id),
+            username: d.unbanned_by.username,
+            displayName: d.unbanned_by.username,
             profilePicture: '', // Not provided in event
             isVerified: false, // Not provided in event
             channelSlug: '' // Not provided in event
@@ -112,17 +112,17 @@ export function parseViewerBannedOrTimedOutEvent(data: any): ModerationBannedEve
     const d = data as ViewerBannedEventData;
     return {
         bannedUser: {
-            userId: kickifyUserId(d.user.id.toString()),
-            username: kickifyUsername(d.user.username),
-            displayName: unkickifyUsername(d.user.username),
+            userId: String(d.user.id),
+            username: d.user.username,
+            displayName: d.user.username,
             profilePicture: '', // Not provided in event
             isVerified: false, // Not provided in event
             channelSlug: d.user.slug
         },
         moderator: {
-            userId: kickifyUserId(d.banned_by.id.toString()),
-            username: kickifyUsername(d.banned_by.username),
-            displayName: unkickifyUsername(d.banned_by.username),
+            userId: String(d.banned_by.id),
+            username: d.banned_by.username,
+            displayName: d.banned_by.username,
             profilePicture: '', // Not provided in event
             isVerified: false, // Not provided in event
             channelSlug: d.banned_by.slug
@@ -141,9 +141,9 @@ export function parseStreamerIsLiveEvent(data: any): LivestreamStatusUpdated {
     return {
         isLive: true,
         broadcaster: {
-            userId: kickifyUserId(b?.userId),
-            username: kickifyUsername(b?.name),
-            displayName: unkickifyUsername(b?.name),
+            userId: b?.userId ? String(b.userId) : "",
+            username: b?.name || "",
+            displayName: b?.name || '',
             profilePicture: b?.profilePicture || '',
             isVerified: false, // Not set in event
             channelSlug: '' // Not set in event
@@ -159,12 +159,12 @@ export function parseStopStreamBroadcast(): LivestreamStatusUpdated {
     return {
         isLive: false,
         broadcaster: {
-            userId: kickifyUserId(b?.userId),
-            username: kickifyUsername(b?.name),
-            displayName: unkickifyUsername(b?.name),
-            profilePicture: b?.profilePicture || '',
+            userId: b?.userId ? String(b.userId) : "",
+            username: b?.name || "",
+            displayName: b?.name || "",
+            profilePicture: b?.profilePicture || "",
             isVerified: false, // Not set in event
-            channelSlug: '' // Not set in event
+            channelSlug: "" // Not set in event
         },
         title: '',
         startedAt: undefined, // Not set in event
