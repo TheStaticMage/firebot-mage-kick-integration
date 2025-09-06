@@ -348,6 +348,17 @@ export const eventSource: EventSource = {
                     return `**${userDisplayName}** was **${action}** by **${moderator}**.`;
                 }
             }
+        },
+        {
+            id: "webhook-received",
+            name: "Kick Webhook Received",
+            description: "When a Kick webhook is received (this event is for advanced users looking to profile response time or debug webhook connectivity issues)",
+            cached: false,
+            manualMetadata: {
+                timestamp: new Date().toISOString(),
+                webhookType: "chat.message.sent",
+                webhookVersion: "1"
+            }
         }
     ]
 };

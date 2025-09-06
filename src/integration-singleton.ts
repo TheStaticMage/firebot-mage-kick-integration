@@ -55,6 +55,8 @@ import { kickTimeoutDurationVariable } from "./variables/timeout-duration";
 import { kickUnbanTypeVariable } from "./variables/unban-type";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
+import { webhookReceivedEventTypeVariable, webhookReceivedEventVersionVariable, webhookReceivedLatencyVariable } from "./variables/webhook-received";
+import { webhookReceivedEventTypeFilter, webhookReceivedLatencyFilter } from "./filters/webhook-received";
 
 type IntegrationParameters = {
     connectivity: {
@@ -228,6 +230,8 @@ export class KickIntegration extends EventEmitter {
         eventFilterManager.registerFilter(rewardTitleFilter);
         eventFilterManager.registerFilter(streamerOrBotFilter);
         eventFilterManager.registerFilter(usernameFilter);
+        eventFilterManager.registerFilter(webhookReceivedEventTypeFilter);
+        eventFilterManager.registerFilter(webhookReceivedLatencyFilter);
 
         const { replaceVariableManager } = firebot.modules;
 
@@ -281,6 +285,11 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.registerReplaceVariable(kickSubMonthsVariable);
         replaceVariableManager.registerReplaceVariable(kickSubStreakVariable);
         replaceVariableManager.registerReplaceVariable(kickSubTypeVariable);
+
+        // Webhook received and latency variables
+        replaceVariableManager.registerReplaceVariable(webhookReceivedEventTypeVariable);
+        replaceVariableManager.registerReplaceVariable(webhookReceivedEventVersionVariable);
+        replaceVariableManager.registerReplaceVariable(webhookReceivedLatencyVariable);
 
         // Miscellaneous variables
         replaceVariableManager.registerReplaceVariable(platformVariable);

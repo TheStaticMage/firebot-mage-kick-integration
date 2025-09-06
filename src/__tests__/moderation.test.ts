@@ -2,7 +2,14 @@ export const triggerEventMock = jest.fn();
 
 jest.mock('../integration', () => ({
     integration: {
-        getSettings: jest.fn()
+        getSettings: jest.fn(),
+        kick: {
+            broadcaster: {
+                name: "You",
+                profilePicture: "https://your-profile-pic",
+                userId: 1234567890
+            }
+        }
     }
 }));
 
@@ -380,7 +387,7 @@ describe('e2e moderation banned', () => {
 
             it('triggers all expected events', async () => {
                 await expect(webhookHandler.handleWebhook(webhookTimeoutPayload)).resolves.not.toThrow();
-                expect(triggerEventMock).toHaveBeenCalledTimes(2);
+                expect(triggerEventMock).toHaveBeenCalledTimes(3); // 1 integration + 1 twitch + 1 webhook-received
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "timeout", expectedWebhookTimeoutMetadata);
                 expect(triggerEventMock).toHaveBeenCalledWith("twitch", "timeout", expectedWebhookTimeoutMetadata);
             });
@@ -412,7 +419,7 @@ describe('e2e moderation banned', () => {
                     platform: 'kick'
                 };
                 await expect(webhookHandler.handleWebhook(webhookTimeoutPayloadDisabled)).resolves.not.toThrow();
-                expect(triggerEventMock).toHaveBeenCalledTimes(1);
+                expect(triggerEventMock).toHaveBeenCalledTimes(2); // 1 integration + 1 webhook-received
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "timeout", expectedWebhookTimeoutMetadataDisabled);
             });
         });
@@ -446,7 +453,7 @@ describe('e2e moderation banned', () => {
 
             it('triggers all expected events', async () => {
                 await expect(webhookHandler.handleWebhook(webhookBanPayload)).resolves.not.toThrow();
-                expect(triggerEventMock).toHaveBeenCalledTimes(2);
+                expect(triggerEventMock).toHaveBeenCalledTimes(3); // 1 integration + 1 twitch + 1 webhook-received
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "banned", expectedWebhookBanMetadata);
                 expect(triggerEventMock).toHaveBeenCalledWith("twitch", "banned", expectedWebhookBanMetadata);
             });
@@ -478,7 +485,7 @@ describe('e2e moderation banned', () => {
                     platform: 'kick'
                 };
                 await expect(webhookHandler.handleWebhook(webhookBanPayloadDisabled)).resolves.not.toThrow();
-                expect(triggerEventMock).toHaveBeenCalledTimes(1);
+                expect(triggerEventMock).toHaveBeenCalledTimes(2); // 1 integration + 1 webhook-received
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "banned", expectedWebhookBanMetadataDisabled);
             });
         });

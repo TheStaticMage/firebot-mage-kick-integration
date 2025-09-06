@@ -174,3 +174,10 @@ export interface ModerationUnbannedEvent {
     moderator: KickUser;
     banType: "timeout" | "permanent";
 }
+
+export interface WebhookReceivedEvent {
+    kickEventType: string;
+    kickEventVersion: string;
+    isTestEvent: boolean;
+    timestamp: Date | null;
+}
