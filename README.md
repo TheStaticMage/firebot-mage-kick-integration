@@ -103,7 +103,7 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 | Currency: Watch time | :x: | No viewer list API endpoint on Kick &#x1F1F0; |
 | Moderation: Banned words / URLs | :x: | Kick API lacks ability to delete messages &#x1F1F0; |
 | Ranks | :x: | Pointless without proper currency support |
-| Roles | :white_check_mark: | Seems to mostly work |
+| Roles | :white_check_mark: | Seems to mostly work; Twitch role filters emulated in platform-aware filter |
 | Viewer database | :x: | Firebot assumes all users are Twitch users &#x1F525; |
 
 &#x1F1F0; = Denotes that the feature cannot be fully supported due to [Kick limitations](#limitations-due-to-kick)
@@ -127,6 +127,7 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 - Rate limiting (cooldowns) for commands and redeems doesn't work natively. Consider using the [Firebot Rate Limiter](https://github.com/TheStaticMage/firebot-rate-limiter) if needed.
 - Many built-in Firebot variables, filters and effects are hard-coded to be available only to specific Twitch events. This means that variables you'd expect to work just won't for the Kick events (e.g. `$moderator` is not available for ban events and `$chatMessage` will not contain the Kick chat message). We do have some workarounds in the form of Kick-specific variables like `$kickModerator` and the ability to trigger the Twitch-equivalent events when Kick events are received.
 - Slash commands in the Firebot chat (e.g. `/clear`) only apply to Twitch. (There aren't Kick API endpoints for most of these anyway.)
+- You won't be able to add a Kick user to a custom role via the Firebot GUI, because Firebot does a Twitch lookup on whatever you type. It is, however, possible to have events add Kick users to custom roles. You can remove Kick users from custom roles through the GUI.
 
 ## Installation
 

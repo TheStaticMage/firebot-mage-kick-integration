@@ -184,18 +184,16 @@ export class KickUserManager {
         return user;
     }
 
-    async syncViewerRoles(userId: string, roles: string[], rolesToDeleteIfNotPresent: string[] = []): Promise<void> {
+    async setViewerRoles(userId: string, roles: string[]): Promise<void> {
         if (!this._db) {
             throw new Error("Viewer database is not connected.");
         }
 
-        const rolesToDelete = rolesToDeleteIfNotPresent.filter(role => !roles.includes(role));
-        logger.debug(`Syncing viewer roles for user ${userId}. Adding roles: ${roles}, Removing roles: ${rolesToDelete}`);
-
         try {
-            await this._db.updateAsync({ _id: unkickifyUserId(userId) }, { $addToSet: { twitchRoles: { $each: roles } }, $pull: { twitchRoles: { $in: rolesToDelete } } });
+            await this._db.updateAsync({ _id: unkickifyUserId(userId) }, { $set: { twitchRoles: roles } });
+            logger.debug(`Set Twitch viewer roles for user ${userId}: ${roles}`);
         } catch (error) {
-            logger.error(`Error adding viewer roles for user ${userId}: ${String(error)}`);
+            logger.error(`Error setting viewer roles for user ${userId}: ${String(error)}`);
         }
     }
 
