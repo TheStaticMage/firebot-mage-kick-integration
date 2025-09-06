@@ -11,7 +11,7 @@ interface chatBadge {
     url: string;
 }
 
-export async function handleChatMessageSentEvent(payload: ChatMessage, delay = 0): Promise<void> {
+export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<void> {
     // Basic message parsing
     const helpers = new FirebotChatHelpers();
     const firebotChatMessage = await helpers.buildFirebotChatMessage(payload, payload.content);
@@ -24,19 +24,6 @@ export async function handleChatMessageSentEvent(payload: ChatMessage, delay = 0
     const viewer = await integration.kick.userManager.getOrCreateViewer(payload.sender, [], true);
     if (viewer) {
         await integration.kick.userManager.syncViewerRoles(viewer._id, badgeRoles, possibleBadges);
-    }
-
-    // This might be delayed -- the webhook contains more information than
-    // pusher (e.g. badges) but the pusher message usually comes first. However
-    // the webhooks are sometimes delayed, so we don't want to wait too long for
-    // the webhook to come either. This tries to make the best operational
-    // choice.
-    //
-    if (delay > 0) {
-        logger.debug(`handleChatMessageSentEvent: Message processing delay is currently disabled (request: ${delay} seconds)`);
-        // Currently commented out: The pusher events do seem to have badges. We can
-        // add this back if we have future dependencies on fields only in webhooks.
-        // await new Promise(resolve => setTimeout(resolve, delay * 1000));
     }
 
     // Skip duplicate messages here

@@ -107,7 +107,7 @@ export class KickPusher {
                 case 'App\\Events\\ChatMessageEvent': {
                     const broadcaster = this.getBroadcaster();
                     if (broadcaster) {
-                        await handleChatMessageSentEvent(parseChatMessageEvent(data, broadcaster), 2); // Delay by 2 seconds in hopes webhook arrives first
+                        await handleChatMessageSentEvent(parseChatMessageEvent(data, broadcaster));
                     } else {
                         logger.warn("Skipping chat message event: broadcaster information not available");
                     }
