@@ -1,5 +1,5 @@
 import { KickUser } from "../../../shared/types";
-import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStopStreamBroadcast, parseStreamHostedEvent, parseStreamerIsLiveEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "../pusher-parsers";
+import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseGiftSubEvent, parseRewardRedeemedEvent, parseStopStreamBroadcast, parseStreamHostedEvent, parseStreamerIsLiveEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "../pusher-parsers";
 
 // Mock the integration module
 jest.mock("../../../integration", () => {
@@ -26,6 +26,9 @@ jest.mock("../../../main", () => ({
         error: jest.fn()
     }
 }));
+
+// Get reference to the mock function for use in tests
+const mockGetViewerByUsername = require("../../../integration").integration.kick.userManager.getViewerByUsername;
 
 describe('parseViewerUnbannedEvent', () => {
     it('parses a permanent unban event correctly', () => {
@@ -601,5 +604,299 @@ describe('parseStopStreamBroadcast', () => {
         expect(result1.endedAt).toEqual(new Date('2025-09-01T12:00:00.000Z'));
         expect(result2.endedAt).toEqual(new Date('2025-09-01T12:00:05.000Z'));
         expect(result1.endedAt?.getTime()).toBeLessThan(result2.endedAt?.getTime() || 0);
+    });
+});
+
+describe('parseGiftSubEvent', () => {
+    const { logger } = require("../../../main");
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        // Reset the mock date to a consistent value
+        jest.useFakeTimers();
+        jest.setSystemTime(new Date('2025-09-01T12:00:00.000Z'));
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
+    });
+
+    it('parses gift sub event when both gifter and giftees exist in database', async () => {
+        /* eslint-disable camelcase */
+        const inputData = {
+            channel: {
+                user_id: 123456
+            },
+            usernames: ["recipient1", "recipient2"],
+            gifter_username: "gifteruser"
+        };
+        /* eslint-enable camelcase */
+
+        // Mock successful database lookups
+        mockGetViewerByUsername
+            .mockResolvedValueOnce({
+                _id: "gifter123",
+                username: "gifteruser",
+                displayName: "Gifter User",
+                profilePicUrl: "https://example.com/gifter.jpg"
+            })
+            .mockResolvedValueOnce({
+                _id: "recipient123",
+                username: "recipient1",
+                displayName: "Recipient One",
+                profilePicUrl: "https://example.com/recipient1.jpg"
+            })
+            .mockResolvedValueOnce({
+                _id: "recipient456",
+                username: "recipient2",
+                displayName: null, // Test null displayName fallback
+                profilePicUrl: null // Test null profilePicUrl fallback
+            });
+
+        const result = await parseGiftSubEvent(inputData);
+
+        expect(result).toEqual({
+            broadcaster: {
+                userId: "123456",
+                username: "teststreamer",
+                displayName: "teststreamer",
+                profilePicture: "https://example.com/profile.jpg",
+                isVerified: false,
+                channelSlug: ""
+            },
+            gifter: {
+                userId: "gifter123",
+                username: "gifteruser",
+                displayName: "Gifter User",
+                profilePicture: "https://example.com/gifter.jpg",
+                isVerified: false,
+                channelSlug: ""
+            },
+            giftees: [
+                {
+                    userId: "recipient123",
+                    username: "recipient1",
+                    displayName: "Recipient One",
+                    profilePicture: "https://example.com/recipient1.jpg",
+                    isVerified: false,
+                    channelSlug: ""
+                },
+                {
+                    userId: "recipient456",
+                    username: "recipient2",
+                    displayName: "recipient2", // Should fallback from null displayName
+                    profilePicture: "", // Should fallback from null profilePicUrl
+                    isVerified: false,
+                    channelSlug: ""
+                }
+            ],
+            createdAt: new Date('2025-09-01T12:00:00.000Z'),
+            expiresAt: new Date('2025-10-01T12:00:00.000Z') // 30 days later
+        });
+
+        expect(mockGetViewerByUsername).toHaveBeenCalledTimes(3);
+        expect(mockGetViewerByUsername).toHaveBeenNthCalledWith(1, "gifteruser");
+        expect(mockGetViewerByUsername).toHaveBeenNthCalledWith(2, "recipient1");
+        expect(mockGetViewerByUsername).toHaveBeenNthCalledWith(3, "recipient2");
+        expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it('handles gifter not found in database', async () => {
+        /* eslint-disable camelcase */
+        const inputData = {
+            channel: {
+                user_id: 123456
+            },
+            usernames: ["recipient1"],
+            gifter_username: "unknowngifter"
+        };
+        /* eslint-enable camelcase */
+
+        // Mock gifter not found, recipient found
+        mockGetViewerByUsername
+            .mockResolvedValueOnce(null) // Gifter not found
+            .mockResolvedValueOnce({ // Recipient found
+                _id: "recipient123",
+                username: "recipient1",
+                displayName: "Recipient One",
+                profilePicUrl: "https://example.com/recipient1.jpg"
+            });
+
+        const result = await parseGiftSubEvent(inputData);
+
+        expect(result.gifter).toEqual({
+            userId: "",
+            username: "anonymous",
+            displayName: "Anonymous",
+            profilePicture: "",
+            isVerified: false,
+            channelSlug: ""
+        });
+
+        expect(logger.error).toHaveBeenCalledWith("Pusher gift sub event: could not find gifter username unknowngifter in viewer database.");
+    });
+
+    it('handles giftee not found in database', async () => {
+        /* eslint-disable camelcase */
+        const inputData = {
+            channel: {
+                user_id: 123456
+            },
+            usernames: ["unknownrecipient"],
+            gifter_username: "gifteruser"
+        };
+        /* eslint-enable camelcase */
+
+        // Mock gifter found, recipient not found
+        mockGetViewerByUsername
+            .mockResolvedValueOnce({ // Gifter found
+                _id: "gifter123",
+                username: "gifteruser",
+                displayName: "Gifter User",
+                profilePicUrl: "https://example.com/gifter.jpg"
+            })
+            .mockResolvedValueOnce(null); // Recipient not found
+
+        const result = await parseGiftSubEvent(inputData);
+
+        expect(result.giftees).toHaveLength(1);
+        expect(result.giftees[0]).toEqual({
+            userId: "",
+            username: "unknownrecipient",
+            displayName: "unknownrecipient",
+            profilePicture: "",
+            isVerified: false,
+            channelSlug: ""
+        });
+
+        expect(logger.error).toHaveBeenCalledWith("Pusher gift sub event: could not find giftee username unknownrecipient in viewer database.");
+    });
+
+    it('handles multiple giftees with mixed database results', async () => {
+        /* eslint-disable camelcase */
+        const inputData = {
+            channel: {
+                user_id: 123456
+            },
+            usernames: ["knownuser", "unknownuser", "anotherknownuser"],
+            gifter_username: "gifteruser"
+        };
+        /* eslint-enable camelcase */
+
+        // Mock responses: gifter found, first recipient found, second not found, third found
+        mockGetViewerByUsername
+            .mockResolvedValueOnce({
+                _id: "gifter123",
+                username: "gifteruser",
+                displayName: "Gifter User",
+                profilePicUrl: "https://example.com/gifter.jpg"
+            })
+            .mockResolvedValueOnce({
+                _id: "1000123",
+                username: "knownuser",
+                displayName: "Known User",
+                profilePicUrl: "https://example.com/known.jpg"
+            })
+            .mockResolvedValueOnce(null) // unknownuser not found
+            .mockResolvedValueOnce({
+                _id: "1000456",
+                username: "anotherknownuser",
+                displayName: "Another Known User",
+                profilePicUrl: "https://example.com/another.jpg"
+            });
+
+        const result = await parseGiftSubEvent(inputData);
+
+        expect(result.giftees).toHaveLength(3);
+        expect(result.giftees[0]).toEqual({
+            userId: "1000123", // Getting the _id directly without kickifyUserId transformation
+            username: "knownuser",
+            displayName: "Known User",
+            profilePicture: "https://example.com/known.jpg",
+            isVerified: false,
+            channelSlug: ""
+        });
+        expect(result.giftees[1]).toEqual({
+            userId: "",
+            username: "unknownuser",
+            displayName: "unknownuser",
+            profilePicture: "",
+            isVerified: false,
+            channelSlug: ""
+        });
+        expect(result.giftees[2]).toEqual({
+            userId: "1000456", // Getting the _id directly without kickifyUserId transformation
+            username: "anotherknownuser",
+            displayName: "Another Known User",
+            profilePicture: "https://example.com/another.jpg",
+            isVerified: false,
+            channelSlug: ""
+        });
+
+        expect(logger.error).toHaveBeenCalledTimes(1);
+        expect(logger.error).toHaveBeenCalledWith("Pusher gift sub event: could not find giftee username unknownuser in viewer database.");
+    });
+
+    it('handles empty giftees array', async () => {
+        /* eslint-disable camelcase */
+        const inputData = {
+            channel: {
+                user_id: 123456
+            },
+            usernames: [],
+            gifter_username: "gifteruser"
+        };
+        /* eslint-enable camelcase */
+
+        mockGetViewerByUsername.mockResolvedValueOnce({
+            _id: "gifter123",
+            username: "gifteruser",
+            displayName: "Gifter User",
+            profilePicUrl: "https://example.com/gifter.jpg"
+        });
+
+        const result = await parseGiftSubEvent(inputData);
+
+        expect(result.giftees).toHaveLength(0);
+        expect(result.gifter.username).toBe("gifteruser");
+        expect(mockGetViewerByUsername).toHaveBeenCalledTimes(1);
+        expect(logger.error).not.toHaveBeenCalled();
+    });
+
+    it('correctly calculates expiration date (30 days from creation)', async () => {
+        /* eslint-disable camelcase */
+        const inputData = {
+            channel: {
+                user_id: 123456
+            },
+            usernames: ["recipient1"],
+            gifter_username: "gifteruser"
+        };
+        /* eslint-enable camelcase */
+
+        mockGetViewerByUsername
+            .mockResolvedValueOnce({
+                _id: "gifter123",
+                username: "gifteruser",
+                displayName: "Gifter User",
+                profilePicUrl: "https://example.com/gifter.jpg"
+            })
+            .mockResolvedValueOnce({
+                _id: "recipient123",
+                username: "recipient1",
+                displayName: "Recipient One",
+                profilePicUrl: "https://example.com/recipient1.jpg"
+            });
+
+        const result = await parseGiftSubEvent(inputData);
+
+        const createdTime = result.createdAt.getTime();
+        const expiresTime = result.expiresAt?.getTime();
+        const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+
+        expect(expiresTime).toBeDefined();
+        if (expiresTime) {
+            expect(expiresTime - createdTime).toBe(thirtyDaysInMs);
+        }
     });
 });

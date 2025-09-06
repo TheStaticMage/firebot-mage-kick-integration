@@ -1,5 +1,6 @@
 import { integration } from "../../integration";
-import { ChatMessage, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
+import { logger } from "../../main";
+import { ChannelGiftSubscription, ChatMessage, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
 import { parseDate } from "../util";
 
 export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMessage {
@@ -169,5 +170,76 @@ export function parseStopStreamBroadcast(): LivestreamStatusUpdated {
         title: '',
         startedAt: undefined, // Not set in event
         endedAt: new Date()
+    };
+}
+
+export async function parseGiftSubEvent(data: any): Promise<ChannelGiftSubscription> {
+    const d = data as PusherGiftSubEvent;
+    // This event only sends the usernames, not the user IDs, of the recipient.
+    // If we have not previously seen the user, we won't be able to look them up
+    // here.
+    const b = integration.kick.broadcaster;
+
+    const gifter = await integration.kick.userManager.getViewerByUsername(d.gifter_username);
+    let gifterUser: KickUser | undefined = undefined;
+    if (gifter) {
+        gifterUser = {
+            userId: gifter._id,
+            username: gifter.username,
+            displayName: gifter.displayName || gifter.username,
+            profilePicture: gifter.profilePicUrl || '',
+            isVerified: false, // Not set in event
+            channelSlug: '' // Not set in event
+        };
+    } else {
+        logger.error(`Pusher gift sub event: could not find gifter username ${d.gifter_username} in viewer database.`);
+        gifterUser = {
+            userId: '',
+            username: 'anonymous',
+            displayName: 'Anonymous',
+            profilePicture: '',
+            isVerified: false,
+            channelSlug: ''
+        };
+    }
+
+    const giftees: KickUser[] = [];
+    for (const username of d.usernames) {
+        const giftee = await integration.kick.userManager.getViewerByUsername(username);
+        if (giftee) {
+            giftees.push({
+                userId: giftee._id,
+                username: giftee.username,
+                displayName: giftee.displayName || giftee.username,
+                profilePicture: giftee.profilePicUrl || '',
+                isVerified: false, // Not set in event
+                channelSlug: '' // Not set in event
+            });
+        } else {
+            logger.error(`Pusher gift sub event: could not find giftee username ${username} in viewer database.`);
+            giftees.push({
+                userId: '',
+                username: username,
+                displayName: username,
+                profilePicture: '',
+                isVerified: false,
+                channelSlug: ''
+            });
+        }
+    }
+
+    return {
+        broadcaster: {
+            userId: String(b?.userId) || '',
+            username: b?.name || '',
+            displayName: b?.name || '',
+            profilePicture: b?.profilePicture || '',
+            isVerified: false, // Not set in event
+            channelSlug: '' // Not set in event
+        },
+        gifter: gifterUser,
+        giftees: giftees,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Assume 30 days from now
     };
 }

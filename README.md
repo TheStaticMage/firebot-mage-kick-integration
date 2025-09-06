@@ -72,8 +72,8 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 | Stream started | :white_check_mark: | :white_check_mark: &#42; |  |
 | Stream title updated | :white_check_mark: | :x: &dagger; | |
 | Sub | :white_check_mark: | Planned | |
-| Sub (Community Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
-| Sub (Gifted) | :white_check_mark: | ? | Not yet evaluated for use without webhook proxy |
+| Sub (Community Gifted) | :white_check_mark: | :white_check_mark: &#42; | Some Pusher events may not fully register |
+| Sub (Gifted) | :white_check_mark: | :white_check_mark: &#42; | Some Pusher events may not fully register |
 | Viewer arrived | :white_check_mark: | :white_check_mark: &#42; |  |
 | Viewer banned | :white_check_mark: | :white_check_mark: &#42; | |
 | Viewer timed out | :white_check_mark: | :white_check_mark: &#42; | |

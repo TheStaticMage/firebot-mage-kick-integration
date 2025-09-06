@@ -5,16 +5,25 @@ import { handleModerationUnbannedEvent } from "../../events/moderation-unbanned"
 import { handleRaidSentOffEvent } from "../../events/raid-sent-off-event";
 import { handleRewardRedeemedEvent } from "../../events/reward-redeemed-event";
 import { handleStreamHostedEvent } from "../../events/stream-hosted-event";
+import { handleChannelSubscriptionGiftsEvent } from "../../events/sub-events";
 import { integration } from "../../integration";
 import { logger } from "../../main";
 import { KickUser } from "../../shared/types";
-import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseRewardRedeemedEvent, parseStopStreamBroadcast, parseStreamerIsLiveEvent, parseStreamHostedEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
+import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseGiftSubEvent, parseRewardRedeemedEvent, parseStopStreamBroadcast, parseStreamerIsLiveEvent, parseStreamHostedEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
 
 const Pusher = require('pusher-js');
 
 export class KickPusher {
     // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     private pusher: typeof Pusher | null = null;
+    private giftSubEventDelay = 10000; // Default 10 seconds
+
+    /**
+     * Creates a delay promise that can be easily mocked in tests
+     */
+    private delay(ms: number): Promise<void> {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
 
     connect(pusherAppKey: string, chatroomId: string, channelId: string): void {
         if (!pusherAppKey) {
@@ -82,6 +91,16 @@ export class KickPusher {
             switch (event) {
                 case "App\\Events\\ChatMoveToSupportedChannelEvent":
                     await handleRaidSentOffEvent(parseChatMoveToSupportedChannelEvent(data));
+                    break;
+                case "App\\Events\\LuckyUsersWhoGotGiftSubscriptionsEvent": // Yup, it's actually named that
+                    // Webhook has more information; give it a chance to arrive first
+                    await this.delay(this.giftSubEventDelay).then(async () => {
+                        try {
+                            await handleChannelSubscriptionGiftsEvent(await parseGiftSubEvent(data));
+                        } catch (error) {
+                            logger.error(`Error handling delayed gift subscription event: ${error}`);
+                        }
+                    });
                     break;
                 case "App\\Events\\StopStreamBroadcast":
                     await livestreamStatusUpdatedHandler.handleLivestreamStatusUpdatedEvent(parseStopStreamBroadcast());
