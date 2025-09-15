@@ -23,6 +23,7 @@ import { AuthManager } from "./internal/auth";
 import { Kick } from "./internal/kick";
 import { Poller } from "./internal/poll";
 import { KickPusher } from "./internal/pusher/pusher";
+import { reflectorExtension } from "./internal/reflector";
 import { firebot, logger } from "./main";
 import { platformRestriction } from "./restrictions/platform";
 import { getDataFilePath } from "./util/datafile";
@@ -298,6 +299,15 @@ export class KickIntegration extends EventEmitter {
         // Miscellaneous variables
         replaceVariableManager.registerReplaceVariable(platformVariable);
 
+        // UI Extensions
+        const { uiExtensionManager } = firebot.modules;
+        if (uiExtensionManager) {
+            uiExtensionManager.registerUIExtension(reflectorExtension);
+        } else {
+            logger.error("UI Extension Manager module not found. The Kick integration UI extension cannot be registered.");
+        }
+
+        // Restrictions
         const { restrictionManager } = firebot.modules;
         restrictionManager.registerRestriction(platformRestriction);
     }
