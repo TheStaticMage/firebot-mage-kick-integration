@@ -181,3 +181,9 @@ export interface WebhookReceivedEvent {
     isTestEvent: boolean;
     timestamp: Date | null;
 }
+
+export interface ReflectedEvent {
+    async: boolean;
+    eventName: string;
+    eventData: any;
+}
