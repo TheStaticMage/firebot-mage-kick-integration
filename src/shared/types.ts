@@ -187,3 +187,10 @@ export interface ReflectedEvent {
     eventName: string;
     eventData: any;
 }
+
+export interface KicksGiftedEvent {
+    gifter: KickUser,
+    kicks: number,
+    // More to come, possibly, if this gets added to the API
+    // or I get better data from actual events
+}

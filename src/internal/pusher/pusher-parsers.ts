@@ -1,6 +1,6 @@
 import { integration } from "../../integration";
 import { logger } from "../../main";
-import { ChannelGiftSubscription, ChatMessage, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
+import { ChannelGiftSubscription, ChatMessage, KicksGiftedEvent, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
 import { parseDate } from "../util";
 
 export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMessage {
@@ -241,5 +241,23 @@ export async function parseGiftSubEvent(data: any): Promise<ChannelGiftSubscript
         giftees: giftees,
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Assume 30 days from now
+    };
+}
+
+export function parseKicksGiftedEvent(data: any): KicksGiftedEvent {
+    const d = data as KickGiftedEventData;
+
+    const gifter: KickUser = {
+        userId: d.sender.id.toString(),
+        username: d.sender.username,
+        displayName: d.sender.username,
+        profilePicture: '', // Not provided in event
+        isVerified: false, // Not provided in event
+        channelSlug: '' // Not provided in event
+    };
+
+    return {
+        gifter: gifter,
+        kicks: d.gift.amount
     };
 }

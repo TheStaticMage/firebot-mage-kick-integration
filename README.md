@@ -64,6 +64,7 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 | Goal updated | Possible * | Possible * | No public API support |
 | Host (raid) (incoming) | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
 | Host (raid) (outgoing) | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
+| Kicks (like bits) | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
 | Message deleted | Possible * | Possible * | No public API support |
 | Message pinned | Possible * | Possible * | No public API support |
 | Message un-pinned | Possible * | Possible * | No public API support |
@@ -103,7 +104,7 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 | Currency: Watch time | :x: | No viewer list API endpoint on Kick &#x1F1F0; |
 | Moderation: Banned words / URLs | :x: | Kick API lacks ability to delete messages &#x1F1F0; |
 | Ranks | :x: | Pointless without proper currency support |
-| Roles | :white_check_mark: | Seems to mostly work; Twitch role filters emulated in platform-aware filter |
+| Roles | :white_check_mark: | Twitch role filters emulated in platform-aware filter |
 | Viewer database | :x: | Firebot assumes all users are Twitch users &#x1F525; |
 
 &#x1F1F0; = Denotes that the feature cannot be fully supported due to [Kick limitations](#limitations-due-to-kick)
