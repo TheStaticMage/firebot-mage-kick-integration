@@ -126,99 +126,91 @@ export const definition: IntegrationDefinition = {
                     title: "Chat Message",
                     tip: "Trigger the 'Twitch:Chat Message' event when someone chats on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 1
+                    default: false
+                },
+                cheer: {
+                    title: "Cheer (Kicks / Bits)",
+                    tip: "Trigger the 'Twitch:Cheer' event when someone cheers (with Kicks) on Kick",
+                    type: "boolean",
+                    default: false
                 },
                 follower: {
                     title: "Follower",
                     tip: "Trigger the 'Twitch:Follow' event when someone follows on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 2
+                    default: false
                 },
                 raid: {
                     title: "Host - Incoming",
                     tip: "Trigger the 'Twitch:Raid' event when someone hosts (raids) your stream on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 3
+                    default: false
                 },
                 raidSentOff: {
                     title: "Host - Outgoing",
                     tip: "Trigger the 'Twitch:Raid Sent Off' event when you send a host (raid) to another channel on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 4
+                    default: false
                 },
                 streamOffline: {
                     title: "Stream Ended",
                     tip: "Trigger the 'Twitch:Stream Ended' event when the Kick stream goes offline",
                     type: "boolean",
-                    default: false,
-                    sortRank: 5
+                    default: false
                 },
                 streamOnline: {
                     title: "Stream Started",
                     tip: "Trigger the 'Twitch:Stream Started' event when the Kick stream goes online",
                     type: "boolean",
-                    default: false,
-                    sortRank: 6
+                    default: false
                 },
                 sub: {
                     title: "Sub",
                     tip: "Trigger the 'Twitch:Sub' event when someone subscribes or resubscribes on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 7
+                    default: false
                 },
                 subCommunityGift: {
                     title: "Sub Community Gift",
                     tip: "Trigger the 'Twitch:Community Subs Gifted' event when someone gifts community subscriptions on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 8
+                    default: false
                 },
                 subGift: {
                     title: "Sub Gifted",
                     tip: "Trigger the 'Twitch:Sub Gifted' event when someone gifts a subscription on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 9
+                    default: false
                 },
                 titleChanged: {
                     title: "Title Changed",
                     tip: "Trigger the 'Twitch:Title Changed' event when the Kick stream title changes",
                     type: "boolean",
-                    default: false,
-                    sortRank: 10
+                    default: false
                 },
                 viewerArrived: {
                     title: "Viewer Arrived",
                     tip: "Trigger the 'Twitch:Viewer Arrived' event when a viewer arrives on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 11
+                    default: false
                 },
                 viewerBanned: {
                     title: "Viewer Banned",
                     tip: "Trigger the 'Twitch:Viewer Banned' event when a viewer is banned on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 12
+                    default: false
                 },
                 viewerTimeout: {
                     title: "Viewer Timeout",
                     tip: "Trigger the 'Twitch:Viewer Timeout' event when a viewer is timed out on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 13
+                    default: false
                 },
                 viewerUnbanned: {
                     title: "Viewer Unbanned",
                     tip: "Trigger the 'Twitch:Viewer Unbanned' event when a viewer is unbanned on Kick",
                     type: "boolean",
-                    default: false,
-                    sortRank: 14
+                    default: false
                 }
             }
         },

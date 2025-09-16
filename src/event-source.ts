@@ -359,6 +359,26 @@ export const eventSource: EventSource = {
                 webhookType: "chat.message.sent",
                 webhookVersion: "1"
             }
+        },
+        {
+            id: "kicks-gifted",
+            name: "Kicks Gifted",
+            description: "When someone gifts Kicks (like bits) in your channel on Kick",
+            cached: false,
+            manualMetadata: {
+                gifterUsername: "Firebot@kick",
+                gifterUserId: "k1234567",
+                amount: 100
+            },
+            activityFeed: {
+                icon: "fad fa-coins",
+                getMessage: (eventData) => {
+                    const username = typeof eventData.gifterUsername === "string" ? unkickifyUsername(eventData.gifterUsername) : "Unknown User";
+                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
+                    const amount = getNumberFromUnknown(eventData.amount, "Unknown");
+                    return `**${userDisplayName}** gifted **${amount} Kicks** on Kick`;
+                }
+            }
         }
     ]
 };

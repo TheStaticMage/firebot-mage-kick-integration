@@ -32,6 +32,7 @@ import { kickCategoryIdVariable } from "./variables/category-id";
 import { kickCategoryImageUrlVariable } from "./variables/category-image-url";
 import { kickChannelIdVariable } from "./variables/channel-id";
 import { kickChatMessageVariable } from "./variables/chat-message";
+import { cheerKicksAmountVariable } from "./variables/cheer-kicks-amount";
 import { kickCurrentViewerCountVariable } from "./variables/current-viewer-count";
 import { hostTargetUserDisplayName } from "./variables/host-target-user-display-name";
 import { hostTargetUserId } from "./variables/host-target-user-id";
@@ -60,6 +61,7 @@ import { kickUnbanTypeVariable } from "./variables/unban-type";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
 import { webhookReceivedEventTypeVariable, webhookReceivedEventVersionVariable, webhookReceivedLatencyVariable } from "./variables/webhook-received";
+import { requireVersion } from "./internal/version";
 
 type IntegrationParameters = {
     connectivity: {
@@ -85,6 +87,7 @@ type IntegrationParameters = {
     };
     triggerTwitchEvents: {
         chatMessage: boolean;
+        cheer: boolean;
         follower: boolean;
         raid: boolean;
         raidSentOff: boolean;
@@ -166,6 +169,7 @@ export class KickIntegration extends EventEmitter {
         },
         triggerTwitchEvents: {
             chatMessage: false,
+            cheer: false,
             follower: false,
             raid: false,
             raidSentOff: false,
@@ -296,6 +300,9 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.registerReplaceVariable(webhookReceivedEventVersionVariable);
         replaceVariableManager.registerReplaceVariable(webhookReceivedLatencyVariable);
 
+        // Kicks (like bits) variables
+        replaceVariableManager.registerReplaceVariable(cheerKicksAmountVariable);
+
         // Miscellaneous variables
         replaceVariableManager.registerReplaceVariable(platformVariable);
 
@@ -310,6 +317,15 @@ export class KickIntegration extends EventEmitter {
         // Restrictions
         const { restrictionManager } = firebot.modules;
         restrictionManager.registerRestriction(platformRestriction);
+
+        // Twitch filters and variables (adding events to filters and variables was added in Firebot 5.65+)
+        try {
+            requireVersion("5.65.0");
+            eventFilterManager.addEventToFilter("firebot:cheerbitsamount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
+            replaceVariableManager.addEventToVariable("cheerBitsAmount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
+        } catch (error) {
+            logger.warn(`This version of Firebot does not support mapping certain Twitch filters and variables. Please update to Firebot 5.65 or later to enable these features: ${error}`);
+        }
     }
 
     async connect() {
