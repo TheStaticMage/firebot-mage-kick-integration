@@ -319,10 +319,31 @@ export class KickIntegration extends EventEmitter {
         restrictionManager.registerRestriction(platformRestriction);
 
         // Twitch filters and variables (adding events to filters and variables was added in Firebot 5.65+)
+        // via commit https://github.com/crowbartools/Firebot/commit/55744f55095d6d6ca791adced534c5a6fad37119
         try {
             requireVersion("5.65.0");
+
             eventFilterManager.addEventToFilter("firebot:cheerbitsamount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
+            eventFilterManager.addEventToFilter("firebot:raid-viewer-count", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
+            eventFilterManager.addEventToFilter("firebot:raid-viewer-count", IntegrationConstants.INTEGRATION_ID, "raid");
+
+            replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "chat-message");
+            replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
             replaceVariableManager.addEventToVariable("cheerBitsAmount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
+            replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "banned");
+            replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "timeout");
+            replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "unbanned");
+            replaceVariableManager.addEventToVariable("modReason", IntegrationConstants.INTEGRATION_ID, "banned");
+            replaceVariableManager.addEventToVariable("modReason", IntegrationConstants.INTEGRATION_ID, "timeout");
+            replaceVariableManager.addEventToVariable("raidTargetUserDisplayName", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
+            replaceVariableManager.addEventToVariable("raidTargetUserId", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
+            replaceVariableManager.addEventToVariable("raidTargetUsername", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
+            replaceVariableManager.addEventToVariable("raidViewerCount", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
+            replaceVariableManager.addEventToVariable("raidViewerCount", IntegrationConstants.INTEGRATION_ID, "raid");
+            replaceVariableManager.addEventToVariable("rewardId", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
+            replaceVariableManager.addEventToVariable("rewardMessage", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
+            replaceVariableManager.addEventToVariable("rewardName", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
+            replaceVariableManager.addEventToVariable("timeoutDuration", IntegrationConstants.INTEGRATION_ID, "timeout");
         } catch (error) {
             logger.warn(`This version of Firebot does not support mapping certain Twitch filters and variables. Please update to Firebot 5.65 or later to enable these features: ${error}`);
         }
