@@ -191,6 +191,11 @@ export interface ReflectedEvent {
 export interface KicksGiftedEvent {
     gifter: KickUser,
     kicks: number,
-    // More to come, possibly, if this gets added to the API
-    // or I get better data from actual events
+    giftId: string,
+    giftName: string,
+    giftType: string,
+    giftTier: string,
+    characterLimit: number,
+    pinnedTime: number,
+    message: string
 }
