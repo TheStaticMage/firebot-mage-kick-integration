@@ -39,6 +39,44 @@ import { KickPusher } from '../internal/pusher/pusher';
 describe('e2e kicks gifted events', () => {
     let pusher: KickPusher;
 
+    const pusherEvent = 'KicksGifted';
+
+    /* eslint-disable camelcase */
+    const pusherPayload = {
+        message: "Test message",
+        sender: {
+            id: 12345678,
+            username: "gifter-username",
+            username_color: "#ffffcc"
+        },
+        gift: {
+            gift_id: "super_gift",
+            name: "Super Gift",
+            type: "BASIC",
+            tier: "BASIC",
+            character_limit: 69,
+            pinned_time: 123456789,
+            amount: 25
+        }
+    };
+    /* eslint-enable camelcase */
+
+    const expectedKickMetadata = {
+        userId: 'k12345678',
+        username: 'gifter-username@kick',
+        userDisplayName: 'gifter-username',
+        amount: 25,
+        bits: 25, // Mapped to bits for Twitch compatibility
+        characterLimit: 69,
+        cheerMessage: 'Test message',
+        giftId: 'super_gift',
+        giftName: 'Super Gift',
+        giftType: 'BASIC',
+        giftTier: 'BASIC',
+        pinnedTime: 123456789,
+        platform: 'kick'
+    };
+
     beforeEach(() => {
         pusher = new KickPusher();
         // Mock the delay method to resolve immediately for testing
@@ -52,30 +90,6 @@ describe('e2e kicks gifted events', () => {
 
     describe('pusher only - KicksGifted', () => {
         it('handles pusher kicks gifted event', async () => {
-            const pusherEvent = 'KicksGifted';
-
-            /* eslint-disable camelcase */
-            const pusherPayload = {
-                message: "",
-                sender: {
-                    id: 12345678,
-                    username: "gifter-username",
-                    username_color: "#ffffcc"
-                },
-                gift: {
-                    amount: 69
-                }
-            };
-            /* eslint-enable camelcase */
-
-            const expectedKickMetadata = {
-                userId: 'k12345678',
-                username: 'gifter-username@kick',
-                userDisplayName: 'gifter-username',
-                amount: 69,
-                bits: 69, // Mapped to bits for Twitch compatibility
-                platform: 'kick'
-            };
 
             // Simulate pusher event dispatch
             await (pusher as any).dispatchChannelEvent(pusherEvent, pusherPayload);
@@ -106,31 +120,6 @@ describe('e2e kicks gifted events', () => {
                 logging: { logWebhooks: false }
             });
 
-            const pusherEvent = 'KicksGifted';
-
-            /* eslint-disable camelcase */
-            const pusherPayload = {
-                message: "",
-                sender: {
-                    id: 12345678,
-                    username: "gifter-username",
-                    username_color: "#ffffcc"
-                },
-                gift: {
-                    amount: 69
-                }
-            };
-            /* eslint-enable camelcase */
-
-            const expectedMetadata = {
-                userId: 'k12345678',
-                username: 'gifter-username@kick',
-                userDisplayName: 'gifter-username',
-                amount: 69,
-                bits: 69,
-                platform: 'kick'
-            };
-
             // Simulate pusher event dispatch
             await (pusher as any).dispatchChannelEvent(pusherEvent, pusherPayload);
 
@@ -141,13 +130,13 @@ describe('e2e kicks gifted events', () => {
             expect(triggerEventMock).toHaveBeenCalledWith(
                 IntegrationConstants.INTEGRATION_ID,
                 "kicks-gifted",
-                expectedMetadata
+                expectedKickMetadata
             );
 
             expect(triggerEventMock).toHaveBeenCalledWith(
                 "twitch",
                 "cheer",
-                expectedMetadata
+                expectedKickMetadata
             );
         });
     });

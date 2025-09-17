@@ -368,7 +368,15 @@ export const eventSource: EventSource = {
             manualMetadata: {
                 gifterUsername: "Firebot@kick",
                 gifterUserId: "k1234567",
-                amount: 100
+                amount: 100,
+                bits: 100, // Mapped to bits for Twitch compatibility
+                characterLimit: 69,
+                cheerMessage: "Test message",
+                giftId: "super_gift",
+                giftName: "Super Gift",
+                giftType: "BASIC",
+                giftTier: "BASIC",
+                pinnedTime: 123456789
             },
             activityFeed: {
                 icon: "fad fa-coins",

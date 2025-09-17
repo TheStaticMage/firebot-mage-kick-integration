@@ -24,6 +24,7 @@ import { Kick } from "./internal/kick";
 import { Poller } from "./internal/poll";
 import { KickPusher } from "./internal/pusher/pusher";
 import { reflectorExtension } from "./internal/reflector";
+import { requireVersion } from "./internal/version";
 import { firebot, logger } from "./main";
 import { platformRestriction } from "./restrictions/platform";
 import { getDataFilePath } from "./util/datafile";
@@ -32,12 +33,16 @@ import { kickCategoryIdVariable } from "./variables/category-id";
 import { kickCategoryImageUrlVariable } from "./variables/category-image-url";
 import { kickChannelIdVariable } from "./variables/channel-id";
 import { kickChatMessageVariable } from "./variables/chat-message";
-import { cheerKicksAmountVariable } from "./variables/cheer-kicks-amount";
 import { kickCurrentViewerCountVariable } from "./variables/current-viewer-count";
 import { hostTargetUserDisplayName } from "./variables/host-target-user-display-name";
 import { hostTargetUserId } from "./variables/host-target-user-id";
 import { hostTargetUsername } from "./variables/host-target-username";
 import { hostViewerCount } from "./variables/host-viewer-count";
+import { cheerKicksAmountVariable } from "./variables/kicks/cheer-kicks-amount";
+import { kicksGiftIdVariable } from "./variables/kicks/kicks-gift-id";
+import { kicksGiftNameVariable } from "./variables/kicks/kicks-gift-name";
+import { kicksGiftTierVariable } from "./variables/kicks/kicks-gift-tier";
+import { kicksGiftTypeVariable } from "./variables/kicks/kicks-gift-type";
 import { kickModReason } from "./variables/mod-reason";
 import { kickModeratorVariable } from "./variables/moderator";
 import { platformVariable } from "./variables/platform";
@@ -61,7 +66,6 @@ import { kickUnbanTypeVariable } from "./variables/unban-type";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
 import { webhookReceivedEventTypeVariable, webhookReceivedEventVersionVariable, webhookReceivedLatencyVariable } from "./variables/webhook-received";
-import { requireVersion } from "./internal/version";
 
 type IntegrationParameters = {
     connectivity: {
@@ -302,6 +306,10 @@ export class KickIntegration extends EventEmitter {
 
         // Kicks (like bits) variables
         replaceVariableManager.registerReplaceVariable(cheerKicksAmountVariable);
+        replaceVariableManager.registerReplaceVariable(kicksGiftIdVariable);
+        replaceVariableManager.registerReplaceVariable(kicksGiftNameVariable);
+        replaceVariableManager.registerReplaceVariable(kicksGiftTierVariable);
+        replaceVariableManager.registerReplaceVariable(kicksGiftTypeVariable);
 
         // Miscellaneous variables
         replaceVariableManager.registerReplaceVariable(platformVariable);
@@ -330,6 +338,7 @@ export class KickIntegration extends EventEmitter {
             replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "chat-message");
             replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
             replaceVariableManager.addEventToVariable("cheerBitsAmount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
+            replaceVariableManager.addEventToVariable("cheerMessage", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
             replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "banned");
             replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "timeout");
             replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "unbanned");

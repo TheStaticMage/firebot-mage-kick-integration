@@ -17,6 +17,13 @@ class KicksHandler {
             userDisplayName: data.gifter.displayName || unkickifyUsername(data.gifter.username),
             amount: data.kicks,
             bits: data.kicks, // Map to bits for Twitch compatibility
+            cheerMessage: data.message,
+            giftId: data.giftId,
+            giftName: data.giftName,
+            giftType: data.giftType,
+            giftTier: data.giftTier,
+            characterLimit: data.characterLimit,
+            pinnedTime: data.pinnedTime,
             platform: "kick"
         };
         eventManager.triggerEvent(IntegrationConstants.INTEGRATION_ID, "kicks-gifted", metadata);

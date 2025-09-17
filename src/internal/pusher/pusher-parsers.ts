@@ -258,6 +258,13 @@ export function parseKicksGiftedEvent(data: any): KicksGiftedEvent {
 
     return {
         gifter: gifter,
-        kicks: d.gift.amount
+        kicks: d.gift.amount,
+        giftId: d.gift.gift_id,
+        giftName: d.gift.name,
+        giftType: d.gift.type,
+        giftTier: d.gift.tier,
+        characterLimit: d.gift.character_limit,
+        pinnedTime: d.gift.pinned_time,
+        message: d.message || ""
     };
 }
