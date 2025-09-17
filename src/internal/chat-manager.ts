@@ -42,21 +42,26 @@ export class ChatManager {
     }
 
     private async handleChatMessageTypedInChatFeed(payload: inboundSendChatMessage): Promise<boolean> {
-        logger.debug("Handling chat message from frontend");
+        logger.debug(`Handling chat message from frontend: ${JSON.stringify(payload)}`);
 
         if (!this.isRunning) {
             logger.warn("ChatManager is not running. Ignoring inbound chat message.");
             return false;
         }
 
-        if (!integration.getSettings().chat.chatSend) {
-            logger.debug("Not sending message typed in chat feed: This option is disabled in the settings.");
-            return false;
+        // Many slash commands are implemented in Firebot, but only some are
+        // available for Kick.
+        if (payload.message.startsWith("/")) {
+            try {
+                return await this.handleSlashCommand(payload);
+            } catch (error) {
+                logger.error(`Error handling slash command: ${error}`);
+                return false;
+            }
         }
 
-        // Slash commands in the message are not implemented (yet).
-        if (payload.message.startsWith("/")) {
-            logger.debug(`Not sending unimplemented slash command as a Kick chat message: ${payload.message}`);
+        if (!integration.getSettings().chat.chatSend) {
+            logger.debug("Not sending message typed in chat feed: This option is disabled in the settings.");
             return false;
         }
 
@@ -148,5 +153,51 @@ export class ChatManager {
             logger.error(`Error determining platform from trigger: ${error}`);
             return "unknown";
         }
+    }
+
+    private async handleSlashCommand(payload: inboundSendChatMessage): Promise<boolean> {
+        const parts = payload.message.trim().split(/\s+/);
+        const command = parts[0].toLowerCase();
+        const args = parts.slice(1);
+        logger.debug(`Handling slash command: ${command} with args: ${args.join(' ')}`);
+
+        switch (command) {
+            case "/ban": {
+                if (args.length === 0) {
+                    throw new Error("No user specified for /ban command.");
+                }
+                break;
+            }
+            case "/unban":
+            case "/untimeout": {
+                if (args.length === 0) {
+                    throw new Error(`No user specified for ${command} command.`);
+                }
+                break;
+            }
+            case "/timeout": {
+                if (args.length < 2) {
+                    throw new Error("Usage: /timeout <user> <duration> [reason]");
+                }
+                break;
+            }
+            case "/announce":
+            case "/announceblue":
+            case "/announcegreen":
+            case "/announceorange":
+            case "/announcepurple": {
+                // Kick doesn't have an announcement feature per se, so we'll
+                // just post this message in the chat.
+                if (args.length === 0) {
+                    throw new Error(`No message specified for ${command} command.`);
+                }
+                const message = args.join(' ');
+                await this.sendKickChatMessage(`[Announcement] ${message}`, payload.accountType, undefined);
+                return true;
+            }
+        }
+
+        logger.warn(`Slash command ${command} is not implemented for Kick. Ignoring.`);
+        return false;
     }
 }
