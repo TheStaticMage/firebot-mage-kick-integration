@@ -54,7 +54,7 @@ describe('e2e moderation unbanned', () => {
         moderatorId: 'k444',
         moderatorUsername: 'mod2@kick',
         moderatorDisplayName: 'mod2',
-        moderator: 'mod2@kick',
+        moderator: 'mod2',
         banType: 'timeout',
         platform: 'kick'
     };

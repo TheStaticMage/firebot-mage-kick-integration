@@ -16,7 +16,7 @@ export async function handleModerationUnbannedEvent(payload: ModerationUnbannedE
         moderatorUsername: kickifyUsername(payload.moderator.username),
         moderatorId: kickifyUserId(payload.moderator.userId.toString()),
         moderatorDisplayName: payload.moderator.displayName || unkickifyUsername(payload.moderator.username),
-        moderator: kickifyUsername(payload.moderator.username),
+        moderator: unkickifyUsername(payload.moderator.username),
         banType: payload.banType,
         platform: "kick"
     };

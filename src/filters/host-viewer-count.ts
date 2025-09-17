@@ -7,7 +7,8 @@ export const hostViewerCountFilter: EventFilter = {
     name: "Host Viewer Count",
     description: "Filter by how many viewers have been brought by the host.",
     events: [
-        { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "raid" }
+        { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "raid" },
+        { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "raid-sent-off" }
     ],
     comparisonTypes: [
         ComparisonType.IS,

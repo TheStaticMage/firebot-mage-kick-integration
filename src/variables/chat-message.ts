@@ -8,7 +8,8 @@ export const kickChatMessageVariable: ReplaceVariable = {
         triggers: {
             "manual": true,
             "event": [
-                "mage-kick-integration:chat-message"
+                "mage-kick-integration:chat-message",
+                "mage-kick-integration:viewer-arrived"
             ]
         },
         categories: ["common"],
