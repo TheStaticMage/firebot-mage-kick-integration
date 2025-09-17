@@ -95,8 +95,8 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 | Channel point rewards: Trigger event | :white_check_mark: | Limited information &#x1F1F0; |
 | Chat feed: Display Kick messages | :white_check_mark: | Works! Shows badges and emotes too |
 | Chat feed: Ban user (on Kick message) | :white_check_mark: | Works! |
-| Chat feed: Timeout user | ? | May be possible &#x1F525; |
-| Chat feed: Unban user | :x: | No public API endpoint &#x1F1F0; |
+| Chat feed: Timeout user | ? | May be possible |
+| Chat feed: Unban user | ? | May be possible |
 | Chat feed: User profile | :x: | Firebot assumes all users are Twitch users &#x1F525; |
 | Chat feed: All other context menu items | :x: | Various limitations &#x1F1F0; &#x1F525; |
 | Commands | :white_check_mark: | Cooldowns do not work &#x1F525; |
@@ -126,7 +126,7 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 
 - Firebot's viewer database uses Twitch user IDs as primary keys and assumes every user is from Twitch. This rigid design prevents many features that depend on storing information about users (e.g. currency, metadata).
 - Rate limiting (cooldowns) for commands and redeems doesn't work natively. Consider using the [Firebot Rate Limiter](https://github.com/TheStaticMage/firebot-rate-limiter) if needed.
-- Many built-in Firebot variables, filters and effects are hard-coded to be available only to specific Twitch events. This means that variables you'd expect to work just won't for the Kick events (e.g. `$moderator` is not available for ban events and `$chatMessage` will not contain the Kick chat message). We do have some workarounds in the form of Kick-specific variables like `$kickModerator` and the ability to trigger the Twitch-equivalent events when Kick events are received.
+- Many built-in Firebot variables, filters and effects are hard-coded to be available only to specific Twitch events. This means that variables you'd expect to work just won't for the Kick events (e.g. `$moderator` is not available for ban events and `$chatMessage` will not contain the Kick chat message). This limitation is removed in Firebot 5.65, which is currently available as nightly releases. Until that is officially released, we have variables that work with the Kick events (e.g. `$kickModerator`, `$kickChatMessage`).
 - Slash commands in the Firebot chat (e.g. `/clear`) only apply to Twitch. (There aren't Kick API endpoints for most of these anyway.)
 - You won't be able to add a Kick user to a custom role via the Firebot GUI, because Firebot does a Twitch lookup on whatever you type. It is, however, possible to have events add Kick users to custom roles. You can remove Kick users from custom roles through the GUI.
 
