@@ -42,7 +42,7 @@ export class ChatManager {
     }
 
     private async handleChatMessageTypedInChatFeed(payload: inboundSendChatMessage): Promise<boolean> {
-        logger.debug("Handling chat message from frontend");
+        logger.debug(`Handling chat message from frontend: ${JSON.stringify(payload)}`);
 
         if (!this.isRunning) {
             logger.warn("ChatManager is not running. Ignoring inbound chat message.");
@@ -54,10 +54,15 @@ export class ChatManager {
             return false;
         }
 
-        // Slash commands in the message are not implemented (yet).
+        // Many slash commands are implemented in Firebot, but only some are
+        // available for Kick.
         if (payload.message.startsWith("/")) {
-            logger.debug(`Not sending unimplemented slash command as a Kick chat message: ${payload.message}`);
-            return false;
+            try {
+                return await this.handleSlashCommand(payload);
+            } catch (error) {
+                logger.error(`Error handling slash command: ${error}`);
+                return false;
+            }
         }
 
         // Handle the chat message
@@ -148,5 +153,85 @@ export class ChatManager {
             logger.error(`Error determining platform from trigger: ${error}`);
             return "unknown";
         }
+    }
+
+    private async handleSlashCommand(payload: inboundSendChatMessage): Promise<boolean> {
+        const parts = payload.message.trim().split(/\s+/);
+        const command = parts[0].toLowerCase();
+        const args = parts.slice(1);
+        logger.debug(`Handling slash command: ${command} with args: ${args.join(' ')}`);
+
+        switch (command) {
+            case "/ban": {
+                if (args.length === 0) {
+                    throw new Error("Usage: /ban <user> [reason]");
+                }
+                const reason = args.length > 1 ? args.slice(1).join(' ') : 'No reason given';
+                const success = await this.kick.userApi.banUserByUsername(args[0], 0, true, reason);
+                if (!success) {
+                    throw new Error(`Failed to ban user: ${args[0]}`);
+                }
+                return true;
+            }
+            case "/timeout": {
+                if (args.length < 2) {
+                    throw new Error("Usage: /timeout <user> <duration> [reason]");
+                }
+                const durationSeconds = parseInt(args[1], 10);
+                if (isNaN(durationSeconds) || durationSeconds <= 0) {
+                    throw new Error("Duration must be a positive integer representing seconds.");
+                }
+
+                // Convert seconds to minutes with required constraints
+                let durationMinutes: number;
+                if (durationSeconds < 60) {
+                    // Round up any value below 1 minute to 1 minute
+                    durationMinutes = 1;
+                } else {
+                    // Round to nearest minute
+                    durationMinutes = Math.round(durationSeconds / 60);
+                }
+
+                // Check maximum limit (10800 minutes)
+                if (durationMinutes > 10800) {
+                    throw new Error("Timeout duration cannot exceed 10800 minutes (7.5 days).");
+                }
+
+                const reason = args.length > 2 ? args.slice(2).join(' ') : 'No reason given';
+                const success = await this.kick.userApi.banUserByUsername(args[0], durationMinutes, true, reason);
+                if (!success) {
+                    throw new Error(`Failed to timeout user: ${args[0]}`);
+                }
+                return true;
+            }
+            case "/unban":
+            case "/untimeout": {
+                if (args.length === 0) {
+                    throw new Error(`Usage: ${command} <user>`);
+                }
+                const success = await this.kick.userApi.banUserByUsername(args[0], 0, false);
+                if (!success) {
+                    throw new Error(`Failed to unban/untimeout user: ${args[0]}`);
+                }
+                return true;
+            }
+            case "/announce":
+            case "/announceblue":
+            case "/announcegreen":
+            case "/announceorange":
+            case "/announcepurple": {
+                // Kick doesn't have an announcement feature per se, so we'll
+                // just post this message in the chat.
+                if (args.length === 0) {
+                    throw new Error(`No message specified for ${command} command.`);
+                }
+                const message = args.join(' ');
+                await this.sendKickChatMessage(`[Announcement] ${message}`, payload.accountType, undefined);
+                return true;
+            }
+        }
+
+        logger.warn(`Slash command ${command} is not implemented for Kick. Ignoring.`);
+        return false;
     }
 }
