@@ -257,6 +257,29 @@ export class AuthManager {
             };
             const response = await httpCallWithTimeout(req);
 
+            // Check for same-account authorization when authorizing bot
+            if (tokenType === 'bot') {
+                if (integration.kick.broadcaster) {
+                    try {
+                        const botUserInfo = await this.verifyBotUser(response.access_token);
+                        if (botUserInfo.userId === integration.kick.broadcaster.userId) {
+                            logger.error(`Same account authorization attempt: Bot user ID ${botUserInfo.userId} matches broadcaster user ID ${integration.kick.broadcaster.userId}`);
+                            res.status(400).send(`<p>Error: Cannot authorize the same account for both streamer and bot. The account "${botUserInfo.name}" is already authorized as the streamer.</p><p>Please <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/bot">authorize a different account</a> for the bot. (Consider opening this link in an incognito window to prevent the same problem from happening again.)</p>`);
+                            return;
+                        }
+                        logger.debug(`Bot authorization verified: Bot user ID ${botUserInfo.userId} is different from broadcaster user ID ${integration.kick.broadcaster.userId}`);
+                    } catch (verificationError) {
+                        logger.error(`Failed to verify bot user during authorization: ${verificationError}`);
+                        res.status(500).send(`<p>Failed to verify bot account: ${verificationError}</p>`);
+                        return;
+                    }
+                } else {
+                    logger.warn("Broadcaster info not available when verifying bot account during authorization.");
+                    res.status(400).send(`<p>Cannot authorize a bot account until a streamer account has been authorized.</p><p>Please <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/streamer">authorize a streamer account</a> first.</p>`);
+                    return;
+                }
+            }
+
             if (tokenType === 'streamer') {
                 this.streamerAuthToken = response.access_token;
                 this.streamerRefreshToken = response.refresh_token;
@@ -439,5 +462,29 @@ export class AuthManager {
             }
         }, delay);
         logger.debug(`Next bot auth token renewal scheduled at ${new Date(Date.now() + delay).toISOString()}.`);
+    }
+
+    private async verifyBotUser(botToken: string): Promise<{ userId: number; name: string }> {
+        const req: HttpCallRequest = {
+            url: `${IntegrationConstants.KICK_API_SERVER}/public/v1/users`,
+            method: 'GET',
+            authToken: botToken
+        };
+        const response = await httpCallWithTimeout(req);
+
+        if (!response || !response.data || response.data.length !== 1) {
+            throw new Error("Failed to retrieve bot user from Kick API.");
+        }
+
+        const userData = response.data[0];
+        if (!userData.user_id) {
+            logger.warn(`Bot user data from Kick API is missing ID: ${JSON.stringify(userData)}`);
+            throw new Error("No user ID found in bot user API response.");
+        }
+
+        return {
+            userId: userData.user_id,
+            name: userData.name || 'Unknown'
+        };
     }
 }

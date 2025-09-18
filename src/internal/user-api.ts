@@ -65,6 +65,11 @@ export class KickUserApi {
             throw new Error("banUser: Cannot ban broadcaster.");
         }
 
+        const botUserId = this.kick.bot?.userId || 0;
+        if (botUserId && realUserId === botUserId) {
+            throw new Error("banUser: Cannot ban bot account.");
+        }
+
         const payload: Record<string, any> = {
             // eslint-disable-next-line camelcase
             broadcaster_user_id: broadcasterUserId,

@@ -435,4 +435,284 @@ describe('AuthManager', () => {
             expect((authManager as any).botRefreshToken).toBe('test-bot-refresh-token');
         });
     });
+
+    describe('same-account detection and prevention', () => {
+        let mockHttpCallWithTimeout: jest.Mock;
+        let mockIntegration: any;
+
+        beforeEach(() => {
+            mockHttpCallWithTimeout = require('../http').httpCallWithTimeout as jest.Mock;
+            mockIntegration = require('../../integration').integration;
+
+            // Clear any previous mocks
+            mockHttpCallWithTimeout.mockClear();
+
+            // Set up mock kick instance with broadcaster
+            mockIntegration.kick = {
+                broadcaster: {
+                    userId: 12345,
+                    name: 'teststreamer',
+                    email: 'test@example.com',
+                    profilePicture: 'pic.jpg'
+                },
+                bot: null
+            };
+
+            // Mock integration settings
+            mockIntegration.getSettings = jest.fn().mockReturnValue({
+                webhookProxy: {
+                    webhookProxyUrl: 'https://proxy.example.com'
+                }
+            });
+
+            // Mock integration methods
+            mockIntegration.saveIntegrationTokenData = jest.fn();
+            mockIntegration.disconnect = jest.fn();
+            mockIntegration.connect = jest.fn();
+
+            // Mock kick instance methods
+            if (!mockIntegration.kick) {
+                mockIntegration.kick = {};
+            }
+            mockIntegration.kick.setAuthToken = jest.fn();
+            mockIntegration.kick.setBotAuthToken = jest.fn();
+        });
+
+        it('prevents same account authorization during bot authorization', async () => {
+            // Mock successful token exchange
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                'access_token': 'bot-token',
+                'refresh_token': 'bot-refresh',
+                'expires_in': 3600
+            });
+
+            // Mock bot user verification returning same user ID as broadcaster
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                data: [{
+                    'user_id': 12345, // Same ID as broadcaster
+                    name: 'teststreamer'
+                }]
+            });
+
+            // Set up callback request
+            const req = {
+                query: {
+                    code: 'auth-code',
+                    state: 'test-state'
+                }
+            };
+
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                send: jest.fn()
+            };
+
+            // Set up token request state
+            (authManager as any).tokenRequests['test-state'] = 'bot';
+            (authManager as any).codeChallenges['test-state'] = 'code-verifier';
+
+            await authManager.handleAuthCallback(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Cannot authorize the same account for both streamer and bot'));
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('teststreamer'));
+        });
+
+        it('allows bot authorization when different account is used', async () => {
+            // Mock successful token exchange
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                'access_token': 'bot-token',
+                'refresh_token': 'bot-refresh',
+                'expires_in': 3600
+            });
+
+            // Mock bot user verification returning different user ID
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                data: [{
+                    'user_id': 67890, // Different ID from broadcaster
+                    name: 'botaccount'
+                }]
+            });
+
+            // Set up callback request
+            const req = {
+                query: {
+                    code: 'auth-code',
+                    state: 'test-state'
+                }
+            };
+
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                send: jest.fn()
+            };
+
+            // Set up token request state
+            (authManager as any).tokenRequests['test-state'] = 'bot';
+            (authManager as any).codeChallenges['test-state'] = 'code-verifier';
+
+            await authManager.handleAuthCallback(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for bot!'));
+        });
+
+        it('handles verification error during bot authorization', async () => {
+            // Mock successful token exchange
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                'access_token': 'bot-token',
+                'refresh_token': 'bot-refresh',
+                'expires_in': 3600
+            });
+
+            // Mock bot user verification failure
+            mockHttpCallWithTimeout.mockRejectedValueOnce(new Error('API Error'));
+
+            // Set up callback request
+            const req = {
+                query: {
+                    code: 'auth-code',
+                    state: 'test-state'
+                }
+            };
+
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                send: jest.fn()
+            };
+
+            // Set up token request state
+            (authManager as any).tokenRequests['test-state'] = 'bot';
+            (authManager as any).codeChallenges['test-state'] = 'code-verifier';
+
+            await authManager.handleAuthCallback(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(500);
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Failed to verify bot account'));
+        });
+
+        it('requires broadcaster to be present when authorizing bot account', async () => {
+            // Remove broadcaster
+            mockIntegration.kick.broadcaster = null;
+
+            // Mock successful token exchange
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                'access_token': 'bot-token',
+                'refresh_token': 'bot-refresh',
+                'expires_in': 3600
+            });
+
+            // Set up callback request
+            const req = {
+                query: {
+                    code: 'auth-code',
+                    state: 'test-state'
+                }
+            };
+
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                send: jest.fn()
+            };
+
+            // Set up token request state
+            (authManager as any).tokenRequests['test-state'] = 'bot';
+            (authManager as any).codeChallenges['test-state'] = 'code-verifier';
+
+            await authManager.handleAuthCallback(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Cannot authorize a bot account until a streamer account has been authorized'));
+        });
+
+        it('skips same-account check for streamer authorization', async () => {
+            // Mock successful token exchange
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                'access_token': 'streamer-token',
+                'refresh_token': 'streamer-refresh',
+                'expires_in': 3600
+            });
+
+            // Set up callback request
+            const req = {
+                query: {
+                    code: 'auth-code',
+                    state: 'test-state'
+                }
+            };
+
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                send: jest.fn()
+            };
+
+            // Set up token request state
+            (authManager as any).tokenRequests['test-state'] = 'streamer';
+            (authManager as any).codeChallenges['test-state'] = 'code-verifier';
+
+            await authManager.handleAuthCallback(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for streamer!'));
+        });
+
+        it('verifyBotUser returns correct user information', async () => {
+            // Clear any previous mocks and set up fresh mock
+            mockHttpCallWithTimeout.mockClear();
+
+            // Mock API response
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                data: [{
+                    'user_id': 12345,
+                    name: 'testbot'
+                }]
+            });
+
+            const result = await (authManager as any).verifyBotUser('test-token');
+
+            expect(result).toEqual({
+                userId: 12345,
+                name: 'testbot'
+            });
+            expect(mockHttpCallWithTimeout).toHaveBeenCalledWith({
+                url: expect.stringContaining('/public/v1/users'),
+                method: 'GET',
+                authToken: 'test-token'
+            });
+        });
+
+        it('verifyBotUser handles API errors', async () => {
+            // Clear any previous mocks and set up fresh mock
+            mockHttpCallWithTimeout.mockClear();
+
+            // Mock API failure
+            mockHttpCallWithTimeout.mockRejectedValueOnce(new Error('Network Error'));
+
+            await expect((authManager as any).verifyBotUser('test-token')).rejects.toThrow('Network Error');
+        });
+
+        it('verifyBotUser handles invalid API response', async () => {
+            // Mock invalid response
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                data: []
+            });
+
+            await expect((authManager as any).verifyBotUser('test-token')).rejects.toThrow('Failed to retrieve bot user from Kick API');
+        });
+
+        it('verifyBotUser handles missing user ID', async () => {
+            // Clear any previous mocks and set up fresh mock
+            mockHttpCallWithTimeout.mockClear();
+
+            // Mock response without user ID
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                data: [{
+                    name: 'testbot'
+                    // Missing user_id field
+                }]
+            });
+
+            await expect((authManager as any).verifyBotUser('test-token')).rejects.toThrow('No user ID found in bot user API response');
+        });
+    });
 });

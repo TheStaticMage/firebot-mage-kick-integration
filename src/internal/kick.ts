@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger } from "../main";
@@ -74,6 +75,13 @@ export class Kick implements IKick {
             } else {
                 logger.debug("No bot token is given.");
                 this.bot = null;
+            }
+
+            // Check for same account used for both streamer and bot
+            if (this.broadcaster && this.bot && this.broadcaster.userId === this.bot.userId) {
+                logger.warn(`Same account detected: User ID ${this.broadcaster.userId} (${this.broadcaster.name}) is authorized for both streamer and bot. Bot functionality will be disabled.`);
+                this.bot = null;
+                integration.sendCriticalErrorNotification(`Bot account is the same as streamer account (${this.broadcaster.name}). Bot functionality has been disabled. Please authorize a different account for the bot in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             }
 
             if (integration.getSettings().webhookProxy) {
