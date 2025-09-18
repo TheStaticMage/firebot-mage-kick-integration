@@ -314,14 +314,6 @@ export class KickIntegration extends EventEmitter {
         // Miscellaneous variables
         replaceVariableManager.registerReplaceVariable(platformVariable);
 
-        // UI Extensions
-        const { uiExtensionManager } = firebot.modules;
-        if (uiExtensionManager) {
-            uiExtensionManager.registerUIExtension(reflectorExtension);
-        } else {
-            logger.error("UI Extension Manager module not found. The Kick integration UI extension cannot be registered.");
-        }
-
         // Restrictions
         const { restrictionManager } = firebot.modules;
         restrictionManager.registerRestriction(platformRestriction);
@@ -330,6 +322,14 @@ export class KickIntegration extends EventEmitter {
         // via commit https://github.com/crowbartools/Firebot/commit/55744f55095d6d6ca791adced534c5a6fad37119
         try {
             requireVersion("5.65.0");
+
+            // UI Extensions
+            const { uiExtensionManager } = firebot.modules;
+            if (uiExtensionManager) {
+                uiExtensionManager.registerUIExtension(reflectorExtension);
+            } else {
+                logger.error("UI Extension Manager module not found. The Kick integration UI extension cannot be registered.");
+            }
 
             eventFilterManager.addEventToFilter("firebot:cheerbitsamount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
             eventFilterManager.addEventToFilter("firebot:raid-viewer-count", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
