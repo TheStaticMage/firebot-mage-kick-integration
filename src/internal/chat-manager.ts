@@ -49,6 +49,11 @@ export class ChatManager {
             return false;
         }
 
+        if (!integration.getSettings().chat.chatSend) {
+            logger.debug("Not sending message typed in chat feed: This option is disabled in the settings.");
+            return false;
+        }
+
         // Many slash commands are implemented in Firebot, but only some are
         // available for Kick.
         if (payload.message.startsWith("/")) {
@@ -58,11 +63,6 @@ export class ChatManager {
                 logger.error(`Error handling slash command: ${error}`);
                 return false;
             }
-        }
-
-        if (!integration.getSettings().chat.chatSend) {
-            logger.debug("Not sending message typed in chat feed: This option is disabled in the settings.");
-            return false;
         }
 
         // Handle the chat message
@@ -164,22 +164,56 @@ export class ChatManager {
         switch (command) {
             case "/ban": {
                 if (args.length === 0) {
-                    throw new Error("No user specified for /ban command.");
+                    throw new Error("Usage: /ban <user> [reason]");
                 }
-                break;
-            }
-            case "/unban":
-            case "/untimeout": {
-                if (args.length === 0) {
-                    throw new Error(`No user specified for ${command} command.`);
+                const reason = args.length > 1 ? args.slice(1).join(' ') : 'No reason given';
+                const success = await this.kick.userApi.banUserByUsername(args[0], 0, true, reason);
+                if (!success) {
+                    throw new Error(`Failed to ban user: ${args[0]}`);
                 }
-                break;
+                return true;
             }
             case "/timeout": {
                 if (args.length < 2) {
                     throw new Error("Usage: /timeout <user> <duration> [reason]");
                 }
-                break;
+                const durationSeconds = parseInt(args[1], 10);
+                if (isNaN(durationSeconds) || durationSeconds <= 0) {
+                    throw new Error("Duration must be a positive integer representing seconds.");
+                }
+
+                // Convert seconds to minutes with required constraints
+                let durationMinutes: number;
+                if (durationSeconds < 60) {
+                    // Round up any value below 1 minute to 1 minute
+                    durationMinutes = 1;
+                } else {
+                    // Round to nearest minute
+                    durationMinutes = Math.round(durationSeconds / 60);
+                }
+
+                // Check maximum limit (10800 minutes)
+                if (durationMinutes > 10800) {
+                    throw new Error("Timeout duration cannot exceed 10800 minutes (7.5 days).");
+                }
+
+                const reason = args.length > 2 ? args.slice(2).join(' ') : 'No reason given';
+                const success = await this.kick.userApi.banUserByUsername(args[0], durationMinutes, true, reason);
+                if (!success) {
+                    throw new Error(`Failed to timeout user: ${args[0]}`);
+                }
+                return true;
+            }
+            case "/unban":
+            case "/untimeout": {
+                if (args.length === 0) {
+                    throw new Error(`Usage: ${command} <user>`);
+                }
+                const success = await this.kick.userApi.banUserByUsername(args[0], 0, false);
+                if (!success) {
+                    throw new Error(`Failed to unban/untimeout user: ${args[0]}`);
+                }
+                return true;
             }
             case "/announce":
             case "/announceblue":

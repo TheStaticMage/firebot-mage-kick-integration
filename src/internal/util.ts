@@ -16,14 +16,22 @@ export function kickifyUsername(username: string | undefined): string {
     if (!username) {
         return "";
     }
-    return username.endsWith("@kick") ? username : `${username}@kick`;
+    let result = username.endsWith("@kick") ? username : `${username}@kick`;
+    if (result.startsWith("@")) {
+        result = result.substring(1);
+    }
+    return result;
 }
 
 export function unkickifyUsername(username: string | undefined): string {
     if (!username) {
         return "";
     }
-    return username.endsWith("@kick") ? username.substring(0, username.length - 5) : username;
+    let result = username.endsWith("@kick") ? username.substring(0, username.length - 5) : username;
+    if (result.startsWith("@")) {
+        result = result.substring(1);
+    }
+    return result;
 }
 
 export function parseDate(dateString: string | undefined | null): Date | undefined {
