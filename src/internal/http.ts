@@ -55,7 +55,7 @@ export async function httpCallWithTimeout<T = any>(req: HttpCallRequest): Promis
         redirect: "manual"
     };
 
-    if (body !== undefined && body !== null && body !== "" && !["GET", "HEAD", "DELETE"].includes(method)) {
+    if (body !== undefined && body !== null && body !== "" && !["GET", "HEAD"].includes(method)) {
         fetchOptions['body'] = body;
     }
 
