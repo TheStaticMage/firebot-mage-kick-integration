@@ -94,9 +94,9 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 | Channel point rewards: Enable/disable/pause | :x: | No public API endpoint &#x1F1F0; |
 | Channel point rewards: Trigger event | :white_check_mark: | Limited information &#x1F1F0; |
 | Chat feed: Display Kick messages | :white_check_mark: | Works! Shows badges and emotes too |
-| Chat feed: Ban user (on Kick message) | :white_check_mark: | Works! |
-| Chat feed: Timeout user | ? | May be possible |
-| Chat feed: Unban user | ? | May be possible |
+| Chat feed: Ban user (on Kick message) | :white_check_mark: | Works via context menu and `/ban` command |
+| Chat feed: Timeout user | :white_check_mark: | Works via context menu and `/timeout` command |
+| Chat feed: Unban user | :white_check_mark: | Works via `/unban` and `/untimeout` commands |
 | Chat feed: User profile | :x: | Firebot assumes all users are Twitch users &#x1F525; |
 | Chat feed: All other context menu items | :x: | Various limitations &#x1F1F0; &#x1F525; |
 | Commands | :white_check_mark: | Cooldowns do not work &#x1F525; |
