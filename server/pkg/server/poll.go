@@ -16,7 +16,7 @@ func (s *Server) HandleClose(ctx context.Context) func(w http.ResponseWriter, r 
 
 		// Look up the UUID from the URL path in the users map
 		uuid := r.URL.Path[len("/poll/"):]
-		_, exists := cfg.IDToKickName[uuid]
+		_, exists := cfg.IDToKickName(uuid)
 		if !exists {
 			http.Error(w, "User not found", http.StatusNotFound)
 			s.log(ctx, r, "Received poll request: user not found (uuid=%s)", uuid)
@@ -37,7 +37,7 @@ func (s *Server) HandlePoll(ctx context.Context) func(w http.ResponseWriter, r *
 
 		// Look up the UUID from the URL path in the users map
 		uuid := r.URL.Path[len("/poll/"):]
-		_, exists := cfg.IDToKickName[uuid]
+		_, exists := cfg.IDToKickName(uuid)
 		if !exists {
 			http.Error(w, "User not found", http.StatusNotFound)
 			s.log(ctx, r, "Received poll request: user not found (uuid=%s)", uuid)

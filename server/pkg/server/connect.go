@@ -12,7 +12,7 @@ func (s *Server) HandleConnect(ctx context.Context) func(w http.ResponseWriter, 
 
 		// Look up the UUID from the URL path in the users map
 		uuid := r.URL.Path[len("/connect/"):]
-		kickID, exists := cfg.IDToKickName[uuid]
+		kickID, exists := cfg.IDToKickName(uuid)
 		if !exists {
 			http.Error(w, "User not found", http.StatusNotFound)
 			s.log(ctx, r, "Received connect request: user not found (uuid=%s)", uuid)
