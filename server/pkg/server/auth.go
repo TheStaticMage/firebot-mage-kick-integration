@@ -138,7 +138,7 @@ func (s *Server) handleAuthorizationCode(ctx context.Context, w http.ResponseWri
 		return
 	}
 
-	if key, exists := config.FromContext(ctx).KickNameToID[strings.ToLower(userInfo.Data[0].Name)]; exists {
+	if key, exists := config.FromContext(ctx).KickNameToID(userInfo.Data[0].Name); exists {
 		response.ProxyPollKey = key
 		s.log(ctx, r, "User %s found in configured Kick IDs, setting ProxyPollKey to %s", userInfo.Data[0].Name, key)
 	} else {

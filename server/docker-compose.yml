@@ -1,0 +1,15 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - CLIENT_ID=${CLIENT_ID}
+      - CLIENT_SECRET=${CLIENT_SECRET}
+      - USERS_FILE=/etc/secrets/users.txt
+    volumes:
+      - ${USERS_FILE:-/dev/null}:/etc/secrets/users.txt
+    ports:
+      - "10000:10000"
+    restart: unless-stopped

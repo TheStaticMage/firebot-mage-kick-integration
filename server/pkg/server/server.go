@@ -103,6 +103,10 @@ func (s *Server) main(ctx context.Context, wg *sync.WaitGroup) {
 		s.HandleWebHook(ctx)(w, r)
 	})
 
+	http.HandleFunc("/admin/users", func(w http.ResponseWriter, r *http.Request) {
+		s.HandleUsers(ctx)(w, r)
+	})
+
 	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)

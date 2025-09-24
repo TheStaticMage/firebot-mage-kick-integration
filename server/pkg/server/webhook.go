@@ -7,7 +7,6 @@ import (
 	"mage-kick-webhook-proxy/pkg/config"
 	"mage-kick-webhook-proxy/pkg/model"
 	"net/http"
-	"strings"
 )
 
 func (s *Server) HandleWebHook(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
@@ -60,7 +59,7 @@ func (s *Server) HandleWebHook(ctx context.Context) func(w http.ResponseWriter, 
 		}
 
 		// Match the webhook request to a user
-		keyID, exists := config.FromContext(ctx).KickNameToID[strings.ToLower(parsedWebhook.Broadcaster.UserName)]
+		keyID, exists := config.FromContext(ctx).KickNameToID(parsedWebhook.Broadcaster.UserName)
 		if !exists {
 			s.log(ctx, r, "Rejected webhook for unregistered kick user! username=%s eventType=%s eventVersion=%s",
 				parsedWebhook.Broadcaster.UserName, eventType, eventVersion)
