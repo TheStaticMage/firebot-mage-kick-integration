@@ -26,3 +26,4 @@ node_modules/
 
 # For local testing
 /test-payloads/
+/server/redis.db

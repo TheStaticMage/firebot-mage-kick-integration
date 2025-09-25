@@ -5,6 +5,7 @@ import (
 	"mage-kick-webhook-proxy/pkg/config"
 	"mage-kick-webhook-proxy/pkg/logger"
 	"mage-kick-webhook-proxy/pkg/server"
+	"mage-kick-webhook-proxy/pkg/state"
 	"mage-kick-webhook-proxy/pkg/state/memory"
 	"os"
 	"os/signal"
@@ -43,8 +44,37 @@ func main() {
 
 	var wg sync.WaitGroup
 
-	st := memory.New()
+	// Initialize state with Redis persistence if available, fallback to memory-only
+	st := initializeState(ctx, cfg)
+	defer func() {
+		if closer, ok := st.(interface{ Close() error }); ok {
+			if err := closer.Close(); err != nil {
+				l.WithError(err).Error("Failed to close state store")
+			}
+		}
+	}()
+
 	svr := server.New(st)
 	svr.Start(ctx, &wg)
 	wg.Wait()
+}
+
+// initializeState creates the appropriate state implementation based on configuration
+func initializeState(ctx context.Context, cfg *config.Config) state.State {
+	l := logger.FromContext(ctx)
+
+	// Try to initialize with Redis persistence
+	if cfg.RedisURL != "" {
+		st, err := memory.NewPersistentMemoryState(ctx, cfg.RedisURL)
+		if err != nil {
+			l.WithError(err).Warn("Failed to initialize Redis-backed state, falling back to memory-only")
+		} else {
+			l.Info("Successfully initialized Redis-backed persistent state")
+			return st
+		}
+	}
+
+	// Fallback to memory-only state
+	l.Info("Using memory-only state (no persistence)")
+	return memory.New()
 }
