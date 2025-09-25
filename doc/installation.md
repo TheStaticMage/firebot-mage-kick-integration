@@ -149,6 +149,8 @@ Here's how to do it:
 
 ## Authentication of Streamer
 
+**Prerequisite:** If you are using the webhook proxy, you must add an entry into the user data file in the format `uuid:username` (using a [UUIDv4](https://www.uuidgenerator.net/version4) and entering the username in lower case). If you are using someone else's webhook proxy, contact the server administrator with the username you wish to authorize as the streamer.
+
 You will authenticate to Kick using your browser, which will grant a token to the application. This uses a technology called [OAuth](https://docs.kick.com/getting-started/generating-tokens-oauth2-flow) which ensures that your Kick password is never needed by the Firebot integration.
 
 1. Log in to Kick as the streamer.
@@ -170,6 +172,8 @@ You will authenticate to Kick using your browser, which will grant a token to th
 ## Authentication of Bot
 
 You may _optionally_ choose to have Firebot post chat messages as a separate Kick user, which we will call your "bot." (If you do not configure a separate bot user, chat messages will always be posted as the streamer.)
+
+**Prerequisite:** If you are using the webhook proxy, you must add an entry into the user data file in the format `:username` (that is, a `:` followed by the username in lower case). If you are using someone else's webhook proxy, contact the server administrator with the username you wish to authorize as the bot.
 
 1. Register a separate Kick account for your bot.
 
@@ -193,4 +197,7 @@ You may _optionally_ choose to have Firebot post chat messages as a separate Kic
 
 8. Be sure to save your integration settings in Firebot.
 
-:bulb: We suggest to make your bot a moderator so it can post URLs and bypass any other restrictions. (Note: this bot account does not attempt to take any "moderator" actions in the channel through Firebot.)
+:bulb: We suggest to make your bot a moderator so it can post URLs and bypass any other restrictions. (Note: this bot account does not attempt to take any "moderator" actions in the channel through Firebot.) You can do this using one of these methods:
+
+- Log in as your main account and [add the moderator](https://dashboard.kick.com/channel/roles/moderator) under channel roles
+- Log in as your main account, go to your chat, and type `/mod BOTUSERNAME` (filling in the appropriate bot username, of course)
