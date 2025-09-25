@@ -12,6 +12,7 @@ type Config struct {
 	ClientID     string `env:"CLIENT_ID" required:"true"`
 	ClientSecret string `env:"CLIENT_SECRET" required:"true"`
 	HTTPPort     string `env:"HTTP_PORT" envDefault:"10000"`
+	RedisURL     string `env:"REDIS_URL" envDefault:""`
 	UsersFile    string `env:"USERS_FILE" envDefault:"/etc/secrets/users.txt"`
 
 	kickNameToID   map[string]string // Populated by Init
