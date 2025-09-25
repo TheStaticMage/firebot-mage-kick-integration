@@ -25,6 +25,8 @@ jest.mock('../http', () => ({
 }));
 
 import { AuthManager } from '../auth';
+import { httpCallWithTimeout } from '../http';
+import { integration } from '../../integration';
 
 describe('AuthManager', () => {
     let authManager: AuthManager;
@@ -622,10 +624,10 @@ describe('AuthManager', () => {
             await authManager.handleAuthCallback(req, res);
 
             expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Cannot authorize a bot account until a streamer account has been authorized'));
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('until the streamer account has been authorized'));
         });
 
-        it('skips same-account check for streamer authorization', async () => {
+        it('prevents a bot account from the webhook proxy from being registered as a streamer account', async () => {
             // Mock successful token exchange
             mockHttpCallWithTimeout.mockResolvedValueOnce({
                 'access_token': 'streamer-token',
@@ -652,8 +654,8 @@ describe('AuthManager', () => {
 
             await authManager.handleAuthCallback(req, res);
 
-            expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for streamer!'));
+            expect(res.status).toHaveBeenCalledWith(400);
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('it is configured as a bot account in the webhook proxy'));
         });
 
         it('verifyBotUser returns correct user information', async () => {
@@ -713,6 +715,318 @@ describe('AuthManager', () => {
             });
 
             await expect((authManager as any).verifyBotUser('test-token')).rejects.toThrow('No user ID found in bot user API response');
+        });
+    });
+
+    describe('refreshAuthTokenReal', () => {
+        /* eslint-disable camelcase */
+        const mockIntegration = integration as any;
+        const mockHttpCall = httpCallWithTimeout as jest.MockedFunction<typeof httpCallWithTimeout>;
+
+        beforeEach(() => {
+            // Set up default refresh tokens
+            (authManager as any).streamerRefreshToken = 'streamer-refresh-token';
+            (authManager as any).botRefreshToken = 'bot-refresh-token';
+
+            // Mock Date.now() for consistent testing
+            jest.spyOn(Date, 'now').mockReturnValue(1000000);
+
+            // Set up integration.kick mock functions
+            mockIntegration.kick = {
+                setAuthToken: jest.fn(),
+                setBotAuthToken: jest.fn()
+            };
+        });
+
+        afterEach(() => {
+            jest.restoreAllMocks();
+        });
+
+        describe('Webhook Proxy flow', () => {
+            beforeEach(() => {
+                mockIntegration.getSettings.mockReturnValue({
+                    connectivity: {
+                        firebotUrl: 'http://localhost:7472'
+                    },
+                    webhookProxy: {
+                        webhookProxyUrl: 'https://webhook-proxy.example.com/'
+                    },
+                    kickApp: {
+                        clientId: 'test-client-id',
+                        clientSecret: 'test-client-secret'
+                    }
+                });
+            });
+
+            it('should successfully refresh streamer token via webhook proxy', async () => {
+                mockHttpCall.mockResolvedValue({
+                    access_token: 'new-streamer-access-token',
+                    refresh_token: 'new-streamer-refresh-token',
+                    expires_in: 3600
+                });
+
+                await (authManager as any).refreshAuthTokenReal('streamer');
+
+                expect(mockHttpCall).toHaveBeenCalledWith({
+                    url: 'https://webhook-proxy.example.com/auth/token',
+                    method: 'POST',
+                    body: JSON.stringify({
+                        grant_type: "refresh_token",
+                        refresh_token: "streamer-refresh-token"
+                    })
+                });
+
+                expect((authManager as any).streamerAuthToken).toBe('new-streamer-access-token');
+                expect((authManager as any).streamerRefreshToken).toBe('new-streamer-refresh-token');
+                expect((authManager as any).streamerTokenExpiresAt).toBe(1000000 + (3600 * 1000));
+                expect(mockIntegration.kick.setAuthToken).toHaveBeenCalledWith('new-streamer-access-token');
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('new-streamer-refresh-token', 'bot-refresh-token');
+            });
+
+            it('should successfully refresh bot token via webhook proxy', async () => {
+                mockHttpCall.mockResolvedValue({
+                    access_token: 'new-bot-access-token',
+                    refresh_token: 'new-bot-refresh-token',
+                    expires_in: 3600
+                });
+
+                await (authManager as any).refreshAuthTokenReal('bot');
+
+                expect(mockHttpCall).toHaveBeenCalledWith({
+                    url: 'https://webhook-proxy.example.com/auth/token',
+                    method: 'POST',
+                    body: JSON.stringify({
+                        grant_type: "refresh_token",
+                        refresh_token: "bot-refresh-token"
+                    })
+                });
+
+                expect((authManager as any).botAuthToken).toBe('new-bot-access-token');
+                expect((authManager as any).botRefreshToken).toBe('new-bot-refresh-token');
+                expect((authManager as any).botTokenExpiresAt).toBe(1000000 + (3600 * 1000));
+                expect(mockIntegration.kick.setBotAuthToken).toHaveBeenCalledWith('new-bot-access-token');
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('streamer-refresh-token', 'new-bot-refresh-token');
+            });
+
+            it('should remove trailing slashes from webhook proxy URL', async () => {
+                mockIntegration.getSettings.mockReturnValue({
+                    connectivity: {
+                        firebotUrl: 'http://localhost:7472'
+                    },
+                    webhookProxy: {
+                        webhookProxyUrl: 'https://webhook-proxy.example.com///' // Multiple trailing slashes
+                    },
+                    kickApp: {
+                        clientId: 'test-client-id',
+                        clientSecret: 'test-client-secret'
+                    }
+                });
+
+                mockHttpCall.mockResolvedValue({
+                    access_token: 'new-access-token',
+                    refresh_token: 'new-refresh-token',
+                    expires_in: 3600
+                });
+
+                await (authManager as any).refreshAuthTokenReal('streamer');
+
+                expect(mockHttpCall).toHaveBeenCalledWith({
+                    url: 'https://webhook-proxy.example.com/auth/token', // Should have trailing slashes removed
+                    method: 'POST',
+                    body: JSON.stringify({
+                        grant_type: "refresh_token",
+                        refresh_token: "streamer-refresh-token"
+                    })
+                });
+            });
+        });
+
+        describe('Direct auth flow', () => {
+            beforeEach(() => {
+                mockIntegration.getSettings.mockReturnValue({
+                    connectivity: {
+                        firebotUrl: 'http://localhost:7472'
+                    },
+                    webhookProxy: {
+                        webhookProxyUrl: '' // Empty webhook proxy URL triggers direct auth
+                    },
+                    kickApp: {
+                        clientId: 'test-client-id',
+                        clientSecret: 'test-client-secret'
+                    }
+                });
+            });
+
+            it('should successfully refresh streamer token via direct auth', async () => {
+                mockHttpCall.mockResolvedValue({
+                    access_token: 'new-streamer-access-token',
+                    refresh_token: 'new-streamer-refresh-token',
+                    expires_in: 3600
+                });
+
+                await (authManager as any).refreshAuthTokenReal('streamer');
+
+                expect(mockHttpCall).toHaveBeenCalledWith({
+                    url: 'https://id.kick.com/oauth/token',
+                    method: 'POST',
+                    body: 'grant_type=refresh_token&refresh_token=streamer-refresh-token&client_id=test-client-id&client_secret=test-client-secret&redirect_uri=http%3A%2F%2Flocalhost%3A7472%2Fintegrations%2Ffirebot-mage-kick-integration%2Fcallback'
+                });
+
+                expect((authManager as any).streamerAuthToken).toBe('new-streamer-access-token');
+                expect((authManager as any).streamerRefreshToken).toBe('new-streamer-refresh-token');
+                expect((authManager as any).streamerTokenExpiresAt).toBe(1000000 + (3600 * 1000));
+                expect(mockIntegration.kick.setAuthToken).toHaveBeenCalledWith('new-streamer-access-token');
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('new-streamer-refresh-token', 'bot-refresh-token');
+            });
+
+            it('should successfully refresh bot token via direct auth', async () => {
+                mockHttpCall.mockResolvedValue({
+                    access_token: 'new-bot-access-token',
+                    refresh_token: 'new-bot-refresh-token',
+                    expires_in: 3600
+                });
+
+                await (authManager as any).refreshAuthTokenReal('bot');
+
+                expect(mockHttpCall).toHaveBeenCalledWith({
+                    url: 'https://id.kick.com/oauth/token',
+                    method: 'POST',
+                    body: 'grant_type=refresh_token&refresh_token=bot-refresh-token&client_id=test-client-id&client_secret=test-client-secret&redirect_uri=http%3A%2F%2Flocalhost%3A7472%2Fintegrations%2Ffirebot-mage-kick-integration%2Fcallback'
+                });
+
+                expect((authManager as any).botAuthToken).toBe('new-bot-access-token');
+                expect((authManager as any).botRefreshToken).toBe('new-bot-refresh-token');
+                expect((authManager as any).botTokenExpiresAt).toBe(1000000 + (3600 * 1000));
+                expect(mockIntegration.kick.setBotAuthToken).toHaveBeenCalledWith('new-bot-access-token');
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('streamer-refresh-token', 'new-bot-refresh-token');
+            });
+        });
+
+        describe('Error handling', () => {
+            beforeEach(() => {
+                mockIntegration.getSettings.mockReturnValue({
+                    connectivity: {
+                        firebotUrl: 'http://localhost:7472'
+                    },
+                    webhookProxy: {
+                        webhookProxyUrl: 'https://webhook-proxy.example.com'
+                    },
+                    kickApp: {
+                        clientId: 'test-client-id',
+                        clientSecret: 'test-client-secret'
+                    }
+                });
+            });
+
+            it('should handle 401 error for streamer token and clear refresh token', async () => {
+                const error401 = { status: 401, message: 'Unauthorized' };
+                mockHttpCall.mockRejectedValue(error401);
+
+                await (authManager as any).refreshAuthTokenReal('streamer');
+
+                expect(mockIntegration.sendCriticalErrorNotification).toHaveBeenCalledWith(
+                    'Kick integration streamer refresh token is invalid. Please re-authorize the streamer account in Settings > Integrations > MageKickIntegration.'
+                );
+                expect((authManager as any).streamerRefreshToken).toBe('');
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('', 'bot-refresh-token');
+            });
+
+            it('should handle 401 error for bot token and clear refresh token', async () => {
+                const error401 = { status: 401, message: 'Unauthorized' };
+                mockHttpCall.mockRejectedValue(error401);
+
+                await (authManager as any).refreshAuthTokenReal('bot');
+
+                expect(mockIntegration.sendCriticalErrorNotification).toHaveBeenCalledWith(
+                    'Kick integration bot refresh token is invalid. Please re-authorize the bot account in Settings > Integrations > MageKickIntegration.'
+                );
+                expect((authManager as any).botRefreshToken).toBe('');
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('streamer-refresh-token', '');
+            });
+
+            it('should handle non-401 errors by re-throwing for streamer', async () => {
+                const networkError = new Error('Network timeout');
+                mockHttpCall.mockRejectedValue(networkError);
+
+                await expect((authManager as any).refreshAuthTokenReal('streamer')).rejects.toThrow('Network timeout');
+
+                // Should not clear refresh token for non-401 errors
+                expect((authManager as any).streamerRefreshToken).toBe('streamer-refresh-token');
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('streamer-refresh-token', 'bot-refresh-token');
+            });
+
+            it('should handle non-401 errors by re-throwing for bot', async () => {
+                const networkError = new Error('Network timeout');
+                mockHttpCall.mockRejectedValue(networkError);
+
+                await expect((authManager as any).refreshAuthTokenReal('bot')).rejects.toThrow('Network timeout');
+
+                // Should not clear refresh token for non-401 errors
+                expect((authManager as any).botRefreshToken).toBe('bot-refresh-token');
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('streamer-refresh-token', 'bot-refresh-token');
+            });
+
+            it('should handle 401 error with non-object error', async () => {
+                mockHttpCall.mockRejectedValue('String error with 401');
+
+                await expect((authManager as any).refreshAuthTokenReal('streamer')).rejects.toBe('String error with 401');
+
+                // Should not clear refresh token for non-object errors, even if they contain "401"
+                expect((authManager as any).streamerRefreshToken).toBe('streamer-refresh-token');
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('streamer-refresh-token', 'bot-refresh-token');
+            });
+
+            it('should always save integration token data in finally block on success', async () => {
+                mockHttpCall.mockResolvedValue({
+                    access_token: 'new-access-token',
+                    refresh_token: 'new-refresh-token',
+                    expires_in: 3600
+                });
+
+                await (authManager as any).refreshAuthTokenReal('streamer');
+
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('new-refresh-token', 'bot-refresh-token');
+            });
+
+            it('should always save integration token data in finally block on error', async () => {
+                const networkError = new Error('Network error');
+                mockHttpCall.mockRejectedValue(networkError);
+
+                await expect((authManager as any).refreshAuthTokenReal('streamer')).rejects.toThrow('Network error');
+
+                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('streamer-refresh-token', 'bot-refresh-token');
+            });
+        });
+
+        describe('Edge cases', () => {
+            it('should handle empty client credentials gracefully in direct auth', async () => {
+                mockIntegration.getSettings.mockReturnValue({
+                    connectivity: {
+                        firebotUrl: 'http://localhost:7472'
+                    },
+                    webhookProxy: {
+                        webhookProxyUrl: ''
+                    },
+                    kickApp: {
+                        clientId: '', // Empty client ID
+                        clientSecret: '' // Empty client secret
+                    }
+                });
+
+                mockHttpCall.mockResolvedValue({
+                    access_token: 'new-access-token',
+                    refresh_token: 'new-refresh-token',
+                    expires_in: 3600
+                });
+
+                await (authManager as any).refreshAuthTokenReal('streamer');
+
+                expect(mockHttpCall).toHaveBeenCalledWith({
+                    url: 'https://id.kick.com/oauth/token',
+                    method: 'POST',
+                    body: 'grant_type=refresh_token&refresh_token=streamer-refresh-token&client_id=&client_secret=&redirect_uri=http%3A%2F%2Flocalhost%3A7472%2Fintegrations%2Ffirebot-mage-kick-integration%2Fcallback'
+                });
+            });
         });
     });
 });

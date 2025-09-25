@@ -257,52 +257,68 @@ export class AuthManager {
             };
             const response = await httpCallWithTimeout(req);
 
-            // Check for same-account authorization when authorizing bot
             if (tokenType === 'bot') {
-                if (integration.kick.broadcaster) {
-                    try {
-                        const botUserInfo = await this.verifyBotUser(response.access_token);
-                        if (botUserInfo.userId === integration.kick.broadcaster.userId) {
-                            logger.error(`Same account authorization attempt: Bot user ID ${botUserInfo.userId} matches broadcaster user ID ${integration.kick.broadcaster.userId}`);
-                            res.status(400).send(`<p>Error: Cannot authorize the same account for both streamer and bot. The account "${botUserInfo.name}" is already authorized as the streamer.</p><p>Please <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/bot">authorize a different account</a> for the bot. (Consider opening this link in an incognito window to prevent the same problem from happening again.)</p>`);
-                            return;
-                        }
-                        logger.debug(`Bot authorization verified: Bot user ID ${botUserInfo.userId} is different from broadcaster user ID ${integration.kick.broadcaster.userId}`);
-                    } catch (verificationError) {
-                        logger.error(`Failed to verify bot user during authorization: ${verificationError}`);
-                        res.status(500).send(`<p>Failed to verify bot account: ${verificationError}</p>`);
-                        return;
-                    }
-                } else {
-                    logger.warn("Broadcaster info not available when verifying bot account during authorization.");
-                    res.status(400).send(`<p>Cannot authorize a bot account until a streamer account has been authorized.</p><p>Please <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/streamer">authorize a streamer account</a> first.</p>`);
+                if (integration.getSettings().webhookProxy.webhookProxyUrl && response.proxy_poll_key) {
+                    logger.warn(`Received proxy_poll_key (${response.proxy_poll_key}) when authorizing bot account via webhook proxy`);
+                    res.status(400).send(`<p>This account cannot be authorized as a bot account because it is configured as a streamer account in the webhook proxy.</p><p>Please contact the webhook proxy administrator if this is in error, or <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/streamer">authorize this account as the streamer account</a> if that is what you intended to do.</p>`);
                     return;
                 }
-            }
 
-            if (tokenType === 'streamer') {
-                this.streamerAuthToken = response.access_token;
-                this.streamerRefreshToken = response.refresh_token;
-                this.streamerTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
-                integration.kick.setAuthToken(this.streamerAuthToken);
-                logger.info(`Kick integration token for streamer refreshed successfully. Valid until: ${new Date(this.streamerTokenExpiresAt).toISOString()}`);
-            } else {
+                if (!integration.kick.broadcaster) {
+                    logger.warn("Broadcaster info not available when verifying bot account during authorization");
+                    res.status(400).send(`<p>A bot account cannot be authorized until the streamer account has been authorized.</p><p>Please <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/streamer">authorize a streamer account</a> first.</p>`);
+                    return;
+                }
+
+                try {
+                    const botUserInfo = await this.verifyBotUser(response.access_token);
+                    if (botUserInfo.userId === integration.kick.broadcaster.userId) {
+                        logger.error(`Same account authorization attempt: Bot user ID ${botUserInfo.userId} matches broadcaster user ID ${integration.kick.broadcaster.userId}`);
+                        res.status(400).send(`<p>Error: Cannot authorize the same account for both streamer and bot. The account "${botUserInfo.name}" is already authorized as the streamer.</p><p>Please <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/bot">authorize a different account</a> for the bot. (Consider opening this link in an incognito window to prevent the same problem from happening again.)</p>`);
+                        return;
+                    }
+                    logger.debug(`Bot authorization verified: Bot user ID ${botUserInfo.userId} is different from broadcaster user ID ${integration.kick.broadcaster.userId}`);
+                } catch (verificationError) {
+                    logger.error(`Failed to verify bot user during authorization: ${verificationError}`);
+                    res.status(500).send(`<p>Failed to verify bot account: ${verificationError}</p>`);
+                    return;
+                }
+
                 this.botAuthToken = response.access_token;
                 this.botRefreshToken = response.refresh_token;
                 this.botTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
                 integration.kick.setBotAuthToken(this.botAuthToken);
+                integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken, null);
                 logger.info(`Kick integration token for bot refreshed successfully. Valid until: ${new Date(this.botTokenExpiresAt).toISOString()}`);
             }
 
-            integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken, tokenType === 'streamer' ? response.proxy_poll_key : null);
+            if (tokenType === 'streamer') {
+                if (integration.getSettings().webhookProxy.webhookProxyUrl && !response.proxy_poll_key) {
+                    logger.warn("No proxy_poll_key when authorizing streamer account via webhook proxy");
+                    res.status(400).send(`<p>This account cannot be authorized as a streamer account because it is configured as a bot account in the webhook proxy.</p><p>Please contact the webhook proxy administrator if you believe this is an error, or <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/bot">authorize this account as the bot account</a> if that is what you intended to do.</p>`);
+                    return;
+                }
+
+                this.streamerAuthToken = response.access_token;
+                this.streamerRefreshToken = response.refresh_token;
+                this.streamerTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
+                integration.kick.setAuthToken(this.streamerAuthToken);
+                integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken, response.proxy_poll_key);
+                logger.info(`Kick integration token for streamer refreshed successfully. Valid until: ${new Date(this.streamerTokenExpiresAt).toISOString()}`);
+            }
+
             integration.disconnect();
             integration.connect();
 
             logger.info("Kick integration connected successfully!");
-            res.status(200).send(`Kick integration authorized for ${tokenType}! You can close this tab. (Be sure to save the integration settings in Firebot if you have that window open.)`);
+            res.status(200).send(`<p>Kick integration authorized for ${tokenType}! You can close this tab.</p><p>(Be sure to save the integration settings in Firebot if you have that window open.)</p>`);
         } catch (error) {
             logger.error(`Failed to exchange code for tokens: ${error}`);
-            res.status(500).send(`Failed to exchange code for tokens: ${error}`);
+            if (integration.getSettings().webhookProxy.webhookProxyUrl) {
+                res.status(500).send(`<p>Failed to exchange code for tokens via webhook proxy: ${error}.</p><p>Please contact the webhook proxy administrator for assistance.</p>`);
+            } else {
+                res.status(500).send(`<p>Failed to exchange code for tokens: ${error}</p>`);
+            }
         }
     }
 
