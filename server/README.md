@@ -12,11 +12,11 @@ This design avoids the need for Firebot to know the client secret of your Kick a
 - Keeps the Kick app's client secret off the Firebot integration
 - Individual user UUIDs are handled internally (no copy and paste)
 - This app never sees the user's Kick password (OAuth 2.1 flow)
+- Optional redis store preserves webhooks across application restart
 
 ## Limitations
 
-- All webhook memory disappears when this application is restarted or redeployed
-- User management requires editing a secret and restarting the app
+- User management is clunky
 - This app needs to know the users token to be involved in the authorization flow
 
 ## Installation
@@ -64,21 +64,25 @@ I run my copy of this software on [render.com](https://render.com) with this set
 - Environment:
   - `CLIENT_ID`: Your Kick client ID (see [Create a Kick app](#create-a-kick-app))
   - `CLIENT_SECRET`: Your Kick client secret (see [Create a Kick app](#create-a-kick-app))
+  - `REDIS_URL`: If set up in Render, paste the Redis URL they provide
 - Secret Files:
   - Filename: `users.txt`
   - Content:
 
     ```text
     00000000-0000-0000-0000-000000000000:yourkickusername
+    :yourkickbotusername
     ```
 
     Note: Generate a real UUID at [uuidgenerator.net](https://www.uuidgenerator.net/) and fill in your actual Kick username.
 
     Note: If you want to "host" this service for others, create one line per user (with a unique UUID for each).
 
+    Note: A "streamer" account has a UUID. A "bot" account has no UUID.
+
     Note: You should fork this repository and point Render at your fork. While it is possible to point Render directly at this repository, this means you are subject to my timelines on release and deployment, which could be in the middle of _your_ stream!
 
-**Free tier advisory**: If you use the Render free tier, your service will spin down after a period of inactivity. Firebot's polling should be sufficient to keep your service alive while you're using it, but you might experience delayed or failed webhooks if Kick tries to deliver a webhook while your service is asleep. It will also take Firebot a while to connect at the start while your Render service wakes up -- be sure you leave at least a minute for Firebot to connect when you start it.
+**Free tier advisory**: If you use the Render free tier, your service will spin down after a period of inactivity. Firebot's polling should be sufficient to keep your service alive while you're using it, but you might experience delayed or failed webhooks if Kick tries to deliver a webhook while your service is asleep. It will also take Firebot a while to connect at the start while your Render service wakes up -- be sure you leave at least a minute for Firebot to connect when you start it. Kick will also eventually disable any webhook endpoint where it repeatedly fails delivery, which is a possibility with the free tier.
 
 ## Support
 
