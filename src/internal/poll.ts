@@ -13,6 +13,7 @@ export class Poller {
     private proxyPollUrl = "";
     private instanceId = "";
     private isPolling = false;
+    private nextCursor = 0;
 
     async connect(proxyPollKey: string): Promise<void> {
         if (this.isDisconnecting || this.isConnected) {
@@ -144,24 +145,30 @@ export class Poller {
                 headers: {
                     "X-Broadcaster-Username": integration.kick.broadcaster?.name || "unknown",
                     "X-Instance-ID": this.instanceId,
-                    "X-Request-ID": crypto.randomUUID()
+                    "X-Request-ID": crypto.randomUUID(),
+                    "X-Cursor-ID": String(this.nextCursor) // Send the cursor for the next batch of webhooks
                 },
                 userAgent: `firebot-mage-kick-integration/${scriptVersion} (+https://github.com/TheStaticMage/firebot-mage-kick-integration)`,
                 maxRedirects: 1000
             };
+            let nextCursor = this.nextCursor;
             httpCallWithTimeout(req)
                 .then((response): InboundWebhook[] => {
                     if (!response || !response.webhooks) {
                         logger.debug("No webhooks received from proxy poll.");
                         resolve();
                     }
+                    logger.debug(`Proxy poll response: ${JSON.stringify(response)}`);
+                    nextCursor = response.cursor_id || nextCursor;
                     return response.webhooks as InboundWebhook[];
                 })
                 .then(async (webhooks: InboundWebhook[]) => {
                     logger.debug(`Received ${webhooks.length} webhooks from proxy poll.`);
                     for (const webhook of webhooks) {
                         await this.handleResponse(webhook);
+                        this.nextCursor = webhook.cursor_id || this.nextCursor;
                     }
+                    this.nextCursor = nextCursor;
                     resolve();
                 })
                 .catch((error) => {

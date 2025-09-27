@@ -97,14 +97,20 @@ func (s *Server) HandleInject(ctx context.Context) func(w http.ResponseWriter, r
 				EventVersion:          injectable.EventVersion,
 			},
 			IsTestEvent: true,
+			CursorID:    time.Now().UnixMicro(),
 			RawData:     injectable.Payload,
 		}
 
 		// Add the webhook to the user's state
 		username, _ := config.FromContext(ctx).IDToKickName(keyID)
-		s.log(ctx, r, "Injected webhook! key=%s username=%s eventType=%s eventVersion=%s messageID=%s timestamp=%s",
-			keyID, username, webhook.EventType, webhook.EventVersion, webhook.EventMessageID, webhook.EventMessageTimestamp)
-		s.state.Put(keyID, webhook)
+		seqID, err := s.state.AppendWebhook(ctx, keyID, webhook)
+		if err != nil {
+			s.log(ctx, r, "Failed to append injected webhook for user %s: %v", keyID, err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		s.log(ctx, r, "Injected webhook! key=%s username=%s eventType=%s eventVersion=%s messageID=%s timestamp=%s seqID=%d",
+			keyID, username, webhook.EventType, webhook.EventVersion, webhook.EventMessageID, webhook.EventMessageTimestamp, seqID)
 
 		// Signal any waiters that a webhook has been received
 		s.notifyWaiter(keyID)

@@ -7,6 +7,7 @@ import (
 	"mage-kick-webhook-proxy/pkg/config"
 	"mage-kick-webhook-proxy/pkg/model"
 	"net/http"
+	"time"
 )
 
 func (s *Server) HandleWebHook(ctx context.Context) func(w http.ResponseWriter, r *http.Request) {
@@ -78,13 +79,20 @@ func (s *Server) HandleWebHook(ctx context.Context) func(w http.ResponseWriter, 
 				EventVersion:          eventVersion,
 			},
 			IsTestEvent: false,
+			CursorID:    time.Now().UnixMicro(),
 			RawData:     body,
 		}
 
 		// Add the webhook to the user's state
-		s.log(ctx, r, "Received webhook! key=%s username=%s eventType=%s eventVersion=%s messageID=%s timestamp=%s",
-			keyID, parsedWebhook.Broadcaster.UserName, eventType, eventVersion, messageID, timestamp)
-		s.state.Put(keyID, webhook)
+		seqID, err := s.state.AppendWebhook(ctx, keyID, webhook)
+		if err != nil {
+			s.log(ctx, r, "Failed to append webhook for user %s: %v", keyID, err)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"success": true}`))
+			return
+		}
+		s.log(ctx, r, "Received webhook! key=%s username=%s eventType=%s eventVersion=%s messageID=%s timestamp=%s seqID=%d",
+			keyID, parsedWebhook.Broadcaster.UserName, eventType, eventVersion, messageID, timestamp, seqID)
 
 		// Signal any waiters that a webhook has been received
 		s.notifyWaiter(keyID)

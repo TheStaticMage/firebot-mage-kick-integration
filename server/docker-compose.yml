@@ -25,7 +25,7 @@ services:
       - ADMIN_TOKEN=${KICK_ADMIN_TOKEN}
       - CLIENT_ID=${KICK_CLIENT_ID}
       - CLIENT_SECRET=${KICK_CLIENT_SECRET}
-      - LOG_LEVEL=debug
+      - LOG_LEVEL=trace
       - REDIS_URL=redis://redis:6379
       - USERS_FILE=/etc/secrets/users.txt
     volumes:
@@ -53,3 +53,11 @@ services:
     depends_on:
       redis-init:
         condition: service_completed_successfully
+
+  redis-insights:
+    image: redis/redisinsight:latest
+    ports:
+      - "5540:5540"
+    restart: unless-stopped
+    depends_on:
+      - redis

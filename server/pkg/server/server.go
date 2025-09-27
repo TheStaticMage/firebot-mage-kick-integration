@@ -18,6 +18,8 @@ type Server struct {
 	waitersMu sync.RWMutex
 	auths     map[string]string
 	authsMu   sync.RWMutex
+	lastIDs   map[string]int64
+	lastIDsMu sync.RWMutex
 }
 
 type waiter struct {
@@ -32,6 +34,7 @@ func New(s pkgstate.State) *Server {
 		state:   s,
 		waiters: make(map[string]*waiter),
 		auths:   make(map[string]string),
+		lastIDs: make(map[string]int64),
 	}
 }
 

@@ -13,6 +13,7 @@ type WebhookHeaders struct {
 type Webhook struct {
 	WebhookHeaders
 	IsTestEvent bool   `json:"is_test_event"`
+	CursorID    int64  `json:"cursor_id"`
 	RawData     []byte `json:"raw_data"`
 }
 
@@ -34,4 +35,5 @@ type WebhookBroadcaster struct {
 type WebhookResponse struct {
 	Success  bool      `json:"success"`
 	Webhooks []Webhook `json:"webhooks"`
+	CursorID int64     `json:"cursor_id"`
 }
