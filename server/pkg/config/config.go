@@ -12,8 +12,9 @@ type Config struct {
 	ClientID     string `env:"CLIENT_ID" required:"true"`
 	ClientSecret string `env:"CLIENT_SECRET" required:"true"`
 	HTTPPort     string `env:"HTTP_PORT" envDefault:"10000"`
-	RedisURL     string `env:"REDIS_URL" envDefault:""`
 	UsersFile    string `env:"USERS_FILE" envDefault:"/etc/secrets/users.txt"`
+
+	Redis RedisConfig
 
 	kickNameToID   map[string]string // Populated by Init
 	kickNameToIDMu sync.RWMutex
@@ -21,9 +22,21 @@ type Config struct {
 	idToKickNameMu sync.RWMutex
 }
 
+func New() *Config {
+	return &Config{
+		kickNameToID: make(map[string]string),
+		idToKickName: make(map[string]string),
+	}
+}
+
 func Init() (*Config, error) {
-	cfg := &Config{}
+	cfg := New()
 	if err := env.Parse(cfg); err != nil {
+		return nil, err
+	}
+
+	// Parse Redis configuration
+	if err := env.Parse(&cfg.Redis); err != nil {
 		return nil, err
 	}
 

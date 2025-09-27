@@ -28,14 +28,16 @@ export class WebhookHandler {
         // multiple times under different subscription IDs and message IDs. So here
         // we hash the payload (raw_data) and then check it against a cache so that
         // we can reject duplicate payloads.
-        const crypto = await import('crypto');
-        const payloadHash = crypto.createHash('sha256').update(webhook.raw_data).digest('hex');
+        if (!webhook.is_test_event) {
+            const crypto = await import('crypto');
+            const payloadHash = crypto.createHash('sha256').update(webhook.raw_data).digest('hex');
 
-        if (this.webhookCache.has(payloadHash)) {
-            logger.warn(`Duplicate webhook payload detected (id: ${webhook.kick_event_message_id}, type: ${webhook.kick_event_type}, version: ${webhook.kick_event_version}, hash: ${payloadHash}), ignoring.`);
-            return;
+            if (this.webhookCache.has(payloadHash)) {
+                logger.warn(`Duplicate webhook payload detected (id: ${webhook.kick_event_message_id}, type: ${webhook.kick_event_type}, version: ${webhook.kick_event_version}, hash: ${payloadHash}), ignoring.`);
+                return;
+            }
+            this.webhookCache.set(payloadHash, true);
         }
-        this.webhookCache.set(payloadHash, true);
 
         // For performance checks and other debugging on webhooks
         const webhookReceivedEvent = {
