@@ -12,7 +12,8 @@ import { parseChannelSubscriptionGiftsEvent, parseChannelSubscriptionNewEvent, p
 import NodeCache from 'node-cache';
 
 export class WebhookHandler {
-    private webhookCache = new NodeCache({ stdTTL: 300, checkperiod: 60 }); // Cache for 5 minutes
+    private eventIdCache = new NodeCache({ stdTTL: 86400, checkperiod: 3600 });
+    private payloadCache = new NodeCache({ stdTTL: 5, checkperiod: 60 });
 
     public async handleWebhook(webhook: InboundWebhook): Promise<void> {
         if (integration.getSettings().logging.logWebhooks) {
@@ -24,18 +25,28 @@ export class WebhookHandler {
             throw new Error("Invalid webhook data");
         }
 
+        // Duplicate webhook detection based on Kick's message ID. These should
+        // always be safely discarded.
+        if (this.eventIdCache.has(webhook.kick_event_message_id)) {
+            logger.warn(`Duplicate webhook detected (id: ${webhook.kick_event_message_id}, type: ${webhook.kick_event_type}, version: ${webhook.kick_event_version}), ignoring.`);
+            return;
+        }
+        this.eventIdCache.set(webhook.kick_event_message_id, true);
+
         // When Kick subscriptions get messed up, it can send the same payload
         // multiple times under different subscription IDs and message IDs. So here
         // we hash the payload (raw_data) and then check it against a cache so that
         // we can reject duplicate payloads.
-        const crypto = await import('crypto');
-        const payloadHash = crypto.createHash('sha256').update(webhook.raw_data).digest('hex');
+        if (!webhook.is_test_event) {
+            const crypto = await import('crypto');
+            const payloadHash = crypto.createHash('sha256').update(webhook.raw_data).digest('hex');
 
-        if (this.webhookCache.has(payloadHash)) {
-            logger.warn(`Duplicate webhook payload detected (id: ${webhook.kick_event_message_id}, type: ${webhook.kick_event_type}, version: ${webhook.kick_event_version}, hash: ${payloadHash}), ignoring.`);
-            return;
+            if (this.payloadCache.has(payloadHash)) {
+                logger.warn(`Duplicate webhook payload detected (id: ${webhook.kick_event_message_id}, type: ${webhook.kick_event_type}, version: ${webhook.kick_event_version}, hash: ${payloadHash}), ignoring.`);
+                return;
+            }
+            this.payloadCache.set(payloadHash, true);
         }
-        this.webhookCache.set(payloadHash, true);
 
         // For performance checks and other debugging on webhooks
         const webhookReceivedEvent = {
