@@ -388,7 +388,8 @@ describe('Poller', () => {
                 headers: {
                     'X-Broadcaster-Username': 'test-broadcaster',
                     'X-Instance-ID': 'test-instance',
-                    'X-Request-ID': expect.any(String)
+                    'X-Request-ID': expect.any(String),
+                    'X-Cursor-ID': '0'
                 },
                 userAgent: 'firebot-mage-kick-integration/1.0.0 (+https://github.com/TheStaticMage/firebot-mage-kick-integration)',
                 maxRedirects: 1000
