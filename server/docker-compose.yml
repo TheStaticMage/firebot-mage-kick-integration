@@ -29,7 +29,7 @@ services:
       - REDIS_URL=redis://redis:6379
       - USERS_FILE=/etc/secrets/users.txt
     volumes:
-      - ${USERS_FILE:-/dev/null}:/etc/secrets/users.txt
+      - ${USERS_FILE:-./test-data/users.txt}:/etc/secrets/users.txt
     ports:
       - "10000:10000"
     restart: unless-stopped
