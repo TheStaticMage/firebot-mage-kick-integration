@@ -20,6 +20,7 @@ node_modules/
 
 # Go stuff
 /server/app
+/server/mage-kick-webhook-proxy
 
 # Coverage
 /coverage/
@@ -27,3 +28,4 @@ node_modules/
 # For local testing
 /test-payloads/
 /server/redis.db
+/server/test-data/

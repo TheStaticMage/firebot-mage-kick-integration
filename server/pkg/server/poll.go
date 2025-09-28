@@ -74,6 +74,8 @@ func (s *Server) HandlePoll(ctx context.Context) func(w http.ResponseWriter, r *
 			lastID = parsed
 		}
 
+		s.log(ctx, r, "Received poll request: uuid=%s, lastID=%d, oldClient=%v", uuid, lastID, lastIDStr == "")
+
 		// Get all webhooks since last ID
 		webhooks, err := s.state.GetWebhooksSince(ctx, uuid, lastID)
 		if err != nil {
@@ -85,15 +87,14 @@ func (s *Server) HandlePoll(ctx context.Context) func(w http.ResponseWriter, r *
 		// If we have webhooks, send them immediately
 		if len(webhooks) > 0 {
 			s.sendWebhooksWithSequence(ctx, w, r, webhooks, uuid)
+			s.log(ctx, r, "Sent %d webhooks (uuid=%s)", len(webhooks), uuid)
 			return
 		}
-
-		// No stored webhooks - enter wait mode
-		s.log(ctx, r, "Received poll request: Waiting (uuid=%s, lastID=%d)", uuid, lastID)
 
 		// Add new waiter for this UUID (this closes any existing one)
 		waiterObj := s.addWaiter(uuid)
 		defer waiterObj.cleanup()
+		s.log(ctx, r, "Poll request waiting (uuid=%s)", uuid)
 
 		select {
 		case <-ctx.Done():
@@ -167,7 +168,6 @@ func (w *waiter) cleanup() {
 func (s *Server) sendWebhooksWithSequence(ctx context.Context, w http.ResponseWriter, r *http.Request, webhooks []state.WebhookWithSequence, uuid string) {
 	if len(webhooks) == 0 {
 		s.sendEmptyResponse(w, 0)
-		s.log(ctx, r, "Sent 0 webhooks (uuid=%s)", uuid)
 		return
 	}
 
@@ -176,10 +176,11 @@ func (s *Server) sendWebhooksWithSequence(ctx context.Context, w http.ResponseWr
 		hooks[i] = wh.Webhook
 	}
 
+	cursorID := webhooks[len(webhooks)-1].SequenceID
 	response := model.WebhookResponse{
 		Success:  true,
 		Webhooks: hooks,
-		CursorID: webhooks[len(webhooks)-1].SequenceID,
+		CursorID: cursorID,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -189,10 +190,8 @@ func (s *Server) sendWebhooksWithSequence(ctx context.Context, w http.ResponseWr
 		return
 	}
 
-	s.log(ctx, r, "Sent %d webhooks (uuid=%s)", len(webhooks), uuid)
-
 	s.lastIDsMu.Lock()
-	s.lastIDs[uuid] = webhooks[len(webhooks)-1].SequenceID
+	s.lastIDs[uuid] = cursorID
 	s.lastIDsMu.Unlock()
 }
 
