@@ -1,5 +1,5 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { unkickifyUsername } from "../internal/util";
 
 export const kickUserDisplayNameVariable: ReplaceVariable = {
@@ -15,7 +15,7 @@ export const kickUserDisplayNameVariable: ReplaceVariable = {
         categories: ["common"],
         possibleDataOutput: ["text"]
     },
-    evaluator: (trigger: Effects.Trigger, username: string | null = null) => {
+    evaluator: (trigger: Trigger, username: string | null = null) => {
         if (username == null || username.trim() === "") {
             const userDisplayName = trigger.metadata?.eventData?.userDisplayName ?? trigger.metadata?.userDisplayName;
             if (userDisplayName != null) {

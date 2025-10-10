@@ -1,9 +1,9 @@
-import { Effects } from '@crowbartools/firebot-custom-scripts-types/types/effects';
-import { platformAwareUserDisplayNameVariable, PlatformAwareUserDisplayNameVariable } from '../platform-aware-user-display-name';
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { IntegrationConstants } from '../../constants';
+import { platformAwareUserDisplayNameVariable, PlatformAwareUserDisplayNameVariable } from '../platform-aware-user-display-name';
 
 describe('platformAwareUserDisplayName.evaluate', () => {
-    const baseTrigger: Effects.Trigger = {
+    const baseTrigger: Trigger = {
         type: 'event',
         metadata: {
             username: '',

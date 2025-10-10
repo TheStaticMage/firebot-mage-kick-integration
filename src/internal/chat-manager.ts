@@ -1,8 +1,8 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { integration } from "../integration";
 import { firebot, logger } from "../main";
 import { platformVariable } from "../variables/platform";
 import { Kick } from "./kick";
-import { integration } from "../integration";
 
 interface inboundSendChatMessage {
     message: string,
@@ -146,7 +146,7 @@ export class ChatManager {
         return true;
     }
 
-    static getPlatformFromTrigger(trigger: Effects.Trigger): string {
+    static getPlatformFromTrigger(trigger: Trigger): string {
         try {
             return platformVariable.evaluator(trigger) || "unknown";
         } catch (error) {

@@ -1,5 +1,5 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 
 export const hostViewerCount: ReplaceVariable = {
     definition: {
@@ -17,7 +17,7 @@ export const hostViewerCount: ReplaceVariable = {
         categories: ["common"],
         possibleDataOutput: ["number"]
     },
-    evaluator: (trigger: Effects.Trigger) => {
+    evaluator: (trigger: Trigger) => {
         return trigger.metadata.eventData?.viewerCount || 0;
     }
 };

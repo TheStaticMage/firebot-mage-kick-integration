@@ -1,5 +1,5 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { IntegrationConstants } from "../constants";
 
 export const webhookReceivedEventTypeVariable: ReplaceVariable = {
@@ -19,7 +19,7 @@ export const webhookReceivedEventTypeVariable: ReplaceVariable = {
             "event": [`${IntegrationConstants.INTEGRATION_ID}:webhook-received`]
         }
     },
-    evaluator: (trigger: Effects.Trigger) => {
+    evaluator: (trigger: Trigger) => {
         return trigger.metadata.eventData?.webhookType || "";
     }
 };
@@ -41,7 +41,7 @@ export const webhookReceivedEventVersionVariable: ReplaceVariable = {
             "event": [`${IntegrationConstants.INTEGRATION_ID}:webhook-received`]
         }
     },
-    evaluator: (trigger: Effects.Trigger) => {
+    evaluator: (trigger: Trigger) => {
         return trigger.metadata?.eventData?.webhookVersion || "";
     }
 };
@@ -63,7 +63,7 @@ export const webhookReceivedLatencyVariable: ReplaceVariable = {
             "event": [`${IntegrationConstants.INTEGRATION_ID}:webhook-received`]
         }
     },
-    evaluator: (trigger: Effects.Trigger) => {
+    evaluator: (trigger: Trigger) => {
         return trigger.metadata?.eventData?.latencyMs || 0;
     }
 };

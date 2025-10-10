@@ -1,5 +1,5 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { EventData, EventFilter, FilterEvent, FilterSettings, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { unkickifyUsername } from "../internal/util";
@@ -60,7 +60,7 @@ export const streamerOrBotFilter: EventFilter = {
         eventData: EventData
     ): Promise<boolean> => {
         const { comparisonType, value } = filterSettings;
-        const trigger: Effects.Trigger = {
+        const trigger: Trigger = {
             type: "event",
             metadata: {
                 eventSource: { id: eventData.eventSourceId, name: eventData.eventSourceId },

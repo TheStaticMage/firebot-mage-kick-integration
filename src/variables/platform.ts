@@ -1,7 +1,8 @@
-import { Effects } from '@crowbartools/firebot-custom-scripts-types/types/effects';
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { IntegrationConstants } from '../constants';
 import { logger } from "../main";
+import { getPropertyFromChatMessage } from '../util/util';
 
 export const platformVariable: ReplaceVariable = {
     definition: {
@@ -38,16 +39,17 @@ export const platformVariable: ReplaceVariable = {
 
         // If there's a chat message, guess the platform from the user ID or username
         if (trigger.metadata.chatMessage) {
-            const chatMessage = trigger.metadata.chatMessage;
-            if (chatMessage.userId && chatMessage.userId.startsWith("k")) {
+            const userId = getPropertyFromChatMessage(trigger, 'userId');
+            if (userId && userId.startsWith("k")) {
                 return debugPlatform("kick", "metadata.chatMessage.userId", trigger);
             }
 
-            if (chatMessage.username && chatMessage.username.endsWith("@kick")) {
+            const username = getPropertyFromChatMessage(trigger, 'username');
+            if (username && username.endsWith("@kick")) {
                 return debugPlatform("kick", "metadata.chatMessage.username", trigger);
             }
 
-            if (chatMessage.userId || chatMessage.username) {
+            if (userId || username) {
                 return debugPlatform("twitch", "metadata.chatMessage.userId/username", trigger);
             }
         }
@@ -89,7 +91,7 @@ export const platformVariable: ReplaceVariable = {
     }
 };
 
-function debugPlatform(result: string, reference: string, trigger: Effects.Trigger): string {
+function debugPlatform(result: string, reference: string, trigger: Trigger): string {
     // Skip this in tests
     if (process.env.NODE_ENV === "test") {
         return result;
@@ -107,8 +109,8 @@ function debugPlatform(result: string, reference: string, trigger: Effects.Trigg
                 username: trigger.metadata.eventData?.username
             },
             chatMessage: {
-                userId: trigger.metadata.chatMessage?.userId,
-                username: trigger.metadata.chatMessage?.username
+                userId: getPropertyFromChatMessage(trigger, 'userId'),
+                username: getPropertyFromChatMessage(trigger, 'username')
             }
         }
     };

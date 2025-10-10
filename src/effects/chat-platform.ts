@@ -2,6 +2,7 @@ import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { integration } from "../integration";
 import { ChatManager } from "../internal/chat-manager";
 import { logger } from "../main";
+import { getPropertyFromChatMessage } from "../util/util";
 
 type chatPlatformEffectParams = {
     alwaysSendKick?: boolean; // DEPRECATED
@@ -216,14 +217,7 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
         if ((platform === "kick" && effect.sendKick === "trigger") || (platform === "unknown" && effect.defaultSendKick && effect.sendKick === "trigger") || effect.sendKick === "always") {
             let messageId = undefined;
             if (effect.sendAsReplyKick && platform === 'kick') {
-                if (trigger.type === "command") {
-                    messageId = trigger.metadata.chatMessage.id;
-                } else if (trigger.type === "event") {
-                    const chatMsg = trigger.metadata.eventData?.chatMessage;
-                    if (chatMsg && typeof chatMsg === "object" && "id" in chatMsg) {
-                        messageId = (chatMsg as { id: string }).id;
-                    }
-                }
+                messageId = getPropertyFromChatMessage(trigger, 'id') || undefined;
             }
 
             logger.debug(`Sending message to Kick. (Reply: ${messageId ? messageId : "N/A"})`);
@@ -235,14 +229,7 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
         if ((platform === "twitch" && effect.sendTwitch === "trigger") || (platform === "unknown" && effect.defaultSendTwitch && effect.sendTwitch === "trigger") || effect.sendTwitch === "always") {
             let messageId = undefined;
             if (effect.sendAsReply && platform === 'twitch') {
-                if (trigger.type === "command") {
-                    messageId = trigger.metadata.chatMessage.id;
-                } else if (trigger.type === "event") {
-                    const chatMsg = trigger.metadata.eventData?.chatMessage;
-                    if (chatMsg && typeof chatMsg === "object" && "id" in chatMsg) {
-                        messageId = (chatMsg as { id: string }).id;
-                    }
-                }
+                messageId = getPropertyFromChatMessage(trigger, 'id') || undefined;
             }
 
             logger.debug(`Sending message to Twitch. (Reply: ${messageId ? messageId : "N/A"})`);
