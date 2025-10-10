@@ -1,9 +1,9 @@
-import { Effects } from '@crowbartools/firebot-custom-scripts-types/types/effects';
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { IntegrationConstants } from '../constants';
+import { TriggersObject } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import * as crypto from 'crypto';
+import { IntegrationConstants } from '../constants';
 
-const triggers: Effects.TriggersObject = {};
+const triggers: TriggersObject = {};
 triggers["event"] = [`${IntegrationConstants.INTEGRATION_ID}:channel-reward-redemption`];
 triggers["manual"] = true;
 triggers["preset"] = true;

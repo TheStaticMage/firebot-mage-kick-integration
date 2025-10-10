@@ -1,5 +1,5 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 
 export const hostTargetUserId: ReplaceVariable = {
     definition: {
@@ -15,7 +15,7 @@ export const hostTargetUserId: ReplaceVariable = {
         categories: ["common"],
         possibleDataOutput: ["text"]
     },
-    evaluator: (trigger: Effects.Trigger) => {
+    evaluator: (trigger: Trigger) => {
         return trigger.metadata.eventData?.raidTargetUserId ?? "";
     }
 };

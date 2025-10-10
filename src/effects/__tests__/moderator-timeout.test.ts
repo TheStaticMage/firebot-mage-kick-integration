@@ -1,5 +1,5 @@
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { moderatorTimeoutEffect } from '../moderator-timeout';
-import { Effects } from '@crowbartools/firebot-custom-scripts-types/types/effects';
 
 type ModeratorTimeoutEffectParams = {
     username: string;
@@ -39,7 +39,7 @@ describe('moderatorTimeoutEffect.onTriggerEvent', () => {
             time: '300', // 5 minutes in seconds
             reason: 'Test timeout reason'
         };
-        const trigger: Effects.Trigger = { type: 'command', metadata: {} } as any;
+        const trigger: Trigger = { type: 'command', metadata: {} } as any;
 
         integration.kick.userApi.banUserByUsername.mockResolvedValue(true);
 
@@ -61,7 +61,7 @@ describe('moderatorTimeoutEffect.onTriggerEvent', () => {
             time: '120',
             reason: ''
         };
-        const trigger: Effects.Trigger = { type: 'command', metadata: {} } as any;
+        const trigger: Trigger = { type: 'command', metadata: {} } as any;
 
         integration.kick.userApi.banUserByUsername.mockResolvedValue(true);
 
@@ -81,7 +81,7 @@ describe('moderatorTimeoutEffect.onTriggerEvent', () => {
             time: '30', // 30 seconds, should round to 1 minute minimum
             reason: 'Short timeout'
         };
-        const trigger: Effects.Trigger = { type: 'command', metadata: {} } as any;
+        const trigger: Trigger = { type: 'command', metadata: {} } as any;
 
         integration.kick.userApi.banUserByUsername.mockResolvedValue(true);
 
@@ -101,7 +101,7 @@ describe('moderatorTimeoutEffect.onTriggerEvent', () => {
             time: '999999', // Very large number, should cap to 10080 minutes
             reason: 'Long timeout'
         };
-        const trigger: Effects.Trigger = { type: 'command', metadata: {} } as any;
+        const trigger: Trigger = { type: 'command', metadata: {} } as any;
 
         integration.kick.userApi.banUserByUsername.mockResolvedValue(true);
 
@@ -121,7 +121,7 @@ describe('moderatorTimeoutEffect.onTriggerEvent', () => {
             time: '150', // 2.5 minutes, should round to 3 minutes
             reason: 'Fractional timeout'
         };
-        const trigger: Effects.Trigger = { type: 'command', metadata: {} } as any;
+        const trigger: Trigger = { type: 'command', metadata: {} } as any;
 
         integration.kick.userApi.banUserByUsername.mockResolvedValue(true);
 
@@ -141,7 +141,7 @@ describe('moderatorTimeoutEffect.onTriggerEvent', () => {
             time: 'invalid',
             reason: 'Test reason'
         };
-        const trigger: Effects.Trigger = { type: 'command', metadata: {} } as any;
+        const trigger: Trigger = { type: 'command', metadata: {} } as any;
 
         const result = await moderatorTimeoutEffect.onTriggerEvent({ trigger, effect } as any);
 
@@ -156,7 +156,7 @@ describe('moderatorTimeoutEffect.onTriggerEvent', () => {
             time: '300',
             reason: 'Test reason'
         };
-        const trigger: Effects.Trigger = { type: 'command', metadata: {} } as any;
+        const trigger: Trigger = { type: 'command', metadata: {} } as any;
 
         integration.kick.userApi.banUserByUsername.mockResolvedValue(false);
 
@@ -178,7 +178,7 @@ describe('moderatorTimeoutEffect.onTriggerEvent', () => {
             time: '0',
             reason: 'Zero timeout'
         };
-        const trigger: Effects.Trigger = { type: 'command', metadata: {} } as any;
+        const trigger: Trigger = { type: 'command', metadata: {} } as any;
 
         integration.kick.userApi.banUserByUsername.mockResolvedValue(true);
 
@@ -198,7 +198,7 @@ describe('moderatorTimeoutEffect.onTriggerEvent', () => {
             time: '-100',
             reason: 'Negative timeout'
         };
-        const trigger: Effects.Trigger = { type: 'command', metadata: {} } as any;
+        const trigger: Trigger = { type: 'command', metadata: {} } as any;
 
         integration.kick.userApi.banUserByUsername.mockResolvedValue(true);
 
@@ -218,7 +218,7 @@ describe('moderatorTimeoutEffect.onTriggerEvent', () => {
             time: 300, // Number instead of string
             reason: 'Numeric timeout'
         };
-        const trigger: Effects.Trigger = { type: 'command', metadata: {} } as any;
+        const trigger: Trigger = { type: 'command', metadata: {} } as any;
 
         integration.kick.userApi.banUserByUsername.mockResolvedValue(true);
 

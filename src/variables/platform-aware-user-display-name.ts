@@ -1,12 +1,13 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { unkickifyUsername } from "../internal/util";
-import { integration } from "../integration";
-import { firebot, logger } from "../main";
-import { platformVariable } from "./platform";
 import { TwitchApi } from "@crowbartools/firebot-custom-scripts-types/types/modules/twitch-api";
 import { ViewerDatabase } from "@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database";
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { integration } from "../integration";
 import { KickUserManager } from "../internal/user-manager";
+import { unkickifyUsername } from "../internal/util";
+import { firebot, logger } from "../main";
+import { platformVariable } from "./platform";
+import { getPropertyFromChatMessage } from '../util/util';
 
 export class PlatformAwareUserDisplayNameVariable {
     replaceVariable: ReplaceVariable = {
@@ -26,7 +27,7 @@ export class PlatformAwareUserDisplayNameVariable {
             categories: ["common"],
             possibleDataOutput: ["text"]
         },
-        evaluator: async (trigger: Effects.Trigger, username: string | null = null) => {
+        evaluator: async (trigger: Trigger, username: string | null = null) => {
             return await this.evaluate(trigger, username);
         }
     };
@@ -41,7 +42,7 @@ export class PlatformAwareUserDisplayNameVariable {
         this._kickUserManager = injectKickUserManager;
     }
 
-    async evaluate(trigger: Effects.Trigger, username: string | null = null): Promise<string> {
+    async evaluate(trigger: Trigger, username: string | null = null): Promise<string> {
         // This uses the Twitch logic unless the event is demonstrably from
         // Kick, for maximum compatibility.
         const platform = this.getPlatform(trigger);
@@ -51,13 +52,14 @@ export class PlatformAwareUserDisplayNameVariable {
         return this.evaluateForTwitch(trigger, username);
     }
 
-    private fallbackUserDisplayName(trigger: Effects.Trigger): string | null {
+    private fallbackUserDisplayName(trigger: Trigger): string | null {
         if (typeof trigger.metadata?.eventData?.userDisplayName === 'string' && trigger.metadata?.eventData?.userDisplayName.trim() !== "") {
             return trigger.metadata.eventData.userDisplayName;
         }
 
-        if (typeof trigger.metadata?.chatMessage?.displayName === 'string' && trigger.metadata?.chatMessage?.displayName.trim() !== "") {
-            return trigger.metadata.chatMessage.displayName;
+        const displayName = getPropertyFromChatMessage(trigger, 'displayName');
+        if (displayName && displayName.trim() !== "") {
+            return displayName;
         }
 
         if (typeof trigger.metadata?.userDisplayName === 'string' && trigger.metadata?.userDisplayName.trim() !== "") {
@@ -67,13 +69,14 @@ export class PlatformAwareUserDisplayNameVariable {
         return null;
     }
 
-    private fallbackUsername(trigger: Effects.Trigger): string | null {
+    private fallbackUsername(trigger: Trigger): string | null {
         if (typeof trigger.metadata?.eventData?.username === 'string' && trigger.metadata?.eventData?.username.trim() !== "") {
             return trigger.metadata.eventData.username;
         }
 
-        if (typeof trigger.metadata?.chatMessage?.username === 'string' && trigger.metadata?.chatMessage?.username.trim() !== "") {
-            return trigger.metadata.chatMessage.username;
+        const chatUsername = getPropertyFromChatMessage(trigger, 'username');
+        if (chatUsername && chatUsername.trim() !== "") {
+            return chatUsername;
         }
 
         if (typeof trigger.metadata?.username === 'string' && trigger.metadata?.username.trim() !== "") {
@@ -83,7 +86,7 @@ export class PlatformAwareUserDisplayNameVariable {
         return null;
     }
 
-    private async evaluateForKick(trigger: Effects.Trigger, username: string | null): Promise<string> {
+    private async evaluateForKick(trigger: Trigger, username: string | null): Promise<string> {
         if (username == null) {
             const realUsername = this.fallbackUsername(trigger);
             if (!realUsername) {
@@ -105,7 +108,7 @@ export class PlatformAwareUserDisplayNameVariable {
         return unkickifyUsername(username); // Fallback to the username if no display name is found
     }
 
-    private async evaluateForTwitch(trigger: Effects.Trigger, username: string | null): Promise<string> {
+    private async evaluateForTwitch(trigger: Trigger, username: string | null): Promise<string> {
         // Re-implements the logic from Firebot's `userDisplayName` variable
         // implementation. I don't particularly like parts of this
         // implementation, like not referencing the display name metadata if the
@@ -141,7 +144,7 @@ export class PlatformAwareUserDisplayNameVariable {
         }
     }
 
-    private getPlatform(trigger: Effects.Trigger): string {
+    private getPlatform(trigger: Trigger): string {
         return platformVariable.evaluator(trigger);
     }
 

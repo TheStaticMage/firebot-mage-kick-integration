@@ -1,8 +1,8 @@
-import { Effects } from '@crowbartools/firebot-custom-scripts-types/types/effects';
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { platformCondition } from '../platform';
 
 describe('platformCondition.predicate', () => {
-    const baseTrigger: Effects.Trigger = {
+    const baseTrigger: Trigger = {
         type: 'event',
         metadata: {
             username: '',
@@ -12,7 +12,7 @@ describe('platformCondition.predicate', () => {
         }
     };
 
-    const kickTrigger: Effects.Trigger = {
+    const kickTrigger: Trigger = {
         ...baseTrigger,
         metadata: {
             ...baseTrigger.metadata,
@@ -20,7 +20,7 @@ describe('platformCondition.predicate', () => {
         }
     };
 
-    const twitchTrigger: Effects.Trigger = {
+    const twitchTrigger: Trigger = {
         ...baseTrigger,
         metadata: {
             ...baseTrigger.metadata,

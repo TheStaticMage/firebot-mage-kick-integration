@@ -1,5 +1,5 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { EventData, EventFilter, FilterEvent, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { IntegrationConstants } from "../constants";
 import { platformVariable } from "../variables/platform";
 
@@ -53,7 +53,7 @@ export const platformFilter: EventFilter = {
         eventData: EventData
     ): boolean => {
         const { comparisonType, value } = filterSettings;
-        const trigger: Effects.Trigger = {
+        const trigger: Trigger = {
             type: "event",
             metadata: {
                 eventSource: { id: eventData.eventSourceId, name: eventData.eventSourceId },

@@ -1,9 +1,8 @@
-
-import { Effects } from '@crowbartools/firebot-custom-scripts-types/types/effects';
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { platformRestriction } from '../platform';
 
 describe('platformRestriction.predicate', () => {
-    const baseTrigger: Effects.Trigger = {
+    const baseTrigger: Trigger = {
         type: 'event',
         metadata: {
             username: '',
@@ -13,7 +12,7 @@ describe('platformRestriction.predicate', () => {
         }
     };
 
-    const kickTrigger: Effects.Trigger = {
+    const kickTrigger: Trigger = {
         ...baseTrigger,
         metadata: {
             ...baseTrigger.metadata,
@@ -30,7 +29,7 @@ describe('platformRestriction.predicate', () => {
     });
 
     it('resolves true when comparison is "is" and platform is "unknown" and currentPlatform is unknown', async () => {
-        const unknownTrigger: Effects.Trigger = { ...baseTrigger, metadata: { ...baseTrigger.metadata } };
+        const unknownTrigger: Trigger = { ...baseTrigger, metadata: { ...baseTrigger.metadata } };
         await expect(platformRestriction.predicate(unknownTrigger, { comparison: 'is', platform: 'unknown' })).resolves.toBe(true);
     });
 
@@ -39,7 +38,7 @@ describe('platformRestriction.predicate', () => {
     });
 
     it('resolves true when comparison is "isNot" and platform is "any" and currentPlatform is unknown', async () => {
-        const unknownTrigger: Effects.Trigger = { ...baseTrigger, metadata: { ...baseTrigger.metadata } };
+        const unknownTrigger: Trigger = { ...baseTrigger, metadata: { ...baseTrigger.metadata } };
         await expect(platformRestriction.predicate(unknownTrigger, { comparison: 'isNot', platform: 'any' })).resolves.toBe(true);
     });
 
@@ -48,7 +47,7 @@ describe('platformRestriction.predicate', () => {
     });
 
     it('rejects when none of the conditions are met', async () => {
-        const twitchTrigger: Effects.Trigger = { ...baseTrigger, metadata: { ...baseTrigger.metadata, eventSource: { id: 'twitch', name: 'twitch' } } };
+        const twitchTrigger: Trigger = { ...baseTrigger, metadata: { ...baseTrigger.metadata, eventSource: { id: 'twitch', name: 'twitch' } } };
         await expect(platformRestriction.predicate(twitchTrigger, { comparison: 'is', platform: 'kick' })).rejects.toThrow('Platform restriction failed');
     });
 });

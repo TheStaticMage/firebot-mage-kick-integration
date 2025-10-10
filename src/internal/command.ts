@@ -1,8 +1,7 @@
 import { FirebotChatMessage } from "@crowbartools/firebot-custom-scripts-types/types/chat";
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { CommandDefinition, UserCommand } from "@crowbartools/firebot-custom-scripts-types/types/modules/command-manager";
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { firebot, logger } from "../main";
-import Trigger = Effects.Trigger;
 
 interface TriggerWithArgs {
     trigger: string;
@@ -200,7 +199,7 @@ class CommandHandler {
 
         if (restrictionData) {
             logger.debug("Command has restrictions...checking them.");
-            const triggerData: Effects.Trigger = {
+            const triggerData: Trigger = {
                 type: "command",
                 metadata: {
                     username: commandSender,

@@ -1,5 +1,6 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { getPropertyFromChatMessage } from '../util/util';
 
 export const kickChatMessageVariable: ReplaceVariable = {
     definition: {
@@ -15,11 +16,9 @@ export const kickChatMessageVariable: ReplaceVariable = {
         categories: ["common"],
         possibleDataOutput: ["number", "text"]
     },
-    evaluator: (trigger: Effects.Trigger) => {
-        let chatMessage = "";
-        if (trigger.metadata.chatMessage) {
-            chatMessage = trigger.metadata.chatMessage.rawText;
-        } else if (trigger.type === "event" || trigger.type === "manual") {
+    evaluator: (trigger: Trigger) => {
+        let chatMessage = getPropertyFromChatMessage(trigger, 'rawText');
+        if (!chatMessage || chatMessage.trim() === "") {
             // if trigger is event/manual event, build chat message from chat event data
             chatMessage = typeof trigger.metadata.eventData?.messageText === "string"
                 ? trigger.metadata.eventData.messageText

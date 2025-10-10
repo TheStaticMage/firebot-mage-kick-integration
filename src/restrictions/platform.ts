@@ -1,4 +1,4 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
+import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { IntegrationConstants } from "../constants";
 import { platformVariable } from "../variables/platform";
 
@@ -70,7 +70,7 @@ export const platformRestriction = {
         }
         return `Platform ${comparison === "is" ? "is" : "is not"} ${platformDisplay}`;
     },
-    predicate: (triggerData: Effects.Trigger, { comparison, platform }: { comparison: string, platform: string }): Promise<boolean> => {
+    predicate: (triggerData: Trigger, { comparison, platform }: { comparison: string, platform: string }): Promise<boolean> => {
         return new Promise((resolve, reject) => {
             const currentPlatform = platformVariable.evaluator(triggerData);
             if (comparison === "is" && currentPlatform === platform) {

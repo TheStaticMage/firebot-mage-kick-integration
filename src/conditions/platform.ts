@@ -1,9 +1,9 @@
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
 import { ConditionType, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/condition-manager";
+import { TriggersObject } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { IntegrationConstants } from "../constants";
 import { platformVariable } from "../variables/platform";
 
-const triggers: Effects.TriggersObject = {
+const triggers: TriggersObject = {
     "channel_reward": true,
     "command": true,
     "event": true,
