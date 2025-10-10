@@ -331,6 +331,10 @@ export class KickIntegration extends EventEmitter {
                 logger.error("UI Extension Manager module not found. The Kick integration UI extension cannot be registered.");
             }
 
+            effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "chat-message");
+            effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
+            effectManager.addEventToEffect("firebot:chat-feed-message-hide", IntegrationConstants.INTEGRATION_ID, "chat-message");
+
             eventFilterManager.addEventToFilter("firebot:cheerbitsamount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
             eventFilterManager.addEventToFilter("firebot:raid-viewer-count", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
             eventFilterManager.addEventToFilter("firebot:raid-viewer-count", IntegrationConstants.INTEGRATION_ID, "raid");
