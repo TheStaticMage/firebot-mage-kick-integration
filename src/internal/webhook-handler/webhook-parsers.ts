@@ -33,6 +33,21 @@ import {
 
 import { parseDate } from "../util";
 
+// Helper function to parse raw data that may be either base64-encoded or plain JSON
+function parseRawData(rawData: string): any {
+    try {
+        // First, try to parse as plain JSON (for test events or direct JSON)
+        return JSON.parse(rawData);
+    } catch {
+        // If that fails, assume it's base64-encoded and decode it
+        try {
+            return JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+        } catch (error) {
+            throw new Error(`Failed to parse raw data as JSON or base64-encoded JSON: ${error}`);
+        }
+    }
+}
+
 export function parseKickUser(user: WebhookUser): KickUser {
     return {
         isAnonymous: user.is_anonymous || false,
@@ -116,7 +131,7 @@ export function parseChannel(rawData: any): Channel {
 }
 
 export function parseChatMessageEvent(rawData: string): ChatMessage {
-    const data: ChatMessageEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: ChatMessageEvent = parseRawData(rawData);
     return {
         messageId: data.message_id,
         repliesTo: data.replies_to ? {
@@ -133,7 +148,7 @@ export function parseChatMessageEvent(rawData: string): ChatMessage {
 }
 
 export function parseFollowEvent(rawData: string): KickFollower {
-    const data: ChannelFollowEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: ChannelFollowEvent = parseRawData(rawData);
     return {
         broadcaster: parseKickUser(data.broadcaster),
         follower: parseKickUser(data.follower)
@@ -141,7 +156,7 @@ export function parseFollowEvent(rawData: string): KickFollower {
 }
 
 export function parseLivestreamMetadataUpdatedEvent(rawData: string): LivestreamMetadataUpdated {
-    const data: LivestreamMetadataUpdatedEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: LivestreamMetadataUpdatedEvent = parseRawData(rawData);
     return {
         broadcaster: parseKickUser(data.broadcaster),
         metadata: {
@@ -159,7 +174,7 @@ export function parseLivestreamMetadataUpdatedEvent(rawData: string): Livestream
 }
 
 export function parseLivestreamStatusUpdatedEvent(rawData: string): LivestreamStatusUpdated {
-    const data: LivestreamStatusUpdatedEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: LivestreamStatusUpdatedEvent = parseRawData(rawData);
     return {
         broadcaster: parseKickUser(data.broadcaster),
         isLive: data.is_live,
@@ -170,7 +185,7 @@ export function parseLivestreamStatusUpdatedEvent(rawData: string): LivestreamSt
 }
 
 export function parseModerationBannedEvent(rawData: string): ModerationBannedEvent {
-    const data: KickApiModerationBannedEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: KickApiModerationBannedEvent = parseRawData(rawData);
 
     const metadata: ModerationBannedMetadata = {
         reason: data.metadata.reason,
@@ -187,7 +202,7 @@ export function parseModerationBannedEvent(rawData: string): ModerationBannedEve
 }
 
 export function parseChannelSubscriptionNewEvent(rawData: string): ChannelSubscription {
-    const data: NewSubscriptionEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: NewSubscriptionEvent = parseRawData(rawData);
 
     return {
         broadcaster: parseKickUser(data.broadcaster),
@@ -200,7 +215,7 @@ export function parseChannelSubscriptionNewEvent(rawData: string): ChannelSubscr
 }
 
 export function parseChannelSubscriptionRenewalEvent(rawData: string): ChannelSubscription {
-    const data: SubscriptionRenewalEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: SubscriptionRenewalEvent = parseRawData(rawData);
 
     return {
         broadcaster: parseKickUser(data.broadcaster),
@@ -213,7 +228,7 @@ export function parseChannelSubscriptionRenewalEvent(rawData: string): ChannelSu
 }
 
 export function parseChannelSubscriptionGiftsEvent(rawData: string): ChannelGiftSubscription {
-    const data: SubscriptionGiftEvent = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: SubscriptionGiftEvent = parseRawData(rawData);
 
     return {
         broadcaster: parseKickUser(data.broadcaster),
@@ -225,7 +240,7 @@ export function parseChannelSubscriptionGiftsEvent(rawData: string): ChannelGift
 }
 
 export function parsePusherTestWebhook(rawData: string): InboundPayload {
-    const data: InboundPayload = JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+    const data: InboundPayload = parseRawData(rawData);
     return {
         event: data.event,
         channel: data.channel,
@@ -234,7 +249,7 @@ export function parsePusherTestWebhook(rawData: string): InboundPayload {
 }
 
 export function parseKicksGiftedEvent(rawData: string): KicksGiftedEvent {
-    const data: KickApiKicksGiftedEvent = JSON.parse(rawData);
+    const data: KickApiKicksGiftedEvent = parseRawData(rawData);
 
     return {
         gifter: parseKicksGiftedUser(data.sender),
