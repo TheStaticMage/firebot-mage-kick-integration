@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"crypto"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -9,6 +10,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"mage-kick-webhook-proxy/pkg/config"
 )
 
 const pubKeyText = `
@@ -33,7 +35,25 @@ func init() {
 	pubKey = &key
 }
 
-func verifyWebhook(messageID, timestamp, body, inputSignature string) error {
+func verifyWebhook(ctx context.Context, authorizationHeader, messageID, timestamp, body, inputSignature string) (bool, error) {
+	if authorizationHeader == "" {
+		return false, verifyWebhookSignature(messageID, timestamp, body, inputSignature)
+	}
+
+	// Currently there's one static admin token for the entire site.
+	// We can do better if we have to.
+	if config.FromContext(ctx).AdminToken == "" {
+		return false, fmt.Errorf("admin token is not configured")
+	}
+
+	if authorizationHeader != "Bearer "+config.FromContext(ctx).AdminToken && authorizationHeader != "Token "+config.FromContext(ctx).AdminToken && authorizationHeader != config.FromContext(ctx).AdminToken {
+		return false, fmt.Errorf("rejecting injection request: Admin token mismatch")
+	}
+
+	return true, nil
+}
+
+func verifyWebhookSignature(messageID, timestamp, body, inputSignature string) error {
 	// Create the Signature to compare
 	signature := fmt.Appendf(nil, "%s.%s.%s", messageID, timestamp, body)
 
