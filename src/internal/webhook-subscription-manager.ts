@@ -34,6 +34,10 @@ const subscriptionsToRequest = [
     {
         name: "moderation.banned",
         version: 1
+    },
+    {
+        name: "kicks.gifted",
+        version: 1
     }
 ];
 

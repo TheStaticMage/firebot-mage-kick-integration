@@ -64,7 +64,7 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 | Goal updated | Possible * | Possible * | No public API support |
 | Host (raid) (incoming) | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
 | Host (raid) (outgoing) | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
-| Kicks (like bits) | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
+| Kicks (like bits) | :white_check_mark: | :white_check_mark: &#42; | Public API support as of 0.7.0 |
 | Message deleted | Possible * | Possible * | No public API support |
 | Message pinned | Possible * | Possible * | No public API support |
 | Message un-pinned | Possible * | Possible * | No public API support |

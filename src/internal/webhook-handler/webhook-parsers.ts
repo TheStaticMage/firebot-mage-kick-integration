@@ -1,10 +1,54 @@
-import { ChannelFollowEvent, ChatMessageEvent, Channel as KickApiChannel, ModerationBannedEvent as KickApiModerationBannedEvent, LivestreamMetadataUpdatedEvent, LivestreamStatusUpdatedEvent, NewSubscriptionEvent, SubscriptionGiftEvent, SubscriptionRenewalEvent, User, WebhookUser, WebhookUserWithIdentity } from "kick-api-types/v1";
-import { BasicKickUser, Channel, ChannelGiftSubscription, ChannelSubscription, ChatMessage, KickFollower, KickUser, KickUserWithIdentity, LivestreamMetadataUpdated, LivestreamStatusUpdated, ModerationBannedEvent, ModerationBannedMetadata } from "../../shared/types";
+import {
+    ChannelFollowEvent,
+    ChatMessageEvent,
+    Channel as KickApiChannel,
+    KicksGiftedEvent as KickApiKicksGiftedEvent,
+    KicksGiftedWebhookUser,
+    ModerationBannedEvent as KickApiModerationBannedEvent,
+    LivestreamMetadataUpdatedEvent,
+    LivestreamStatusUpdatedEvent,
+    NewSubscriptionEvent,
+    SubscriptionGiftEvent,
+    SubscriptionRenewalEvent,
+    User,
+    WebhookUser,
+    WebhookUserWithIdentity
+} from "kick-api-types/v1";
+
+import {
+    BasicKickUser,
+    Channel,
+    ChannelGiftSubscription,
+    ChannelSubscription,
+    ChatMessage,
+    KickFollower,
+    KickUser,
+    KickUserWithIdentity,
+    KicksGiftedEvent,
+    LivestreamMetadataUpdated,
+    LivestreamStatusUpdated,
+    ModerationBannedEvent,
+    ModerationBannedMetadata
+} from "../../shared/types";
+
 import { parseDate } from "../util";
 
 export function parseKickUser(user: WebhookUser): KickUser {
     return {
         isAnonymous: user.is_anonymous || false,
+        userId: (user.user_id ?? 0).toString(),
+        username: user.username || "",
+        displayName: user.username || "",
+        isVerified: user.is_verified || false,
+        profilePicture: user.profile_picture || "",
+        channelSlug: user.channel_slug || ""
+    };
+}
+
+// Parser for kicks.gifted events where Kick's API doesn't provide is_anonymous
+export function parseKicksGiftedUser(user: KicksGiftedWebhookUser): KickUser {
+    return {
+        isAnonymous: false, // Default to false since kicks.gifted API doesn't provide this field
         userId: (user.user_id ?? 0).toString(),
         username: user.username || "",
         displayName: user.username || "",
@@ -186,5 +230,21 @@ export function parsePusherTestWebhook(rawData: string): InboundPayload {
         event: data.event,
         channel: data.channel,
         data: data.data
+    };
+}
+
+export function parseKicksGiftedEvent(rawData: string): KicksGiftedEvent {
+    const data: KickApiKicksGiftedEvent = JSON.parse(rawData);
+
+    return {
+        gifter: parseKicksGiftedUser(data.sender),
+        kicks: data.gift.amount,
+        giftId: "", // Not provided in webhook payload, keeping empty for compatibility
+        giftName: data.gift.name,
+        giftType: data.gift.type,
+        giftTier: data.gift.tier,
+        characterLimit: 0, // Not provided in webhook payload, keeping 0 for compatibility
+        pinnedTime: 0, // Not provided in webhook payload, keeping 0 for compatibility
+        message: data.gift.message
     };
 }
