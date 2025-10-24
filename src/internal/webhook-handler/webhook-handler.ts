@@ -1,5 +1,6 @@
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleFollowerEvent } from "../../events/follower";
+import { kicksHandler } from "../../events/kicks";
 import { handleLivestreamMetadataUpdatedEvent } from "../../events/livestream-metadata-updated";
 import { livestreamStatusUpdatedHandler } from "../../events/livestream-status-updated";
 import { moderationBannedEventHandler } from "../../events/moderation-banned";
@@ -8,7 +9,18 @@ import { handleWebhookReceivedEvent } from "../../events/webhook-received";
 import { integration } from "../../integration";
 import { logger } from "../../main";
 import { parseDate } from "../util";
-import { parseChannelSubscriptionGiftsEvent, parseChannelSubscriptionNewEvent, parseChannelSubscriptionRenewalEvent, parseChatMessageEvent, parseFollowEvent, parseLivestreamMetadataUpdatedEvent, parseLivestreamStatusUpdatedEvent, parseModerationBannedEvent, parsePusherTestWebhook } from "./webhook-parsers";
+import {
+    parseChannelSubscriptionGiftsEvent,
+    parseChannelSubscriptionNewEvent,
+    parseChannelSubscriptionRenewalEvent,
+    parseChatMessageEvent,
+    parseFollowEvent,
+    parseKicksGiftedEvent,
+    parseLivestreamMetadataUpdatedEvent,
+    parseLivestreamStatusUpdatedEvent,
+    parseModerationBannedEvent,
+    parsePusherTestWebhook
+} from "./webhook-parsers";
 import NodeCache from 'node-cache';
 
 export class WebhookHandler {
@@ -113,6 +125,11 @@ export class WebhookHandler {
             case "moderation.banned": {
                 const event = parseModerationBannedEvent(webhook.raw_data);
                 moderationBannedEventHandler.handleModerationBannedEvent(event);
+                break;
+            }
+            case "kicks.gifted": {
+                const event = parseKicksGiftedEvent(webhook.raw_data);
+                await kicksHandler.handleKicksGiftedEvent(event);
                 break;
             }
             default: {

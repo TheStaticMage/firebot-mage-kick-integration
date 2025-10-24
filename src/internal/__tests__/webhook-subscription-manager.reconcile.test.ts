@@ -27,7 +27,7 @@ describe('WebhookSubscriptionManager.reconcileSubscriptions', () => {
 
     it('creates all when none exist', () => {
         const result = reconcile([]);
-        expect(result.create.length).toBe(8);
+        expect(result.create.length).toBe(9);
         expect(result.delete).toEqual([]);
     });
 
@@ -40,7 +40,7 @@ describe('WebhookSubscriptionManager.reconcileSubscriptions', () => {
             { id: '5', event: 'not-needed', version: 1 }
         ];
         const result = reconcile(current);
-        expect(result.create.length).toBe(5); // 8 total - 3 present
+        expect(result.create.length).toBe(6); // 9 total - 3 present
         expect(result.delete).toContain('2'); // duplicate
         expect(result.delete).toContain('5'); // not-needed
         expect(result.create.some((e: any) => e.name === 'livestream.metadata.updated')).toBe(true);
@@ -52,7 +52,7 @@ describe('WebhookSubscriptionManager.reconcileSubscriptions', () => {
             { id: '2', event: 'bar', version: 1 }
         ];
         const result = reconcile(current);
-        expect(result.create.length).toBe(8);
+        expect(result.create.length).toBe(9);
         expect(result.delete).toEqual(['1', '2']);
     });
 
@@ -64,7 +64,7 @@ describe('WebhookSubscriptionManager.reconcileSubscriptions', () => {
             { id: '4', event: 'extra', version: 1 }
         ];
         const result = reconcile(current);
-        expect(result.create.length).toBe(5); // 8 total - 3 present
+        expect(result.create.length).toBe(6); // 9 total - 3 present
         expect(result.delete).toContain('4'); // extra
         expect(result.create.some((e: any) => e.name === 'livestream.status.updated')).toBe(true);
     });
@@ -75,7 +75,7 @@ describe('WebhookSubscriptionManager.reconcileSubscriptions', () => {
             { id: null, event: 'channel.followed', version: 1 }
         ];
         const result = reconcile(current);
-        expect(result.create.length).toBe(6); // 8 total - 2 present
+        expect(result.create.length).toBe(7); // 9 total - 2 present
         expect(result.delete).toEqual([]); // no duplicates or extras with id
     });
 
@@ -88,7 +88,8 @@ describe('WebhookSubscriptionManager.reconcileSubscriptions', () => {
             { id: '5', event: 'channel.subscription.renewal', version: 1 },
             { id: '6', event: 'channel.subscription.gifts', version: 1 },
             { id: '7', event: 'channel.subscription.new', version: 1 },
-            { id: '8', event: 'moderation.banned', version: 1 }
+            { id: '8', event: 'moderation.banned', version: 1 },
+            { id: '9', event: 'kicks.gifted', version: 1 }
         ];
         const result = reconcile(current);
         expect(result.create).toEqual([]);
@@ -107,8 +108,8 @@ describe('WebhookSubscriptionManager.reconcileSubscriptions', () => {
 
         const result = reconcile(current);
 
-        // Should create all 8 subscriptions
-        expect(result.create.length).toBe(8);
+        // Should create all 9 subscriptions
+        expect(result.create.length).toBe(9);
         expect(result.create).toEqual([
             { name: 'chat.message.sent', version: 1 },
             { name: 'channel.followed', version: 1 },
@@ -117,7 +118,8 @@ describe('WebhookSubscriptionManager.reconcileSubscriptions', () => {
             { name: 'channel.subscription.renewal', version: 1 },
             { name: 'channel.subscription.gifts', version: 1 },
             { name: 'channel.subscription.new', version: 1 },
-            { name: 'moderation.banned', version: 1 }
+            { name: 'moderation.banned', version: 1 },
+            { name: 'kicks.gifted', version: 1 }
         ]);
 
         // Should delete all current subscriptions
