@@ -38,8 +38,10 @@ func (s *Server) HandleWebHook(ctx context.Context) func(w http.ResponseWriter, 
 			return
 		}
 
-		// Verify the webhook signature
-		if err := verifyWebhook(messageID, timestamp, string(body), inputSignature); err != nil {
+		// Verify the webhook signature for production webhooks. This can be overridden
+		// by the administrator when injecting webhooks.
+		isTestEvent, err := verifyWebhook(ctx, r.Header.Get("Authorization"), messageID, timestamp, string(body), inputSignature)
+		if err != nil {
 			s.log(ctx, r, "Invalid webhook signature: %v", err)
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"success": true}`))
@@ -78,7 +80,7 @@ func (s *Server) HandleWebHook(ctx context.Context) func(w http.ResponseWriter, 
 				EventType:             eventType,
 				EventVersion:          eventVersion,
 			},
-			IsTestEvent: false,
+			IsTestEvent: isTestEvent,
 			CursorID:    time.Now().UnixMicro(),
 			RawData:     body,
 		}
