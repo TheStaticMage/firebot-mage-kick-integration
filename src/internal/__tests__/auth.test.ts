@@ -11,11 +11,7 @@ jest.mock('../../main', () => ({
 jest.mock('../../integration', () => ({
     integration: {
         sendCriticalErrorNotification: jest.fn(),
-        getSettings: jest.fn(() => ({
-            accounts: {
-                authorizeBotAccount: true
-            }
-        })),
+        getSettings: jest.fn(() => ({})),
         saveIntegrationTokenData: jest.fn()
     }
 }));
@@ -310,10 +306,6 @@ describe('AuthManager', () => {
             (authManager as any).botRefreshToken = '';
             (authManager as any).botTokenExpiresAt = Date.now() + 60000;
 
-            // Mock refreshAuthTokenReal to fail (it will be called even with empty token)
-            const mockError = new Error('No refresh token');
-            jest.spyOn(authManager as any, 'refreshAuthTokenReal').mockRejectedValue(mockError);
-
             // Spy on scheduleNextBotTokenRenewal and disconnect
             const scheduleSpyBot = jest.spyOn(authManager as any, 'scheduleNextBotTokenRenewal');
             const disconnectSpy = jest.spyOn(authManager, 'disconnect');
@@ -321,12 +313,12 @@ describe('AuthManager', () => {
             // Call refreshBotToken directly
             const result = await (authManager as any).refreshBotToken();
 
-            // Should return false due to error
-            expect(result).toBe(false);
+            // Should return true because bot token is optional
+            expect(result).toBe(true);
 
-            // Should have disconnected (not scheduled retry) because token is missing
-            expect(disconnectSpy).toHaveBeenCalled();
-            expect(scheduleSpyBot).not.toHaveBeenCalledWith(10000);
+            // Should not have disconnected or scheduled retry because missing bot token is normal
+            expect(disconnectSpy).not.toHaveBeenCalled();
+            expect(scheduleSpyBot).not.toHaveBeenCalled();
         });
 
         it('schedules normal renewal after successful streamer token refresh', async () => {
@@ -375,22 +367,17 @@ describe('AuthManager', () => {
             expect(scheduleSpyBot).toHaveBeenCalledWith(expectedDelay);
         });
 
-        it('disconnects when bot token refresh fails and token gets cleared during error', async () => {
+        it('retries bot token renewal when refresh fails with error (bot token present)', async () => {
             // Set up auth manager with tokens
             (authManager as any).botRefreshToken = 'test-bot-refresh-token';
             (authManager as any).botTokenExpiresAt = Date.now() + 60000;
 
-            // Mock refreshAuthTokenReal to fail and simulate token being cleared
-            const mockError = new Error('Invalid refresh token');
-            jest.spyOn(authManager as any, 'refreshAuthTokenReal').mockImplementation(() => {
-                // Simulate the token being cleared during the error (e.g., by external code)
-                (authManager as any).botRefreshToken = '';
-                throw mockError;
-            });
+            // Mock refreshAuthTokenReal to fail
+            const mockError = new Error('Network timeout');
+            jest.spyOn(authManager as any, 'refreshAuthTokenReal').mockRejectedValue(mockError);
 
-            // Spy on scheduleNextBotTokenRenewal and disconnect
+            // Spy on scheduleNextBotTokenRenewal
             const scheduleSpyBot = jest.spyOn(authManager as any, 'scheduleNextBotTokenRenewal');
-            const disconnectSpy = jest.spyOn(authManager, 'disconnect');
 
             // Call refreshBotToken directly
             const result = await (authManager as any).refreshBotToken();
@@ -398,9 +385,8 @@ describe('AuthManager', () => {
             // Should return false due to error
             expect(result).toBe(false);
 
-            // Should have disconnected (not scheduled retry) because token was cleared
-            expect(disconnectSpy).toHaveBeenCalled();
-            expect(scheduleSpyBot).not.toHaveBeenCalledWith(10000);
+            // Should have scheduled retry after 10 seconds
+            expect(scheduleSpyBot).toHaveBeenCalledWith(10000);
         });
 
         it('automatically retries bot token renewal from scheduled renewal when network error occurs', async () => {
@@ -925,7 +911,7 @@ describe('AuthManager', () => {
                 await (authManager as any).refreshAuthTokenReal('streamer');
 
                 expect(mockIntegration.sendCriticalErrorNotification).toHaveBeenCalledWith(
-                    'Kick integration streamer refresh token is invalid. Please re-authorize the streamer account in Settings > Integrations > MageKickIntegration.'
+                    'Kick integration streamer refresh token is invalid. Open the Kick Accounts screen to re-authorize the streamer account.'
                 );
                 expect((authManager as any).streamerRefreshToken).toBe('');
                 expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('', 'bot-refresh-token');
@@ -938,7 +924,7 @@ describe('AuthManager', () => {
                 await (authManager as any).refreshAuthTokenReal('bot');
 
                 expect(mockIntegration.sendCriticalErrorNotification).toHaveBeenCalledWith(
-                    'Kick integration bot refresh token is invalid. Please re-authorize the bot account in Settings > Integrations > MageKickIntegration.'
+                    'Kick integration bot refresh token is invalid. Open the Kick Accounts screen to re-authorize the bot account.'
                 );
                 expect((authManager as any).botRefreshToken).toBe('');
                 expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('streamer-refresh-token', '');
@@ -1027,6 +1013,544 @@ describe('AuthManager', () => {
                     body: 'grant_type=refresh_token&refresh_token=streamer-refresh-token&client_id=&client_secret=&redirect_uri=http%3A%2F%2Flocalhost%3A7472%2Fintegrations%2Ffirebot-mage-kick-integration%2Fcallback'
                 });
             });
+        });
+    });
+
+    describe('getStreamerConnectionStatus()', () => {
+        it('returns ready: true when both streamerRefreshToken and streamerAuthToken are set', () => {
+            (authManager as any).streamerRefreshToken = 'refresh-token';
+            (authManager as any).streamerAuthToken = 'auth-token';
+            (authManager as any).streamerTokenExpiresAt = 0;
+
+            const status = authManager.getStreamerConnectionStatus();
+
+            expect(status.ready).toBe(true);
+            expect(status.tokenExpiresAt).toBe(0);
+        });
+
+        it('returns ready: false when streamerRefreshToken is missing', () => {
+            (authManager as any).streamerRefreshToken = '';
+            (authManager as any).streamerAuthToken = 'auth-token';
+            (authManager as any).streamerTokenExpiresAt = 0;
+
+            const status = authManager.getStreamerConnectionStatus();
+
+            expect(status.ready).toBe(false);
+        });
+
+        it('returns ready: false when streamerAuthToken is missing', () => {
+            (authManager as any).streamerRefreshToken = 'refresh-token';
+            (authManager as any).streamerAuthToken = '';
+            (authManager as any).streamerTokenExpiresAt = 0;
+
+            const status = authManager.getStreamerConnectionStatus();
+
+            expect(status.ready).toBe(false);
+        });
+
+        it('returns tokenExpiresAt from streamerTokenExpiresAt', () => {
+            const expiryTime = Date.now() + 3600000;
+            (authManager as any).streamerRefreshToken = 'refresh-token';
+            (authManager as any).streamerAuthToken = 'auth-token';
+            (authManager as any).streamerTokenExpiresAt = expiryTime;
+
+            const status = authManager.getStreamerConnectionStatus();
+
+            expect(status.tokenExpiresAt).toBe(expiryTime);
+        });
+
+        it('returns tokenExpiresAt as 0 when not set', () => {
+            (authManager as any).streamerRefreshToken = 'refresh-token';
+            (authManager as any).streamerAuthToken = 'auth-token';
+            (authManager as any).streamerTokenExpiresAt = 0;
+
+            const status = authManager.getStreamerConnectionStatus();
+
+            expect(status.tokenExpiresAt).toBe(0);
+        });
+    });
+
+    describe('getBotConnectionStatus()', () => {
+        it('returns ready: true when both botRefreshToken and botAuthToken are set', () => {
+            (authManager as any).botRefreshToken = 'bot-refresh-token';
+            (authManager as any).botAuthToken = 'bot-auth-token';
+            (authManager as any).botTokenExpiresAt = 0;
+
+            const status = authManager.getBotConnectionStatus();
+
+            expect(status.ready).toBe(true);
+            expect(status.tokenExpiresAt).toBe(0);
+        });
+
+        it('returns ready: false when botRefreshToken is missing', () => {
+            (authManager as any).botRefreshToken = '';
+            (authManager as any).botAuthToken = 'bot-auth-token';
+            (authManager as any).botTokenExpiresAt = 0;
+
+            const status = authManager.getBotConnectionStatus();
+
+            expect(status.ready).toBe(false);
+        });
+
+        it('returns ready: false when botAuthToken is missing', () => {
+            (authManager as any).botRefreshToken = 'bot-refresh-token';
+            (authManager as any).botAuthToken = '';
+            (authManager as any).botTokenExpiresAt = 0;
+
+            const status = authManager.getBotConnectionStatus();
+
+            expect(status.ready).toBe(false);
+        });
+
+        it('returns tokenExpiresAt from botTokenExpiresAt', () => {
+            const expiryTime = Date.now() + 3600000;
+            (authManager as any).botRefreshToken = 'bot-refresh-token';
+            (authManager as any).botAuthToken = 'bot-auth-token';
+            (authManager as any).botTokenExpiresAt = expiryTime;
+
+            const status = authManager.getBotConnectionStatus();
+
+            expect(status.tokenExpiresAt).toBe(expiryTime);
+        });
+
+        it('returns tokenExpiresAt as 0 when not set', () => {
+            (authManager as any).botRefreshToken = 'bot-refresh-token';
+            (authManager as any).botAuthToken = 'bot-auth-token';
+            (authManager as any).botTokenExpiresAt = 0;
+
+            const status = authManager.getBotConnectionStatus();
+
+            expect(status.tokenExpiresAt).toBe(0);
+        });
+    });
+
+    describe('deauthorizeStreamer()', () => {
+        it('clears streamerRefreshToken', () => {
+            (authManager as any).streamerRefreshToken = 'refresh-token';
+
+            authManager.deauthorizeStreamer();
+
+            expect((authManager as any).streamerRefreshToken).toBe('');
+        });
+
+        it('clears streamerAuthToken', () => {
+            (authManager as any).streamerAuthToken = 'auth-token';
+
+            authManager.deauthorizeStreamer();
+
+            expect((authManager as any).streamerAuthToken).toBe('');
+        });
+
+        it('sets streamerTokenExpiresAt to 0', () => {
+            (authManager as any).streamerTokenExpiresAt = Date.now() + 3600000;
+
+            authManager.deauthorizeStreamer();
+
+            expect((authManager as any).streamerTokenExpiresAt).toBe(0);
+        });
+
+        it('cancels existing streamerAuthRenewer timeout', () => {
+            const timeoutId = setTimeout(() => {
+                void 0;
+            }, 1000);
+            (authManager as any).streamerAuthRenewer = timeoutId;
+            const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+
+            authManager.deauthorizeStreamer();
+
+            expect(clearTimeoutSpy).toHaveBeenCalledWith(timeoutId);
+            clearTimeoutSpy.mockRestore();
+        });
+
+        it('calls saveIntegrationTokenData with empty streamer token', () => {
+            (authManager as any).streamerRefreshToken = 'refresh-token';
+            (authManager as any).botRefreshToken = 'bot-refresh-token';
+            const mockSave = jest.fn();
+            (integration.saveIntegrationTokenData as any) = mockSave;
+
+            authManager.deauthorizeStreamer();
+
+            expect(mockSave).toHaveBeenCalled();
+        });
+
+        it('preserves botRefreshToken when saving', () => {
+            (authManager as any).streamerRefreshToken = 'streamer-refresh';
+            (authManager as any).botRefreshToken = 'bot-refresh';
+
+            authManager.deauthorizeStreamer();
+
+            // Bot token should still be present in the manager
+            expect((authManager as any).botRefreshToken).toBe('bot-refresh');
+        });
+
+        it('logs debug and info messages', () => {
+            const { logger } = require('../../main');
+
+            authManager.deauthorizeStreamer();
+
+            expect(logger.debug).toHaveBeenCalled();
+            expect(logger.info).toHaveBeenCalled();
+        });
+    });
+
+    describe('deauthorizeBot()', () => {
+        it('clears botRefreshToken', () => {
+            (authManager as any).botRefreshToken = 'bot-refresh-token';
+
+            authManager.deauthorizeBot();
+
+            expect((authManager as any).botRefreshToken).toBe('');
+        });
+
+        it('clears botAuthToken', () => {
+            (authManager as any).botAuthToken = 'bot-auth-token';
+
+            authManager.deauthorizeBot();
+
+            expect((authManager as any).botAuthToken).toBe('');
+        });
+
+        it('sets botTokenExpiresAt to 0', () => {
+            (authManager as any).botTokenExpiresAt = Date.now() + 3600000;
+
+            authManager.deauthorizeBot();
+
+            expect((authManager as any).botTokenExpiresAt).toBe(0);
+        });
+
+        it('cancels existing botAuthRenewer timeout', () => {
+            const timeoutId = setTimeout(() => {
+                void 0;
+            }, 1000);
+            (authManager as any).botAuthRenewer = timeoutId;
+            const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+
+            authManager.deauthorizeBot();
+
+            expect(clearTimeoutSpy).toHaveBeenCalledWith(timeoutId);
+            clearTimeoutSpy.mockRestore();
+        });
+
+        it('calls saveIntegrationTokenData with empty bot token', () => {
+            (authManager as any).streamerRefreshToken = 'streamer-refresh-token';
+            (authManager as any).botRefreshToken = 'bot-refresh-token';
+            const mockSave = jest.fn();
+            (integration.saveIntegrationTokenData as any) = mockSave;
+
+            authManager.deauthorizeBot();
+
+            expect(mockSave).toHaveBeenCalled();
+        });
+
+        it('preserves streamerRefreshToken when saving', () => {
+            (authManager as any).streamerRefreshToken = 'streamer-refresh';
+            (authManager as any).botRefreshToken = 'bot-refresh';
+
+            authManager.deauthorizeBot();
+
+            // Streamer token should still be present in the manager
+            expect((authManager as any).streamerRefreshToken).toBe('streamer-refresh');
+        });
+
+        it('logs debug and info messages', () => {
+            const { logger } = require('../../main');
+
+            authManager.deauthorizeBot();
+
+            expect(logger.debug).toHaveBeenCalled();
+            expect(logger.info).toHaveBeenCalled();
+        });
+    });
+
+    describe('registerUIExtensionEvents()', () => {
+        it('returns early if frontendCommunicator is null and logs warning', () => {
+            const { logger } = require('../../main');
+            const mockCallback = jest.fn();
+
+            authManager.registerUIExtensionEvents(null, 'http://localhost:7472', mockCallback);
+
+            expect(logger.warn).toHaveBeenCalledWith('Frontend communicator not available for UI extension events');
+        });
+
+        it('returns early if frontendCommunicator is undefined and logs warning', () => {
+            const { logger } = require('../../main');
+            const mockCallback = jest.fn();
+
+            authManager.registerUIExtensionEvents(undefined, 'http://localhost:7472', mockCallback);
+
+            expect(logger.warn).toHaveBeenCalledWith('Frontend communicator not available for UI extension events');
+        });
+
+        it('registers onAsync handler for "kick:get-connections"', () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            expect(mockFrontendCommunicator.onAsync).toHaveBeenCalledWith('kick:get-connections', expect.any(Function));
+        });
+
+        it('handler calls notifyConnectionStateChange callback', async () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            // Get the registered handler
+            const onAsyncCalls = mockFrontendCommunicator.onAsync.mock.calls;
+            const getConnectionsCall = onAsyncCalls.find((call: any) => call[0] === 'kick:get-connections');
+            const handler = getConnectionsCall[1];
+
+            // Call the handler
+            await handler();
+
+            expect(mockCallback).toHaveBeenCalled();
+        });
+
+        it('registers on handler for "kick:authorize-streamer"', () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            expect(mockFrontendCommunicator.on).toHaveBeenCalledWith('kick:authorize-streamer', expect.any(Function));
+        });
+
+        it('handler constructs correct authorization URL for streamer', () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            // Get the registered handler
+            const onCalls = mockFrontendCommunicator.on.mock.calls;
+            const authorizeStreamerCall = onCalls.find((call: any) => call[0] === 'kick:authorize-streamer');
+            const handler = authorizeStreamerCall[1];
+
+            // Call the handler
+            handler();
+
+            expect(mockFrontendCommunicator.send).toHaveBeenCalledWith(
+                'kick:streamer-auth-url',
+                'http://localhost:7472/integrations/firebot-mage-kick-integration/link/streamer'
+            );
+        });
+
+        it('registers on handler for "kick:authorize-bot"', () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            expect(mockFrontendCommunicator.on).toHaveBeenCalledWith('kick:authorize-bot', expect.any(Function));
+        });
+
+        it('handler sends correct bot auth URL via frontendCommunicator', () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            // Get the registered handler
+            const onCalls = mockFrontendCommunicator.on.mock.calls;
+            const authorizeBotCall = onCalls.find((call: any) => call[0] === 'kick:authorize-bot');
+            const handler = authorizeBotCall[1];
+
+            // Call the handler
+            handler();
+
+            expect(mockFrontendCommunicator.send).toHaveBeenCalledWith(
+                'kick:bot-auth-url',
+                'http://localhost:7472/integrations/firebot-mage-kick-integration/link/bot'
+            );
+        });
+
+        it('registers onAsync handler for "kick:deauthorize-streamer"', () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            expect(mockFrontendCommunicator.onAsync).toHaveBeenCalledWith('kick:deauthorize-streamer', expect.any(Function));
+        });
+
+        it('deauthorize-streamer handler calls deauthorizeStreamer method', async () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+            const deauthorizeSpy = jest.spyOn(authManager, 'deauthorizeStreamer');
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            // Get the registered handler
+            const onAsyncCalls = mockFrontendCommunicator.onAsync.mock.calls;
+            const deauthorizeStreamerCall = onAsyncCalls.find((call: any) => call[0] === 'kick:deauthorize-streamer');
+            const handler = deauthorizeStreamerCall[1];
+
+            // Call the handler
+            await handler();
+
+            expect(deauthorizeSpy).toHaveBeenCalled();
+            deauthorizeSpy.mockRestore();
+        });
+
+        it('deauthorize-streamer handler calls notifyConnectionStateChange', async () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+            jest.spyOn(authManager, 'deauthorizeStreamer').mockResolvedValue();
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            // Get the registered handler
+            const onAsyncCalls = mockFrontendCommunicator.onAsync.mock.calls;
+            const deauthorizeStreamerCall = onAsyncCalls.find((call: any) => call[0] === 'kick:deauthorize-streamer');
+            const handler = deauthorizeStreamerCall[1];
+
+            // Call the handler
+            await handler();
+
+            expect(mockCallback).toHaveBeenCalled();
+        });
+
+        it('deauthorize-streamer handler handles errors gracefully', async () => {
+            const { logger } = require('../../main');
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+            const testError = new Error('Deauthorize failed');
+            jest.spyOn(authManager, 'deauthorizeStreamer').mockRejectedValue(testError);
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            // Get the registered handler
+            const onAsyncCalls = mockFrontendCommunicator.onAsync.mock.calls;
+            const deauthorizeStreamerCall = onAsyncCalls.find((call: any) => call[0] === 'kick:deauthorize-streamer');
+            const handler = deauthorizeStreamerCall[1];
+
+            // Call the handler
+            await handler();
+
+            expect(logger.error).toHaveBeenCalledWith('Failed to deauthorize streamer: Deauthorize failed');
+        });
+
+        it('registers onAsync handler for "kick:deauthorize-bot"', () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            expect(mockFrontendCommunicator.onAsync).toHaveBeenCalledWith('kick:deauthorize-bot', expect.any(Function));
+        });
+
+        it('deauthorize-bot handler calls deauthorizeBot method', async () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+            const deauthorizeSpy = jest.spyOn(authManager, 'deauthorizeBot');
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            // Get the registered handler
+            const onAsyncCalls = mockFrontendCommunicator.onAsync.mock.calls;
+            const deauthorizeBotCall = onAsyncCalls.find((call: any) => call[0] === 'kick:deauthorize-bot');
+            const handler = deauthorizeBotCall[1];
+
+            // Call the handler
+            await handler();
+
+            expect(deauthorizeSpy).toHaveBeenCalled();
+            deauthorizeSpy.mockRestore();
+        });
+
+        it('deauthorize-bot handler calls notifyConnectionStateChange', async () => {
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+            jest.spyOn(authManager, 'deauthorizeBot').mockResolvedValue();
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            // Get the registered handler
+            const onAsyncCalls = mockFrontendCommunicator.onAsync.mock.calls;
+            const deauthorizeBotCall = onAsyncCalls.find((call: any) => call[0] === 'kick:deauthorize-bot');
+            const handler = deauthorizeBotCall[1];
+
+            // Call the handler
+            await handler();
+
+            expect(mockCallback).toHaveBeenCalled();
+        });
+
+        it('deauthorize-bot handler handles errors gracefully', async () => {
+            const { logger } = require('../../main');
+            const mockFrontendCommunicator = {
+                onAsync: jest.fn(),
+                on: jest.fn(),
+                send: jest.fn()
+            };
+            const mockCallback = jest.fn();
+            const testError = new Error('Bot deauthorize failed');
+            jest.spyOn(authManager, 'deauthorizeBot').mockRejectedValue(testError);
+
+            authManager.registerUIExtensionEvents(mockFrontendCommunicator, 'http://localhost:7472', mockCallback);
+
+            // Get the registered handler
+            const onAsyncCalls = mockFrontendCommunicator.onAsync.mock.calls;
+            const deauthorizeBotCall = onAsyncCalls.find((call: any) => call[0] === 'kick:deauthorize-bot');
+            const handler = deauthorizeBotCall[1];
+
+            // Call the handler
+            await handler();
+
+            expect(logger.error).toHaveBeenCalledWith('Failed to deauthorize bot: Bot deauthorize failed');
         });
     });
 });

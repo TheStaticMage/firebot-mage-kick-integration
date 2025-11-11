@@ -25,7 +25,10 @@ import { Poller } from "./internal/poll";
 import { KickPusher } from "./internal/pusher/pusher";
 import { reflectorExtension } from "./internal/reflector";
 import { requireVersion } from "./internal/version";
+import { getConnectionStatusMessage } from "./internal/connection-utils";
+import { KickConnection, ConnectionUpdateData, ConnectionStateUpdate } from "./shared/types";
 import { firebot, logger } from "./main";
+import { kickAccountsExtension } from "./ui-extensions/kick-accounts";
 import { platformRestriction } from "./restrictions/platform";
 import { getDataFilePath } from "./util/datafile";
 import { kickCategoryVariable } from "./variables/category";
@@ -80,10 +83,6 @@ type IntegrationParameters = {
     kickApp: {
         clientId: string;
         clientSecret: string;
-    };
-    accounts: {
-        authorizeStreamerAccount: null;
-        authorizeBotAccount: boolean;
     };
     chat: {
         chatFeed: boolean;
@@ -162,10 +161,6 @@ export class KickIntegration extends EventEmitter {
         kickApp: {
             clientId: "",
             clientSecret: ""
-        },
-        accounts: {
-            authorizeStreamerAccount: null,
-            authorizeBotAccount: false
         },
         chat: {
             chatFeed: true,
@@ -327,9 +322,12 @@ export class KickIntegration extends EventEmitter {
             const { uiExtensionManager } = firebot.modules;
             if (uiExtensionManager) {
                 uiExtensionManager.registerUIExtension(reflectorExtension);
+                uiExtensionManager.registerUIExtension(kickAccountsExtension);
             } else {
                 logger.error("UI Extension Manager module not found. The Kick integration UI extension cannot be registered.");
             }
+
+            this.registerUIExtensionEvents();
 
             effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "chat-message");
             effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
@@ -377,7 +375,7 @@ export class KickIntegration extends EventEmitter {
         // Make sure the necessary tokens and settings are available
         if (!this.authManager.canConnect()) {
             await this.disconnect();
-            this.sendCriticalErrorNotification("You need to set up authorization for the integration before you can use it. Do that in Settings > Integrations > Kick.");
+            this.sendCriticalErrorNotification("You need to set up authorization for the integration before you can use it. Open the Kick Accounts screen to authorize the streamer and bot accounts.");
             return;
         }
 
@@ -421,6 +419,7 @@ export class KickIntegration extends EventEmitter {
         // Mark the integration as connected
         this.connected = true;
         this.emit("connected", IntegrationConstants.INTEGRATION_ID);
+        this.notifyConnectionStateChange();
     }
 
     async disconnect() {
@@ -431,6 +430,7 @@ export class KickIntegration extends EventEmitter {
         await this.kick.disconnect();
         await this.poller.disconnect(this.proxyPollKey);
         this.pusher.disconnect();
+        this.notifyConnectionStateChange();
         this.emit("disconnected", IntegrationConstants.INTEGRATION_ID);
         logger.info("Kick integration disconnected.");
     }
@@ -471,18 +471,6 @@ export class KickIntegration extends EventEmitter {
                 integrationData.userSettings.connectivity.chatroomId !== oldSettings.connectivity.chatroomId ||
                 integrationData.userSettings.connectivity.channelId !== oldSettings.connectivity.channelId) {
                 logger.info("Pusher settings have changed. The Kick integration will reconnect.");
-                mustReconnect = true;
-            }
-
-            if (integrationData.userSettings.accounts.authorizeBotAccount && !oldSettings.accounts.authorizeBotAccount) {
-                logger.info("Bot account authorization has been enabled. You may need to authorize the bot account.");
-                this.kick.setBotAuthToken('');
-                mustReconnect = true;
-            }
-
-            if (!integrationData.userSettings.accounts.authorizeBotAccount && oldSettings.accounts.authorizeBotAccount) {
-                logger.info("Bot account authorization has been disabled. The Kick integration will reconnect.");
-                this.kick.setBotAuthToken('');
                 mustReconnect = true;
             }
 
@@ -561,6 +549,63 @@ export class KickIntegration extends EventEmitter {
         logger.debug("Kick integration token data saved.");
 
         this.proxyPollKey = data.proxyPollKey;
+    }
+
+    private notifyConnectionStateChange(): void {
+        const { frontendCommunicator } = firebot.modules;
+        if (!frontendCommunicator) {
+            return;
+        }
+
+        const streamerStatus = this.authManager.getStreamerConnectionStatus();
+        const botStatus = this.authManager.getBotConnectionStatus();
+
+        const streamerConnection: KickConnection = {
+            type: "streamer",
+            accessToken: "",
+            refreshToken: "",
+            tokenExpiresAt: streamerStatus.tokenExpiresAt,
+            ready: streamerStatus.ready,
+            username: ""
+        };
+
+        const botConnection: KickConnection = {
+            type: "bot",
+            accessToken: "",
+            refreshToken: "",
+            tokenExpiresAt: botStatus.tokenExpiresAt,
+            ready: botStatus.ready,
+            username: ""
+        };
+
+        const streamerData: ConnectionUpdateData = {
+            ready: streamerStatus.ready,
+            status: getConnectionStatusMessage(streamerConnection, this.connected),
+            tokenExpiresAt: streamerStatus.tokenExpiresAt
+        };
+
+        const botData: ConnectionUpdateData = {
+            ready: botStatus.ready,
+            status: getConnectionStatusMessage(botConnection, this.connected),
+            tokenExpiresAt: botStatus.tokenExpiresAt
+        };
+
+        const update: ConnectionStateUpdate = {
+            connected: this.connected,
+            streamer: streamerData,
+            bot: botData
+        };
+
+        logger.debug(`Notifying frontend of connection state change: ${JSON.stringify(update)}`);
+        frontendCommunicator.send("kick:connections-update", update);
+    }
+
+    private registerUIExtensionEvents(): void {
+        const { frontendCommunicator } = firebot.modules;
+        const firebotUrl = this.settings.connectivity.firebotUrl || "http://localhost:7472";
+        this.authManager.registerUIExtensionEvents(frontendCommunicator, firebotUrl, () => {
+            this.notifyConnectionStateChange();
+        });
     }
 }
 

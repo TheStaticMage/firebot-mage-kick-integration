@@ -199,3 +199,31 @@ export interface KicksGiftedEvent {
     pinnedTime: number,
     message: string
 }
+
+export interface KickConnection {
+    type: "streamer" | "bot";
+    accessToken: string;
+    refreshToken: string;
+    tokenExpiresAt: number;
+    ready: boolean;
+    username: string;
+}
+
+export interface ConnectionStatus {
+    ready: boolean;
+    status: string;
+    tokenExpiresAt: number;
+    username: string;
+}
+
+export interface ConnectionUpdateData {
+    ready: boolean;
+    status: string;
+    tokenExpiresAt: number;
+}
+
+export interface ConnectionStateUpdate {
+    connected: boolean;
+    streamer: ConnectionUpdateData;
+    bot: ConnectionUpdateData;
+}

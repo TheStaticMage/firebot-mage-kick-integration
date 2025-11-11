@@ -75,7 +75,7 @@ export const streamerOrBotFilter: EventFilter = {
 
         if (platform === "kick") {
             const kickStreamer = integration.kick.broadcaster?.name;
-            const kickBot = integration.getSettings().accounts.authorizeBotAccount ? integration.kick.bot?.name : "";
+            const kickBot = integration.kick.bot?.name ?? "";
             username = unkickifyUsername(trigger.metadata.username).toLowerCase();
             switch (value) {
                 case "streamer":

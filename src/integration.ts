@@ -78,29 +78,9 @@ export const definition: IntegrationDefinition = {
                 }
             }
         },
-        accounts: {
-            title: "Accounts",
-            sortRank: 4,
-            settings: {
-                authorizeStreamerAccount: {
-                    title: "Authorize Streamer Account",
-                    tip: `Open this URL in a browser window to authorize the streamer account: http://localhost:7472/integrations/${IntegrationConstants.INTEGRATION_URI}/link/streamer`,
-                    type: "unknown",
-                    sortRank: 1
-                },
-                authorizeBotAccount: {
-                    title: "Authorize Bot Account",
-                    tip: `Open this URL in a browser window to authorize the bot account: http://localhost:7472/integrations/${IntegrationConstants.INTEGRATION_URI}/link/bot`,
-                    type: "boolean",
-                    description: "This is optional. You can register a separate account to chat in your stream.",
-                    default: false,
-                    sortRank: 2
-                }
-            }
-        },
         chat: {
             title: "Chat Settings",
-            sortRank: 5,
+            sortRank: 4,
             settings: {
                 chatFeed: {
                     title: "Chat Feed",
@@ -120,7 +100,7 @@ export const definition: IntegrationDefinition = {
         },
         triggerTwitchEvents: {
             title: "Trigger Twitch Events",
-            sortRank: 6,
+            sortRank: 5,
             settings: {
                 chatMessage: {
                     title: "Chat Message",
