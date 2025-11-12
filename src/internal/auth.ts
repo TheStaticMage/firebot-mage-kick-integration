@@ -78,7 +78,7 @@ export class AuthManager {
             if (this.streamerRefreshToken) {
                 await this.refreshAuthTokenReal('streamer');
             } else {
-                integration.sendCriticalErrorNotification(`Streamer refresh token is missing. You need to re-authorize the streamer account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+                integration.sendCriticalErrorNotification("Streamer refresh token is missing. Open the Kick Accounts screen to re-authorize the streamer account.");
                 return "";
             }
         }
@@ -98,18 +98,13 @@ export class AuthManager {
     }
 
     async getBotAuthToken(): Promise<string> {
-        if (!integration.getSettings().accounts.authorizeBotAccount) {
-            logger.debug("getBotAuthToken(): Bot account authorization is disabled.");
+        if (!this.botRefreshToken) {
+            logger.debug("getBotAuthToken(): Bot account not authorized.");
             return "";
         }
 
         if (!this.botAuthToken) {
-            if (this.botRefreshToken) {
-                await this.refreshAuthTokenReal('bot');
-            } else {
-                integration.sendCriticalErrorNotification(`Bot refresh token is missing. You need to re-authorize (or disable) the bot account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
-                return "";
-            }
+            await this.refreshAuthTokenReal('bot');
         }
 
         if (this.botAuthToken && this.botTokenExpiresAt > Date.now()) {
@@ -311,7 +306,7 @@ export class AuthManager {
             integration.connect();
 
             logger.info("Kick integration connected successfully!");
-            res.status(200).send(`<p>Kick integration authorized for ${tokenType}! You can close this tab.</p><p>(Be sure to save the integration settings in Firebot if you have that window open.)</p>`);
+            res.status(200).send(`<p>Kick integration authorized for ${tokenType}! You can close this tab.</p>`);
         } catch (error) {
             logger.error(`Failed to exchange code for tokens: ${error}`);
             if (integration.getSettings().webhookProxy.webhookProxyUrl) {
@@ -345,27 +340,30 @@ export class AuthManager {
     }
 
     private async refreshStreamerToken(): Promise<boolean> {
+        // Streamer token is required - check for missing token upfront
+        if (!this.streamerRefreshToken) {
+            logger.error("Streamer refresh token is missing. Disconnecting integration.");
+            this.disconnect();
+            integration.sendCriticalErrorNotification("You need to authorize the streamer account. Open the Kick Accounts screen to set up authorization.");
+            return false;
+        }
+
         try {
             await this.refreshAuthTokenReal('streamer');
             this.scheduleNextStreamerTokenRenewal(this.streamerTokenExpiresAt - Date.now() - 300000); // Refresh 5 minutes before expiration
             return true;
         } catch (error) {
             logger.error(`Error refreshing streamer auth token: ${error}`);
-
-            if (!this.streamerRefreshToken) {
-                logger.error("Streamer refresh token is missing. Disconnecting integration.");
-                this.disconnect();
-                integration.sendCriticalErrorNotification(`You need to authorize the streamer account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
-            } else {
-                this.scheduleNextStreamerTokenRenewal(10000); // Try again in 10 seconds if there's an error
-            }
+            this.scheduleNextStreamerTokenRenewal(10000); // Try again in 10 seconds if there's an error
         }
         return false;
     }
 
     private async refreshBotToken(): Promise<boolean> {
-        if (!integration.getSettings().accounts.authorizeBotAccount) {
-            return true; // There wasn't an error so we indicate success
+        // Bot token is optional - if not provided, just log and return success
+        if (!this.botRefreshToken) {
+            logger.info("Bot refresh token is not configured. Skipping bot token refresh.");
+            return true;
         }
 
         try {
@@ -374,14 +372,7 @@ export class AuthManager {
             return true;
         } catch (error) {
             logger.error(`Error refreshing bot auth token: ${error}`);
-
-            if (!this.botRefreshToken) {
-                logger.error("Bot refresh token is missing. Disconnecting integration.");
-                this.disconnect();
-                integration.sendCriticalErrorNotification(`You need to re-authorize (or disable) the bot account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
-            } else {
-                this.scheduleNextBotTokenRenewal(10000); // Try again in 10 seconds if there's an error
-            }
+            this.scheduleNextBotTokenRenewal(10000); // Try again in 10 seconds if there's an error
         }
         return false;
     }
@@ -435,7 +426,7 @@ export class AuthManager {
         } catch (error: any) {
             // Check if error has a status property and handle 401 specifically
             if (error && typeof error === 'object' && 'status' in error && error.status === 401) {
-                integration.sendCriticalErrorNotification(`Kick integration ${tokenType} refresh token is invalid. Please re-authorize the ${tokenType} account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+                integration.sendCriticalErrorNotification(`Kick integration ${tokenType} refresh token is invalid. Open the Kick Accounts screen to re-authorize the ${tokenType} account.`);
                 if (tokenType === 'streamer') {
                     this.streamerRefreshToken = "";
                 } else {
@@ -502,5 +493,87 @@ export class AuthManager {
             userId: userData.user_id,
             name: userData.name || 'Unknown'
         };
+    }
+
+    getStreamerConnectionStatus(): { ready: boolean; tokenExpiresAt: number } {
+        return {
+            ready: !!this.streamerRefreshToken && !!this.streamerAuthToken,
+            tokenExpiresAt: this.streamerTokenExpiresAt || 0
+        };
+    }
+
+    getBotConnectionStatus(): { ready: boolean; tokenExpiresAt: number } {
+        return {
+            ready: !!this.botRefreshToken && !!this.botAuthToken,
+            tokenExpiresAt: this.botTokenExpiresAt || 0
+        };
+    }
+
+    async deauthorizeStreamer(): Promise<void> {
+        logger.debug("Deauthorizing streamer account...");
+        this.streamerRefreshToken = "";
+        this.streamerAuthToken = "";
+        this.streamerTokenExpiresAt = 0;
+        if (this.streamerAuthRenewer) {
+            clearTimeout(this.streamerAuthRenewer);
+            this.streamerAuthRenewer = null;
+        }
+        integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken);
+        logger.info("Streamer account deauthorized.");
+    }
+
+    async deauthorizeBot(): Promise<void> {
+        logger.debug("Deauthorizing bot account...");
+        this.botRefreshToken = "";
+        this.botAuthToken = "";
+        this.botTokenExpiresAt = 0;
+        if (this.botAuthRenewer) {
+            clearTimeout(this.botAuthRenewer);
+            this.botAuthRenewer = null;
+        }
+        integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken);
+        logger.info("Bot account deauthorized.");
+    }
+
+    registerUIExtensionEvents(frontendCommunicator: any, firebotUrl: string, notifyConnectionStateChange: () => void): void {
+        if (!frontendCommunicator) {
+            logger.warn("Frontend communicator not available for UI extension events");
+            return;
+        }
+
+        frontendCommunicator.onAsync("kick:get-connections", async () => {
+            notifyConnectionStateChange();
+            return null;
+        });
+
+        frontendCommunicator.on("kick:authorize-streamer", () => {
+            const authUrl = `${firebotUrl}/integrations/${IntegrationConstants.INTEGRATION_URI}/link/streamer`;
+            frontendCommunicator.send("kick:streamer-auth-url", authUrl);
+        });
+
+        frontendCommunicator.on("kick:authorize-bot", () => {
+            const authUrl = `${firebotUrl}/integrations/${IntegrationConstants.INTEGRATION_URI}/link/bot`;
+            frontendCommunicator.send("kick:bot-auth-url", authUrl);
+        });
+
+        frontendCommunicator.onAsync("kick:deauthorize-streamer", async () => {
+            try {
+                await this.deauthorizeStreamer();
+                notifyConnectionStateChange();
+            } catch (error: any) {
+                logger.error(`Failed to deauthorize streamer: ${error.message}`);
+            }
+            return null;
+        });
+
+        frontendCommunicator.onAsync("kick:deauthorize-bot", async () => {
+            try {
+                await this.deauthorizeBot();
+                notifyConnectionStateChange();
+            } catch (error: any) {
+                logger.error(`Failed to deauthorize bot: ${error.message}`);
+            }
+            return null;
+        });
     }
 }

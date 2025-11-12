@@ -1,4 +1,3 @@
-import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger, scriptVersion } from "../main";
 import { HttpCallRequest, httpCallWithTimeout } from "./http";
@@ -29,7 +28,7 @@ export class Poller {
         }
         if (!proxyPollKey) {
             logger.error("Cannot start poller: Missing proxy poll key.");
-            integration.sendCriticalErrorNotification(`Failed to start the proxy poller. You probably need to re-authorize the streamer account in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+            integration.sendCriticalErrorNotification("Failed to start the proxy poller. Open the Kick Accounts screen to re-authorize the streamer account.");
             return;
         }
 

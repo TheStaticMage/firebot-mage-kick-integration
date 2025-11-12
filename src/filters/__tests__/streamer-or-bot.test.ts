@@ -6,8 +6,7 @@ jest.mock('../../integration', () => ({
         kick: {
             broadcaster: { name: 'StreamerKick' },
             bot: { name: 'BotKick' }
-        },
-        getSettings: () => ({ accounts: { authorizeBotAccount: true } })
+        }
     }
 }));
 
@@ -43,29 +42,6 @@ describe('streamerOrBotFilter.predicate', () => {
         eventMeta: { username: '' }
     };
 
-    it('returns false for Kick bot when authorizeBotAccount is false (is)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        const integration = require('../../integration').integration;
-        // Set authorizeBotAccount to false
-        integration.getSettings = () => ({ accounts: { authorizeBotAccount: false } });
-        const eventData = { ...baseEventData, eventMeta: { username: 'BotKick' } };
-        const result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'bot' }, eventData);
-        expect(result).toBe(false);
-        // Restore
-        integration.getSettings = () => ({ accounts: { authorizeBotAccount: true } });
-    });
-
-    it('returns true for Kick bot when authorizeBotAccount is false (is not)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        const integration = require('../../integration').integration;
-        // Set authorizeBotAccount to false
-        integration.getSettings = () => ({ accounts: { authorizeBotAccount: false } });
-        const eventData = { ...baseEventData, eventMeta: { username: 'BotKick' } };
-        const result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'bot' }, eventData);
-        expect(result).toBe(true);
-        // Restore
-        integration.getSettings = () => ({ accounts: { authorizeBotAccount: true } });
-    });
 
     it('returns false for Kick bot when bot name is empty string (is)', async () => {
         platformVariable.evaluator.mockReturnValue('kick');

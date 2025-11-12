@@ -153,21 +153,25 @@ Here's how to do it:
 
 You will authenticate to Kick using your browser, which will grant a token to the application. This uses a technology called [OAuth](https://docs.kick.com/getting-started/generating-tokens-oauth2-flow) which ensures that your Kick password is never needed by the Firebot integration.
 
-1. Log in to Kick as the streamer.
+1. Log in to Kick as the streamer account in your browser.
 
-2. Click the following link:
+2. In Firebot, click the **Kick Accounts** link to open the account authorization UI.
 
-   [`http://localhost:7472/integrations/firebot-mage-kick-integration/link/streamer`](http://localhost:7472/integrations/firebot-mage-kick-integration/link/streamer)
+3. In the "Streamer Connection" section, click the **Authorize Streamer** button.
 
-3. You will be redirected to a screen on Kick's website that prompts you to authorize the application. Click the **Allow Access** button.
+4. A modal dialog will appear with an authorization link and instructions.
 
-4. If everything works as it should, you should see this message in your browser after a few seconds:
+5. Click the **Copy Link** button in the modal dialog to copy the authorization link to your clipboard.
+
+6. Paste the authorization link into your browser's address bar and press Enter.
+
+7. You will be redirected to a screen on Kick's website that prompts you to authorize the application. Click the **Allow Access** button.
+
+8. If everything works as it should, you should see this message in your browser after a few seconds:
 
     > Kick integration authorized for streamer! You can close this tab.
 
-    If you get that message, you can indeed close the tab.
-
-:bulb: You can re-authenticate at any time. The link to authenticate the streamer is also available under Settings &gt; Integrations &gt; **MageKickIntegration** &gt; Configure.
+   The modal dialog in Firebot will also automatically close when authorization is complete.
 
 ## Authentication of Bot
 
@@ -177,27 +181,27 @@ You may _optionally_ choose to have Firebot post chat messages as a separate Kic
 
 1. Register a separate Kick account for your bot.
 
-2. Log in to Kick as the bot account. (We suggest using an incognito/private window so there is no confusion between your streamer account and bot account.)
+2. Log in to Kick as the bot account in your browser. **We recommend using an incognito or private window for this to avoid conflicts with your streamer account.**
 
-3. In Firebot, navigate to Settings &gt; Integrations &gt; **MageKickIntegration** and click the **Configure** button.
+3. Click the **Kick Accounts** link to open the account authorization UI.
 
-4. Under the "Accounts" section, check the box for "Authorize Bot Account."
+4. In the "Bot Connection" section, click the **Authorize Bot** button.
 
-5. Copy the link from the integration section into your (incognito) browser window, or just copy this link:
+5. A modal dialog will appear with an authorization link and instructions.
 
-   `http://localhost:7472/integrations/firebot-mage-kick-integration/link/bot`
+6. Click the **Copy Link** button in the modal dialog to copy the authorization link to your clipboard.
 
-6. You will be redirected to a screen on Kick's website that prompts you to authorize the application. Click the **Allow Access** button.
+7. Paste the authorization link into your (incognito) browser window's address bar and press Enter.
 
-7. If everything works as it should, you should see this message in your browser after a few seconds:
+8. You will be redirected to a screen on Kick's website that prompts you to authorize the application. Click the **Allow Access** button.
+
+9. If everything works as it should, you should see this message in your browser after a few seconds:
 
     > Kick integration authorized for bot! You can close this tab.
 
-    If you get that message, you can indeed close the tab.
-
-8. Be sure to save your integration settings in Firebot.
+   The modal dialog in Firebot will also automatically close when authorization is complete.
 
 :bulb: We suggest to make your bot a moderator so it can post URLs and bypass any other restrictions. (Note: this bot account does not attempt to take any "moderator" actions in the channel through Firebot.) You can do this using one of these methods:
 
-- Log in as your main account and [add the moderator](https://dashboard.kick.com/channel/roles/moderator) under channel roles
-- Log in as your main account, go to your chat, and type `/mod BOTUSERNAME` (filling in the appropriate bot username, of course)
+- Log in to Kick with the streamer's account and [add the moderator](https://dashboard.kick.com/channel/roles/moderator) under channel roles
+- Log in to Kick with the streamer's account, go to your chat, and type `/mod BOTUSERNAME` (filling in the appropriate bot username, of course)
