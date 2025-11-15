@@ -6,10 +6,15 @@ import stylistic from '@stylistic/eslint-plugin';
 
 export default tseslint.config(
   eslint.configs.recommended,
-  tseslint.configs.strictTypeChecked,
-  tseslint.configs.stylistic,
+    {
+        ignores: ['**/*.mjs', '**/*.js', 'node_modules/**', 'dist/**', 'coverage/**', 'kick-api-types/**']
+    },
     {
         files: ['**/*.ts', '**/*.tsx'],
+        extends: [
+            ...tseslint.configs.strictTypeChecked,
+            ...tseslint.configs.stylistic,
+        ],
         languageOptions: {
             parserOptions: {
                 projectService: true,
