@@ -13,8 +13,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+          registry-url: https://npm.pkg.github.com
+          scope: '@thestaticmage'
       - name: npm install
         run: npm install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: npm build
         run: npm run build
       - name: get-version

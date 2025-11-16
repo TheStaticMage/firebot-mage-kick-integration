@@ -24,10 +24,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22.x'
+          registry-url: https://npm.pkg.github.com
+          scope: '@thestaticmage'
       - name: Create dist directory
         run: mkdir -p dist
       - name: npm install
         run: npm install
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: get-version
         id: package-version
         uses: martinbeentjes/npm-get-version-action@v1.3.1
