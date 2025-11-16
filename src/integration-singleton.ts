@@ -48,7 +48,6 @@ import { kicksGiftTierVariable } from "./variables/kicks/kicks-gift-tier";
 import { kicksGiftTypeVariable } from "./variables/kicks/kicks-gift-type";
 import { kickModReason } from "./variables/mod-reason";
 import { kickModeratorVariable } from "./variables/moderator";
-import { platformVariable } from "./variables/platform";
 import { platformAwareUserDisplayNameVariable } from "./variables/platform-aware-user-display-name";
 import { kickRewardIdVariable } from "./variables/reward-id";
 import { kickRewardMessageVariable } from "./variables/reward-message";
@@ -305,9 +304,6 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.registerReplaceVariable(kicksGiftNameVariable);
         replaceVariableManager.registerReplaceVariable(kicksGiftTierVariable);
         replaceVariableManager.registerReplaceVariable(kicksGiftTypeVariable);
-
-        // Miscellaneous variables
-        replaceVariableManager.registerReplaceVariable(platformVariable);
 
         // Restrictions
         const { restrictionManager } = firebot.modules;
