@@ -1,7 +1,7 @@
 import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { integration } from "../integration";
 import { firebot, logger } from "../main";
-import { platformVariable } from "../variables/platform";
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 import { Kick } from "./kick";
 
 interface inboundSendChatMessage {
@@ -148,7 +148,7 @@ export class ChatManager {
 
     static getPlatformFromTrigger(trigger: Trigger): string {
         try {
-            return platformVariable.evaluator(trigger) || "unknown";
+            return detectPlatform(trigger) || "unknown";
         } catch (error) {
             logger.error(`Error determining platform from trigger: ${error}`);
             return "unknown";
