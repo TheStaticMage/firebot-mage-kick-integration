@@ -2,7 +2,7 @@ import { ConditionType } from "@crowbartools/firebot-custom-scripts-types/types/
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration-singleton";
 import { logger } from "../main";
-import { platformVariable } from "../variables/platform";
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 
 export const viewerRolesCondition: ConditionType<any, any, any> = {
     id: `${IntegrationConstants.INTEGRATION_ID}:viewerroles`,
@@ -62,9 +62,9 @@ export const viewerRolesCondition: ConditionType<any, any, any> = {
         // Determine platform from trigger metadata if possible
         let platform = "";
         try {
-            platform = platformVariable.evaluator(trigger);
+            platform = detectPlatform(trigger);
         } catch (error) {
-            logger.error(`viewerroles condition: Error evaluating platform variable: ${error}`);
+            logger.error(`viewerroles condition: Error evaluating platform: ${error}`);
             platform = "";
         }
 

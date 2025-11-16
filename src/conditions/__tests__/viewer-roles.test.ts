@@ -13,11 +13,9 @@ jest.mock('../../integration-singleton', () => ({
     }
 }));
 
-// Mock the platform variable
-jest.mock('../../variables/platform', () => ({
-    platformVariable: {
-        evaluator: jest.fn()
-    }
+// Mock the detectPlatform function
+jest.mock('@thestaticmage/mage-platform-lib-client', () => ({
+    detectPlatform: jest.fn()
 }));
 
 // Mock the logger
@@ -32,12 +30,12 @@ jest.mock('../../main', () => ({
 
 // Import the mocked modules after setting up the mocks
 import { integration } from '../../integration-singleton';
-import { platformVariable } from '../../variables/platform';
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 import { logger } from '../../main';
 
 describe('viewerRolesCondition.predicate', () => {
     const mockUserHasRole = jest.mocked(integration.kick.roleManager.userHasRole);
-    const mockPlatformEvaluator = jest.mocked(platformVariable.evaluator);
+    const mockDetectPlatform = jest.mocked(detectPlatform);
     const mockLogger = jest.mocked(logger);
 
     // Helper function to create trigger metadata
@@ -60,7 +58,7 @@ describe('viewerRolesCondition.predicate', () => {
 
     describe('username/userId resolution', () => {
         it('uses leftSideValue when provided', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
+            mockDetectPlatform.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('has role', 'specificuser', 'mod');
@@ -73,7 +71,7 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('falls back to trigger.metadata.username when leftSideValue is empty string', async () => {
-            mockPlatformEvaluator.mockReturnValue('twitch');
+            mockDetectPlatform.mockReturnValue('twitch');
             mockUserHasRole.mockResolvedValue(false);
 
             const conditionSettings = createConditionSettings('has role', '', 'mod');
@@ -86,7 +84,7 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('falls back to trigger.metadata.username when leftSideValue is null', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
+            mockDetectPlatform.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('doesn\'t have role', null, 'vip');
@@ -99,7 +97,7 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('falls back to trigger.metadata.username when leftSideValue is undefined', async () => {
-            mockPlatformEvaluator.mockReturnValue('twitch');
+            mockDetectPlatform.mockReturnValue('twitch');
             mockUserHasRole.mockResolvedValue(false);
 
             const conditionSettings = createConditionSettings('has role', undefined, 'broadcaster');
@@ -114,7 +112,7 @@ describe('viewerRolesCondition.predicate', () => {
 
     describe('platform detection', () => {
         it('uses platform from platformVariable when available', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
+            mockDetectPlatform.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'mod');
@@ -127,7 +125,7 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('handles empty platform string', async () => {
-            mockPlatformEvaluator.mockReturnValue('');
+            mockDetectPlatform.mockReturnValue('');
             mockUserHasRole.mockResolvedValue(false);
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'sub');
@@ -140,7 +138,7 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('handles platform evaluation errors gracefully', async () => {
-            mockPlatformEvaluator.mockImplementation(() => {
+            mockDetectPlatform.mockImplementation(() => {
                 throw new Error('Platform evaluation failed');
             });
             mockUserHasRole.mockResolvedValue(true);
@@ -153,7 +151,7 @@ describe('viewerRolesCondition.predicate', () => {
             expect(result).toBe(true);
             expect(mockUserHasRole).toHaveBeenCalledWith('', 'testuser', 'mod');
             expect(mockLogger.error).toHaveBeenCalledWith(
-                expect.stringContaining('viewerroles condition: Error evaluating platform variable:')
+                expect.stringContaining('viewerroles condition: Error evaluating platform:')
             );
         });
     });
@@ -161,7 +159,7 @@ describe('viewerRolesCondition.predicate', () => {
     describe('comparison types', () => {
         describe('positive comparisons (has role)', () => {
             it('returns true when user has role and comparison is "has role"', async () => {
-                mockPlatformEvaluator.mockReturnValue('kick');
+                mockDetectPlatform.mockReturnValue('kick');
                 mockUserHasRole.mockResolvedValue(true);
 
                 const conditionSettings = createConditionSettings('has role', 'testuser', 'mod');
@@ -172,7 +170,7 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             it('returns false when user does not have role and comparison is "has role"', async () => {
-                mockPlatformEvaluator.mockReturnValue('twitch');
+                mockDetectPlatform.mockReturnValue('twitch');
                 mockUserHasRole.mockResolvedValue(false);
 
                 const conditionSettings = createConditionSettings('has role', 'testuser', 'vip');
@@ -183,7 +181,7 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             it('handles "include" comparison type', async () => {
-                mockPlatformEvaluator.mockReturnValue('kick');
+                mockDetectPlatform.mockReturnValue('kick');
                 mockUserHasRole.mockResolvedValue(true);
 
                 const conditionSettings = createConditionSettings('include', 'testuser', 'broadcaster');
@@ -194,7 +192,7 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             it('handles "is in role" comparison type', async () => {
-                mockPlatformEvaluator.mockReturnValue('twitch');
+                mockDetectPlatform.mockReturnValue('twitch');
                 mockUserHasRole.mockResolvedValue(false);
 
                 const conditionSettings = createConditionSettings('is in role', 'testuser', 'sub');
@@ -207,7 +205,7 @@ describe('viewerRolesCondition.predicate', () => {
 
         describe('negative comparisons (doesn\'t have role)', () => {
             it('returns false when user has role and comparison is "doesn\'t have role"', async () => {
-                mockPlatformEvaluator.mockReturnValue('kick');
+                mockDetectPlatform.mockReturnValue('kick');
                 mockUserHasRole.mockResolvedValue(true);
 
                 const conditionSettings = createConditionSettings('doesn\'t have role', 'testuser', 'mod');
@@ -218,7 +216,7 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             it('returns true when user does not have role and comparison is "doesn\'t have role"', async () => {
-                mockPlatformEvaluator.mockReturnValue('twitch');
+                mockDetectPlatform.mockReturnValue('twitch');
                 mockUserHasRole.mockResolvedValue(false);
 
                 const conditionSettings = createConditionSettings('doesn\'t have role', 'testuser', 'vip');
@@ -229,7 +227,7 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             it('handles "doesn\'t include" comparison type', async () => {
-                mockPlatformEvaluator.mockReturnValue('kick');
+                mockDetectPlatform.mockReturnValue('kick');
                 mockUserHasRole.mockResolvedValue(false);
 
                 const conditionSettings = createConditionSettings('doesn\'t include', 'testuser', 'broadcaster');
@@ -240,7 +238,7 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             it('handles "isn\'t in role" comparison type', async () => {
-                mockPlatformEvaluator.mockReturnValue('twitch');
+                mockDetectPlatform.mockReturnValue('twitch');
                 mockUserHasRole.mockResolvedValue(true);
 
                 const conditionSettings = createConditionSettings('isn\'t in role', 'testuser', 'sub');
@@ -253,7 +251,7 @@ describe('viewerRolesCondition.predicate', () => {
 
         describe('unknown comparison types', () => {
             it('returns false and logs warning for unknown comparison type', async () => {
-                mockPlatformEvaluator.mockReturnValue('kick');
+                mockDetectPlatform.mockReturnValue('kick');
                 mockUserHasRole.mockResolvedValue(true);
 
                 const conditionSettings = createConditionSettings('unknown_comparison', 'testuser', 'mod');
@@ -271,7 +269,7 @@ describe('viewerRolesCondition.predicate', () => {
 
     describe('role types', () => {
         it('works with built-in roles', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
+            mockDetectPlatform.mockReturnValue('kick');
 
             const builtInRoles = ['broadcaster', 'mod', 'vip', 'sub', 'bot'];
 
@@ -289,7 +287,7 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('works with custom roles (UUID format)', async () => {
-            mockPlatformEvaluator.mockReturnValue('twitch');
+            mockDetectPlatform.mockReturnValue('twitch');
             mockUserHasRole.mockResolvedValue(true);
 
             const customRoleId = '550e8400-e29b-41d4-a716-446655440000';
@@ -303,7 +301,7 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('converts rightSideValue to string', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
+            mockDetectPlatform.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(false);
 
             // Test with number as rightSideValue
@@ -319,7 +317,7 @@ describe('viewerRolesCondition.predicate', () => {
 
     describe('logging', () => {
         it('logs debug message when user has role', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
+            mockDetectPlatform.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'mod');
@@ -333,7 +331,7 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('logs debug message when user does not have role', async () => {
-            mockPlatformEvaluator.mockReturnValue('twitch');
+            mockDetectPlatform.mockReturnValue('twitch');
             mockUserHasRole.mockResolvedValue(false);
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'vip');
@@ -349,7 +347,7 @@ describe('viewerRolesCondition.predicate', () => {
 
     describe('integration with RoleManager', () => {
         it('passes correct parameters to RoleManager.userHasRole', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
+            mockDetectPlatform.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('has role', 'specificuser', 'customrole');
@@ -362,7 +360,7 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('handles RoleManager async responses correctly', async () => {
-            mockPlatformEvaluator.mockReturnValue('twitch');
+            mockDetectPlatform.mockReturnValue('twitch');
 
             // Test async resolution
             mockUserHasRole.mockImplementation(async () => {
@@ -382,7 +380,7 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('handles RoleManager errors gracefully', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
+            mockDetectPlatform.mockReturnValue('kick');
             mockUserHasRole.mockRejectedValue(new Error('Role check failed'));
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'mod');
