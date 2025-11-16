@@ -1,7 +1,7 @@
 import { EventData, EventFilter, FilterEvent, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
 import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { IntegrationConstants } from "../constants";
-import { platformVariable } from "../variables/platform";
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 
 // This can be useful if the user is forwarding Kick events to the corresponding
 // Twitch handlers. Otherwise it's kind of silly...
@@ -61,7 +61,7 @@ export const platformFilter: EventFilter = {
                 username: "" // We don't know it in the filter
             }
         };
-        const platform = platformVariable.evaluator(trigger);
+        const platform = detectPlatform(trigger);
         return (comparisonType === "is" && platform === value) ||
                (comparisonType === "is not" && platform !== value);
     }

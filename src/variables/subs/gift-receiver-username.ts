@@ -2,7 +2,7 @@ import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/type
 import { IntegrationConstants } from '../../constants';
 import { kickifyUsername, unkickifyUsername } from '../../internal/util';
 import { logger } from '../../main';
-import { platformVariable } from '../platform';
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 
 export const kickGiftReceiverUsernameVariable: ReplaceVariable = {
     definition: {
@@ -22,7 +22,7 @@ export const kickGiftReceiverUsernameVariable: ReplaceVariable = {
             gifteeUsername = "UnknownUser";
         }
 
-        const platform = platformVariable.evaluator(trigger);
+        const platform = detectPlatform(trigger);
         switch (platform) {
             case "kick":
                 return kickifyUsername(gifteeUsername);

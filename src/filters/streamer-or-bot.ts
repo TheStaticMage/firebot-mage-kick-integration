@@ -4,7 +4,7 @@ import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { platformVariable } from "../variables/platform";
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 import { ComparisonType } from "./common";
 
 const events: string[] = [
@@ -69,7 +69,7 @@ export const streamerOrBotFilter: EventFilter = {
             }
         };
 
-        const platform = platformVariable.evaluator(trigger);
+        const platform = detectPlatform(trigger);
         let username = "";
         const checkName: string[] = [];
 

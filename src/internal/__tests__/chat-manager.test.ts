@@ -14,10 +14,8 @@ jest.mock('../../main', () => ({
         error: jest.fn()
     }
 }));
-jest.mock('../../variables/platform', () => ({
-    platformVariable: {
-        evaluator: jest.fn()
-    }
+jest.mock('@thestaticmage/mage-platform-lib-client', () => ({
+    detectPlatform: jest.fn()
 }));
 
 jest.mock('../kick', () => ({
@@ -32,7 +30,7 @@ jest.mock('../../integration', () => ({
 
 import { integration } from '../../integration';
 import { logger } from '../../main';
-import { platformVariable } from '../../variables/platform';
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 import { ChatManager } from '../chat-manager';
 
 describe('ChatManager', () => {
@@ -112,9 +110,9 @@ describe('ChatManager', () => {
     });
 
     it('getPlatformFromTrigger returns platform or unknown', () => {
-        (platformVariable.evaluator as jest.Mock).mockReturnValue('kick');
+        (detectPlatform as jest.Mock).mockReturnValue('kick');
         expect(ChatManager.getPlatformFromTrigger({} as any)).toBe('kick');
-        (platformVariable.evaluator as jest.Mock).mockImplementation(() => {
+        (detectPlatform as jest.Mock).mockImplementation(() => {
             throw new Error('fail');
         });
         expect(ChatManager.getPlatformFromTrigger({} as any)).toBe('unknown');

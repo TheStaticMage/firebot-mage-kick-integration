@@ -6,7 +6,7 @@ import { integration } from "../integration";
 import { KickUserManager } from "../internal/user-manager";
 import { unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { platformVariable } from "./platform";
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 import { getPropertyFromChatMessage } from '../util/util';
 
 export class PlatformAwareUserDisplayNameVariable {
@@ -145,7 +145,7 @@ export class PlatformAwareUserDisplayNameVariable {
     }
 
     private getPlatform(trigger: Trigger): string {
-        return platformVariable.evaluator(trigger);
+        return detectPlatform(trigger);
     }
 
     private getKickUserManager(): KickUserManager {

@@ -1,7 +1,7 @@
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
 import { IntegrationConstants } from '../../constants';
 import { logger } from '../../main';
-import { platformVariable } from '../platform';
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 
 export const kickSubTypeVariable: ReplaceVariable = {
     definition: {
@@ -14,7 +14,7 @@ export const kickSubTypeVariable: ReplaceVariable = {
         possibleDataOutput: ["text"]
     },
     evaluator: (trigger) => {
-        const platform = platformVariable.evaluator(trigger);
+        const platform = detectPlatform(trigger);
         switch (platform) {
             case "kick":
                 return trigger.metadata.eventData?.subPlan || "kickDefault";

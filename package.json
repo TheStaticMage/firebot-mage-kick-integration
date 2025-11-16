@@ -33,6 +33,7 @@
     },
     "dependencies": {
         "@seald-io/nedb": "^4.1.2",
+        "@thestaticmage/mage-platform-lib-client": "^1.0.0-sha.b1059bf",
         "@twurple/api": "^7.4.0",
         "node-cache": "^5.1.2",
         "node-json-db": "^1.6.0",
