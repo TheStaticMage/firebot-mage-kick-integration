@@ -98,10 +98,6 @@ Here's how to do it:
 
       - **Client Secret**: Copy the client secret from the [Kick app](/doc/kick-app.md) that you created.  _Leave this setting blank if you are using a webhook proxy._
 
-    - **Accounts**
-
-      _We will come back very soon and authorize the accounts. Just skip this for now while you review the rest of the settings._
-
     - **Chat Settings**
 
       - **Chat Feed**: If checked (default), chat messages on Kick will be added to the Firebot chat feed, shown when you click on DASHBOARD in Firebot. Don't worry, this will not forward these messages to Twitch, add them to any on-screen chat overlay, etc. The [Twitch Simulcasting FAQ](https://help.twitch.tv/s/article/simulcasting-guidelines?language=en_US) explicitly notes that it's fine for you to use a tool that combines Twitch and Kick activity for your own use so long as you do not show it on stream:
@@ -154,15 +150,25 @@ Here's how to do it:
 
 4. Click **Save** when you're done. (Save your settings before you proceed to the authentication steps.)
 
-## Authentication of Streamer
+## Authorizing Your Accounts
 
-**Prerequisite:** If you are using the webhook proxy, you must add an entry into the user data file in the format `uuid:username` (using a [UUIDv4](https://www.uuidgenerator.net/version4) and entering the username in lower case). If you are using someone else's webhook proxy, contact the server administrator with the username you wish to authorize as the streamer.
+After you have saved the integration settings, you need to authorize your Kick accounts. The Kick integration provides a dedicated UI for managing account authorization. This can be accessed from Firebot's main interface.
+
+To access the account authorization UI:
+
+1. In Firebot, look for the **Kick Accounts** option in the left menu
+2. This will open the Kick Accounts screen with two sections: "Streamer Connection" and "Bot Connection"
+3. Follow the instructions below to authorize each account
+
+### Authentication of Streamer
+
+**Prerequisite:** If you are using the webhook proxy, contact the server administrator with the username you wish to authorize as the streamer.
 
 You will authenticate to Kick using your browser, which will grant a token to the application. This uses a technology called [OAuth](https://docs.kick.com/getting-started/generating-tokens-oauth2-flow) which ensures that your Kick password is never needed by the Firebot integration.
 
 1. Log in to Kick as the streamer account in your browser.
 
-2. In Firebot, click the **Kick Accounts** link to open the account authorization UI.
+2. Open the Kick Accounts screen (accessed via the **Kick Accounts** link in Firebot).
 
 3. In the "Streamer Connection" section, click the **Authorize Streamer** button.
 
@@ -180,11 +186,11 @@ You will authenticate to Kick using your browser, which will grant a token to th
 
    The modal dialog in Firebot will also automatically close when authorization is complete.
 
-## Authentication of Bot
+### Authentication of Bot
 
 You may _optionally_ choose to have Firebot post chat messages as a separate Kick user, which we will call your "bot." (If you do not configure a separate bot user, chat messages will always be posted as the streamer.)
 
-**Prerequisite:** If you are using the webhook proxy, you must add an entry into the user data file in the format `:username` (that is, a `:` followed by the username in lower case). If you are using someone else's webhook proxy, contact the server administrator with the username you wish to authorize as the bot.
+**Prerequisite:** If you are using the webhook proxy, contact the server administrator with the username you wish to authorize as the bot.
 
 1. Register a separate Kick account for your bot.
 
@@ -208,7 +214,9 @@ You may _optionally_ choose to have Firebot post chat messages as a separate Kic
 
    The modal dialog in Firebot will also automatically close when authorization is complete.
 
-:bulb: We suggest to make your bot a moderator so it can post URLs and bypass any other restrictions. (Note: this bot account does not attempt to take any "moderator" actions in the channel through Firebot.) You can do this using one of these methods:
+### Making the Bot a Moderator
+
+We suggest to make your bot a moderator so it can post URLs and bypass any other restrictions. (Note: this bot account does not attempt to take any "moderator" actions in the channel through Firebot.) You can do this using one of these methods:
 
 - Log in to Kick with the streamer's account and [add the moderator](https://dashboard.kick.com/channel/roles/moderator) under channel roles
 - Log in to Kick with the streamer's account, go to your chat, and type `/mod BOTUSERNAME` (filling in the appropriate bot username, of course)
