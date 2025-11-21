@@ -26,7 +26,14 @@ Additional considerations:
 
 ## Introduction
 
-This [Firebot](https://firebot.app) integration provides chat feed integration, events and effects for the [kick.com](https://kick.com) streaming platform. This allows you to handle events in Firebot from the Kick platform, such as chat messages, commands, follows, subscriptions, and the like. This also provides effects to send messages to Kick, change the title or category of your stream, and ban and unban users (planned).
+This [Firebot](https://firebot.app) integration provides chat feed integration, events and effects for the [kick.com](https://kick.com) streaming platform. This allows you to handle events in Firebot from the Kick platform, such as chat messages, follows, subscriptions, hosts, and more. This also provides effects to send messages to Kick, change the title or category of your stream, and ban and unban users.
+
+## Version Requirements
+
+- **Version 0.7.0 and higher** require Firebot 5.65
+- **Version 0.6.2 and lower** require Firebot 5.64
+
+If you have Firebot 5.64, use version 0.6.2 of this integration. If you have Firebot 5.65 or higher, use version 0.7.0 or higher.
 
 ### Effects
 
@@ -126,7 +133,7 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 
 - Firebot's viewer database uses Twitch user IDs as primary keys and assumes every user is from Twitch. This rigid design prevents many features that depend on storing information about users (e.g. currency, metadata).
 - Rate limiting (cooldowns) for commands and redeems doesn't work natively. Consider using the [Firebot Rate Limiter](https://github.com/TheStaticMage/firebot-rate-limiter) if needed.
-- Many built-in Firebot variables, filters and effects are hard-coded to be available only to specific Twitch events. This means that variables you'd expect to work just won't for the Kick events (e.g. `$moderator` is not available for ban events and `$chatMessage` will not contain the Kick chat message). This limitation is removed in Firebot 5.65, which is currently available as nightly releases. Until that is officially released, we have variables that work with the Kick events (e.g. `$kickModerator`, `$kickChatMessage`).
+- Firebot 5.64 and earlier do not allow standard variables like `$moderator` and `$chatMessage` to work with Kick events. Use Kick-specific aliases instead (e.g. `$kickModerator`, `$kickChatMessage`). Firebot 5.65 and higher with version 0.7.0 or higher of the integration provides full variable support for Kick events.
 - Slash commands in the Firebot chat (e.g. `/clear`) only apply to Twitch. (There aren't Kick API endpoints for most of these anyway.)
 - You won't be able to add a Kick user to a custom role via the Firebot GUI, because Firebot does a Twitch lookup on whatever you type. It is, however, possible to have events add Kick users to custom roles. You can remove Kick users from custom roles through the GUI.
 
