@@ -1,5 +1,12 @@
 # Upgrading
 
+## Version Requirements
+
+- **Version 0.7.0 and higher** require Firebot 5.65
+- **Version 0.6.2 and lower** require Firebot 5.64
+
+If you have Firebot 5.64, stay with version 0.6.2 of this integration. If you upgrade to Firebot 5.65 or higher, upgrade to version 0.7.0 or higher of this integration.
+
 ## Versioning Philosophy
 
 - A **patch release** changes the last number (e.g. `0.0.3` -> `0.0.4`). These releases may fix bugs or add features, but your existing setup should continue to work just fine. _You may review the upgrade notes for any specific information, e.g. to take advantage of new features._

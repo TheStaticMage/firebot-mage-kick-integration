@@ -6,6 +6,13 @@
 
 **THIS IS NOT ASSOCIATED WITH FIREBOT AND IS NOT ENDORSED OR SUPPORTED BY THEIR DEVELOPERS OR ANYONE ELSE.**
 
+## Version Requirements
+
+- **Version 0.7.0 and higher** require Firebot 5.65
+- **Version 0.6.2 and lower** require Firebot 5.64
+
+If you have Firebot 5.64, use version 0.6.2 of this integration. If you have Firebot 5.65 or higher, use version 0.7.0 or higher.
+
 ## Kick Integration Setup
 
 You have these choices for how this integration will receive events from Kick's servers. Choose exactly one.
