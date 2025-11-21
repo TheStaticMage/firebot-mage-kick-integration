@@ -6,6 +6,8 @@ export const IntegrationConstants = {
     KICK_API_SERVER: "https://api.kick.com",
     KICK_AUTH_SERVER: "https://id.kick.com",
     PUSHER_APP_KEY: "32cbd69e4b950bf97679",
+    PLATFORM_LIB_MIN_VERSION: "0.0.1", // Human readable "minimum version"
+    PLATFORM_LIB_VERSION_CONSTRAINT: ">= 0.0.1", // Actual semver constraint for checking
     STREAMER_SCOPES: [
         "user:read",
         "channel:read",

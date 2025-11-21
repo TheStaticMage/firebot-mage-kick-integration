@@ -2,6 +2,7 @@ import { Firebot, RunRequest } from '@crowbartools/firebot-custom-scripts-types'
 import { Logger } from '@crowbartools/firebot-custom-scripts-types/types/modules/logger';
 import { IntegrationConstants } from './constants';
 import { definition, integration } from './integration';
+import { checkPlatformLibCompatibility } from './platform-lib-checker';
 
 export let firebot: RunRequest<any>;
 export let logger: LogWrapper;
@@ -22,10 +23,23 @@ const script: Firebot.CustomScript = {
     getDefaultParameters: () => {
         return {};
     },
-    run: (runRequest: RunRequest<any>) => {
+    run: async (runRequest: RunRequest<any>) => {
         firebot = runRequest;
         logger = new LogWrapper(runRequest.modules.logger);
         logger.info(`Mage Kick Integration v${scriptVersion} initializing...`);
+
+        // Check for platform-lib compatibility
+        const compatibilityCheck = await checkPlatformLibCompatibility(
+            runRequest,
+            logger
+        );
+
+        if (!compatibilityCheck.success) {
+            const { frontendCommunicator } = runRequest.modules;
+            frontendCommunicator.send("error", `Kick Integration: ${compatibilityCheck.errorMessage}`);
+            logger.error(`Platform-lib compatibility check failed: ${compatibilityCheck.errorMessage}`);
+            return;
+        }
 
         const { integrationManager } = runRequest.modules;
         integrationManager.registerIntegration({ definition, integration });
@@ -34,7 +48,7 @@ const script: Firebot.CustomScript = {
 
 export default script;
 
-class LogWrapper {
+export class LogWrapper {
     private _logger: Logger;
 
     constructor(inLogger: Logger) {
