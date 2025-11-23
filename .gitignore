@@ -32,3 +32,6 @@ node_modules/
 
 # AI tooling
 /plans/
+/.claude
+/.github/copilot-instructions.md
+/AGENTS.md
