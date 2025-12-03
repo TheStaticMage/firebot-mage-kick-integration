@@ -25,7 +25,6 @@ import { Kick } from "./internal/kick";
 import { Poller } from "./internal/poll";
 import { KickPusher } from "./internal/pusher/pusher";
 import { reflectorExtension } from "./internal/reflector";
-import { requireVersion } from "./internal/version";
 import { getConnectionStatusMessage } from "./internal/connection-utils";
 import { KickConnection, ConnectionUpdateData, ConnectionStateUpdate } from "./shared/types";
 import { firebot, logger } from "./main";
@@ -315,52 +314,46 @@ export class KickIntegration extends EventEmitter {
         const { restrictionManager } = firebot.modules;
         restrictionManager.registerRestriction(platformRestriction);
 
-        // Twitch filters and variables (adding events to filters and variables was added in Firebot 5.65+)
-        // via commit https://github.com/crowbartools/Firebot/commit/55744f55095d6d6ca791adced534c5a6fad37119
-        try {
-            requireVersion("5.65.0");
-
-            // UI Extensions
-            const { uiExtensionManager } = firebot.modules;
-            if (uiExtensionManager) {
-                uiExtensionManager.registerUIExtension(reflectorExtension);
-                uiExtensionManager.registerUIExtension(kickAccountsExtension);
-            } else {
-                logger.error("UI Extension Manager module not found. The Kick integration UI extension cannot be registered.");
-            }
-
-            this.registerUIExtensionEvents();
-
-            effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "chat-message");
-            effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
-            effectManager.addEventToEffect("firebot:chat-feed-message-hide", IntegrationConstants.INTEGRATION_ID, "chat-message");
-
-            eventFilterManager.addEventToFilter("firebot:cheerbitsamount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
-            eventFilterManager.addEventToFilter("firebot:raid-viewer-count", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
-            eventFilterManager.addEventToFilter("firebot:raid-viewer-count", IntegrationConstants.INTEGRATION_ID, "raid");
-
-            replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "chat-message");
-            replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "chat-message-deleted");
-            replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
-            replaceVariableManager.addEventToVariable("cheerBitsAmount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
-            replaceVariableManager.addEventToVariable("cheerMessage", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
-            replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "banned");
-            replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "timeout");
-            replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "unbanned");
-            replaceVariableManager.addEventToVariable("modReason", IntegrationConstants.INTEGRATION_ID, "banned");
-            replaceVariableManager.addEventToVariable("modReason", IntegrationConstants.INTEGRATION_ID, "timeout");
-            replaceVariableManager.addEventToVariable("raidTargetUserDisplayName", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
-            replaceVariableManager.addEventToVariable("raidTargetUserId", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
-            replaceVariableManager.addEventToVariable("raidTargetUsername", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
-            replaceVariableManager.addEventToVariable("raidViewerCount", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
-            replaceVariableManager.addEventToVariable("raidViewerCount", IntegrationConstants.INTEGRATION_ID, "raid");
-            replaceVariableManager.addEventToVariable("rewardId", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
-            replaceVariableManager.addEventToVariable("rewardMessage", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
-            replaceVariableManager.addEventToVariable("rewardName", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
-            replaceVariableManager.addEventToVariable("timeoutDuration", IntegrationConstants.INTEGRATION_ID, "timeout");
-        } catch (error) {
-            logger.warn(`This version of Firebot does not support mapping certain Twitch filters and variables. Please update to Firebot 5.65 or later to enable these features: ${error}`);
+        // UI Extensions
+        const { uiExtensionManager } = firebot.modules;
+        if (uiExtensionManager) {
+            uiExtensionManager.registerUIExtension(reflectorExtension);
+            uiExtensionManager.registerUIExtension(kickAccountsExtension);
+        } else {
+            logger.error("UI Extension Manager module not found. The Kick integration UI extension cannot be registered.");
         }
+
+        this.registerUIExtensionEvents();
+
+        // Add events to effects, filters, and variables (new Firebot 5.65+ feature)
+
+        effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "chat-message");
+        effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
+        effectManager.addEventToEffect("firebot:chat-feed-message-hide", IntegrationConstants.INTEGRATION_ID, "chat-message");
+
+        eventFilterManager.addEventToFilter("firebot:cheerbitsamount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
+        eventFilterManager.addEventToFilter("firebot:raid-viewer-count", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
+        eventFilterManager.addEventToFilter("firebot:raid-viewer-count", IntegrationConstants.INTEGRATION_ID, "raid");
+
+        replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "chat-message");
+        replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "chat-message-deleted");
+        replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
+        replaceVariableManager.addEventToVariable("cheerBitsAmount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
+        replaceVariableManager.addEventToVariable("cheerMessage", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
+        replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "banned");
+        replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "timeout");
+        replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "unbanned");
+        replaceVariableManager.addEventToVariable("modReason", IntegrationConstants.INTEGRATION_ID, "banned");
+        replaceVariableManager.addEventToVariable("modReason", IntegrationConstants.INTEGRATION_ID, "timeout");
+        replaceVariableManager.addEventToVariable("raidTargetUserDisplayName", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
+        replaceVariableManager.addEventToVariable("raidTargetUserId", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
+        replaceVariableManager.addEventToVariable("raidTargetUsername", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
+        replaceVariableManager.addEventToVariable("raidViewerCount", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
+        replaceVariableManager.addEventToVariable("raidViewerCount", IntegrationConstants.INTEGRATION_ID, "raid");
+        replaceVariableManager.addEventToVariable("rewardId", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
+        replaceVariableManager.addEventToVariable("rewardMessage", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
+        replaceVariableManager.addEventToVariable("rewardName", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
+        replaceVariableManager.addEventToVariable("timeoutDuration", IntegrationConstants.INTEGRATION_ID, "timeout");
     }
 
     async connect() {

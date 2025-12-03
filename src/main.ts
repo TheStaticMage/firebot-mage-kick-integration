@@ -1,5 +1,6 @@
 import { Firebot, RunRequest } from '@crowbartools/firebot-custom-scripts-types';
 import { Logger } from '@crowbartools/firebot-custom-scripts-types/types/modules/logger';
+import { satisfies } from 'semver';
 import { IntegrationConstants } from './constants';
 import { definition, integration } from './integration';
 
@@ -25,6 +26,15 @@ const script: Firebot.CustomScript = {
     run: (runRequest: RunRequest<any>) => {
         firebot = runRequest;
         logger = new LogWrapper(runRequest.modules.logger);
+
+        // Check Firebot version compatibility
+        const fbVersion = firebot.firebot.version;
+        logger.debug(`Detected Firebot version: ${fbVersion}`);
+        if (!satisfies(fbVersion, ">= 5.65.0-0", { includePrerelease: true })) {
+            logger.error(`${IntegrationConstants.INTEGRATION_ID} requires Firebot version 5.65.0 or higher (including prereleases). Detected version: ${fbVersion}. Please update Firebot to use this plugin.`);
+            return;
+        }
+
         logger.info(`Mage Kick Integration v${scriptVersion} initializing...`);
 
         const { integrationManager } = runRequest.modules;
