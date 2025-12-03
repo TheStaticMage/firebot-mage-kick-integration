@@ -1,5 +1,6 @@
 /* eslint-disable camelcase */
 import { KickPusher } from '../pusher';
+import { handleMessageDeletedEvent } from '../../../events/message-deleted';
 
 jest.mock('../../../integration', () => {
     return {
@@ -22,6 +23,10 @@ jest.mock('../../../main', () => ({
         error: jest.fn(),
         warn: jest.fn()
     }
+}));
+
+jest.mock('../../../events/message-deleted', () => ({
+    handleMessageDeletedEvent: jest.fn()
 }));
 
 describe('KickPusher.dispatchChannelEvent', () => {
@@ -97,5 +102,22 @@ describe('KickPusher.dispatchChatroomEvent', () => {
         // Restore original mock
         jest.doMock('../../../integration', () => originalModule);
         jest.resetModules();
+    });
+
+    it('parses and forwards message deleted events (string payload)', async () => {
+        const payload = {
+            event: 'App\\Events\\MessageDeletedEvent',
+            data: '{"id":"94bbd762-ae08-40cd-aec8-27956f9bbc11","message":{"id":"8a5db04a-149c-489b-afec-7a2d8ff4084d"},"aiModerated":false,"violatedRules":[]}',
+            channel: 'chatrooms.2346570.v2'
+        };
+
+        await (pusher as any).dispatchChatroomEvent(payload.event, payload.data);
+
+        expect(handleMessageDeletedEvent).toHaveBeenCalledWith({
+            id: '94bbd762-ae08-40cd-aec8-27956f9bbc11',
+            message: { id: '8a5db04a-149c-489b-afec-7a2d8ff4084d' },
+            aiModerated: false,
+            violatedRules: []
+        });
     });
 });

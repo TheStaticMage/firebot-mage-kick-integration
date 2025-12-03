@@ -10,6 +10,7 @@ export const kickChatMessageVariable: ReplaceVariable = {
             "manual": true,
             "event": [
                 "mage-kick-integration:chat-message",
+                "mage-kick-integration:chat-message-deleted",
                 "mage-kick-integration:viewer-arrived"
             ]
         },

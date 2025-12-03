@@ -13,6 +13,7 @@ import { platformVariable } from "../variables/platform";
 const events = [
     "banned",
     "chat-message",
+    "chat-message-deleted",
     "follow",
     "stream-offline",
     "stream-online",

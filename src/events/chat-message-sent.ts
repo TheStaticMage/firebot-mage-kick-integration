@@ -26,7 +26,7 @@ export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<
     }
 
     // Skip duplicate messages here
-    const isRegistered = await integration.kick.chatManager.registerMessage(payload.messageId, 'kick');
+    const isRegistered = await integration.kick.chatManager.registerMessage(payload.messageId, 'kick', firebotChatMessage);
     if (!isRegistered) {
         logger.debug(`Duplicate chat message ignored: id=${payload.messageId}`);
         return;

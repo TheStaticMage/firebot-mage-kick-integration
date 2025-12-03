@@ -12,7 +12,8 @@ export const IntegrationConstants = {
         "channel:write",
         "chat:write",
         "events:subscribe",
-        "moderation:ban"
+        "moderation:ban",
+        "moderation:chat_message:manage"
     ],
     BOT_SCOPES: [
         "user:read",

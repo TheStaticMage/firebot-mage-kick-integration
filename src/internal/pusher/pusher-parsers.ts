@@ -173,6 +173,21 @@ export function parseStopStreamBroadcast(): LivestreamStatusUpdated {
     };
 }
 
+export function parseMessageDeletedEvent(data: any): MessageDeletedEvent {
+    const raw = typeof data === "string" ? JSON.parse(data) : data;
+    const messageId = raw?.message?.id;
+    if (typeof messageId !== "string" || messageId === "") {
+        throw new Error("Invalid MessageDeletedEvent payload: missing message.id");
+    }
+
+    return {
+        id: typeof raw?.id === "string" ? raw.id : String(raw?.id ?? ""),
+        message: { id: messageId },
+        aiModerated: Boolean(raw?.aiModerated),
+        violatedRules: Array.isArray(raw?.violatedRules) ? raw.violatedRules : []
+    };
+}
+
 export async function parseGiftSubEvent(data: any): Promise<ChannelGiftSubscription> {
     const d = data as PusherGiftSubEvent;
     // This event only sends the usernames, not the user IDs, of the recipient.

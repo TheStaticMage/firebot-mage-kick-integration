@@ -33,4 +33,4 @@ If you have Firebot 5.64, stay with version 0.6.2 of this integration. If you up
 
 ## Upgrade Notes
 
-(None yet)
+:boom: Version 0.8.0 adds the `moderation:chat_message:manage` scope for the streamer token. After upgrading, you will need to re-authorize the streamer account to enable the Delete Message effect.

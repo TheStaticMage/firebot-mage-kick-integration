@@ -67,6 +67,37 @@ describe('ChatManager', () => {
         expect(await chatManager.registerMessage('msg1', 'kick')).toBe(false);
     });
 
+    it('stores chat message metadata when provided', async () => {
+        const chatMessage = {
+            id: 'kick-msg-1',
+            username: 'user@kick',
+            userId: 'k123',
+            userDisplayName: 'User',
+            rawText: 'hello'
+        } as any;
+
+        await chatManager.registerMessage(chatMessage.id, 'kick', chatMessage);
+        expect(chatManager.getChatMessage(chatMessage.id)).toBe(chatMessage);
+
+        chatManager.forgetMessage(chatMessage.id);
+        expect(chatManager.getChatMessage(chatMessage.id)).toBeUndefined();
+        expect(chatManager['messageCacheOrder']).not.toContain(chatMessage.id);
+    });
+
+    it('evicts oldest cached messages beyond limit', async () => {
+        for (let i = 0; i < 101; i++) {
+            const chatMessage = {
+                id: `kick-msg-${i}`,
+                username: `user${i}@kick`
+            } as any;
+            await chatManager.registerMessage(chatMessage.id, 'kick', chatMessage);
+        }
+
+        expect(chatManager.getChatMessage('kick-msg-0')).toBeUndefined();
+        expect(chatManager['messagePlatform']['kick-msg-0']).toBeUndefined();
+        expect(chatManager['messageCacheOrder']).toHaveLength(100);
+    });
+
     it('splits and sends long messages in segments', async () => {
         const longMsg = 'a'.repeat(1200);
         const sendSpy = jest.spyOn<any, any>(chatManager, 'sendChatMessage').mockResolvedValue(undefined);
@@ -661,5 +692,83 @@ describe('ChatManager', () => {
         expect(result).toBe(false);
         expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 5, true, 'timeout reason');
         expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Failed to timeout user: testuser'));
+    });
+});
+
+describe('ChatManager.handleDeleteMessage', () => {
+    let chatManager: ChatManager;
+    let mockKick: any;
+
+    beforeEach(() => {
+        mockKick = {
+            broadcaster: { userId: 'broadcasterId' },
+            httpCallWithTimeout: jest.fn().mockResolvedValue(undefined),
+            getAuthToken: jest.fn().mockReturnValue('authToken')
+        };
+
+        chatManager = new ChatManager(mockKick);
+        jest.clearAllMocks();
+    });
+
+    it('deletes Kick message when platform is kick', async () => {
+        const messageId = 'kick-msg-123';
+        chatManager['messagePlatform'][messageId] = 'kick';
+
+        const result = await chatManager['handleDeleteMessage'](messageId);
+
+        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith(
+            '/public/v1/chat/kick-msg-123',
+            'DELETE',
+            '',
+            null,
+            undefined,
+            'authToken'
+        );
+        expect(logger.debug).toHaveBeenCalledWith('Successfully deleted chat message: kick-msg-123');
+        expect(result).toBe(true);
+    });
+
+    it('returns false for Twitch message', async () => {
+        const messageId = 'twitch-msg-456';
+        chatManager['messagePlatform'][messageId] = 'twitch';
+
+        const result = await chatManager['handleDeleteMessage'](messageId);
+
+        expect(mockKick.httpCallWithTimeout).not.toHaveBeenCalled();
+        expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('is not a Kick message'));
+        expect(result).toBe(false);
+    });
+
+    it('returns false for unknown message platform', async () => {
+        const messageId = 'unknown-msg-789';
+        chatManager['messagePlatform'][messageId] = 'unknown';
+
+        const result = await chatManager['handleDeleteMessage'](messageId);
+
+        expect(mockKick.httpCallWithTimeout).not.toHaveBeenCalled();
+        expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('is not a Kick message'));
+        expect(result).toBe(false);
+    });
+
+    it('returns false for unregistered message ID', async () => {
+        const messageId = 'unregistered-msg';
+
+        const result = await chatManager['handleDeleteMessage'](messageId);
+
+        expect(mockKick.httpCallWithTimeout).not.toHaveBeenCalled();
+        expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('is not a Kick message'));
+        expect(result).toBe(false);
+    });
+
+    it('returns false when API call fails', async () => {
+        const messageId = 'kick-msg-999';
+        chatManager['messagePlatform'][messageId] = 'kick';
+        mockKick.httpCallWithTimeout.mockRejectedValue(new Error('API error'));
+
+        const result = await chatManager['handleDeleteMessage'](messageId);
+
+        expect(mockKick.httpCallWithTimeout).toHaveBeenCalled();
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to delete chat message'));
+        expect(result).toBe(false);
     });
 });

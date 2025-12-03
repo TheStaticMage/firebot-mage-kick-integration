@@ -5,6 +5,7 @@ import { viewerRolesCondition } from "./conditions/viewer-roles";
 import { IntegrationConstants } from "./constants";
 import { chatEffect } from "./effects/chat";
 import { chatPlatformEffect } from "./effects/chat-platform";
+import { deleteChatMessageEffect } from "./effects/delete-chat-message";
 import { maintenanceEffect } from "./effects/maintenance";
 import { moderatorBanEffect } from "./effects/moderator-ban";
 import { moderatorTimeoutEffect } from "./effects/moderator-timeout";
@@ -221,6 +222,7 @@ export class KickIntegration extends EventEmitter {
         const { effectManager } = firebot.modules;
         effectManager.registerEffect(chatEffect);
         effectManager.registerEffect(chatPlatformEffect);
+        effectManager.registerEffect(deleteChatMessageEffect);
         effectManager.registerEffect(maintenanceEffect);
         effectManager.registerEffect(moderatorBanEffect);
         effectManager.registerEffect(moderatorTimeoutEffect);
@@ -338,6 +340,7 @@ export class KickIntegration extends EventEmitter {
             eventFilterManager.addEventToFilter("firebot:raid-viewer-count", IntegrationConstants.INTEGRATION_ID, "raid");
 
             replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "chat-message");
+            replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "chat-message-deleted");
             replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
             replaceVariableManager.addEventToVariable("cheerBitsAmount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
             replaceVariableManager.addEventToVariable("cheerMessage", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");

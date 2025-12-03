@@ -8,7 +8,8 @@ export const viewerRolesFilter: EventFilter = {
     description: "Filter to a given viewer role",
     events: [
         { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "viewer-arrived" },
-        { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "chat-message" }
+        { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "chat-message" },
+        { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "chat-message-deleted" }
     ],
     comparisonTypes: ["include", "doesn't include"],
     valueType: "preset",
