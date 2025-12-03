@@ -2,6 +2,7 @@
 import { AuthManager } from '../internal/auth';
 import { integration } from '../integration';
 import { httpCallWithTimeout } from '../internal/http';
+import { IntegrationConstants } from '../constants';
 
 // Mock dependencies
 jest.mock('../integration');
@@ -132,7 +133,8 @@ describe('AuthManager.handleAuthCallback', () => {
                 access_token: 'streamer-access-token',
                 refresh_token: 'streamer-refresh-token',
                 expires_in: 3600,
-                proxy_poll_key: 'proxy-poll-key'
+                proxy_poll_key: 'proxy-poll-key',
+                scope: IntegrationConstants.STREAMER_SCOPES.join(' ')
             };
             mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
 
@@ -153,7 +155,7 @@ describe('AuthManager.handleAuthCallback', () => {
             expect(mockIntegration.disconnect).toHaveBeenCalled();
             expect(mockIntegration.connect).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for streamer!'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for streamer account!'));
         });
 
         it('should return 400 when streamer lacks proxy_poll_key with webhook proxy', async () => {
@@ -206,7 +208,8 @@ describe('AuthManager.handleAuthCallback', () => {
             const mockResponse = {
                 access_token: 'streamer-access-token',
                 refresh_token: 'streamer-refresh-token',
-                expires_in: 3600
+                expires_in: 3600,
+                scope: IntegrationConstants.STREAMER_SCOPES.join(' ')
             };
             mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
 
@@ -223,7 +226,31 @@ describe('AuthManager.handleAuthCallback', () => {
             expect(mockIntegration.disconnect).toHaveBeenCalled();
             expect(mockIntegration.connect).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for streamer!'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for streamer account!'));
+        });
+
+        it('shows a prominent warning and troubleshooting link when permissions are missing', async () => {
+            const mockResponse = {
+                access_token: 'streamer-access-token',
+                refresh_token: 'streamer-refresh-token',
+                expires_in: 3600,
+                scope: 'user:read'
+            };
+            const verifySpy = jest.spyOn(authManager as any, 'verifyTokenScopes').mockReturnValue(['channel:write', 'chat:write']);
+            mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
+
+            await authManager.handleAuthCallback(mockReq, mockRes);
+
+            expect(verifySpy).toHaveBeenCalled();
+            const sentHtml = (mockRes.send as jest.Mock).mock.calls[0][0];
+            expect(sentHtml).toContain('Kick integration partially authorized for streamer account!');
+            expect(sentHtml).toContain('WARNING: Important permissions were not granted');
+            expect(sentHtml).toContain('Kick app is not set up to request the right permissions');
+            expect(sentHtml).toContain('https://github.com/TheStaticMage/firebot-mage-kick-integration/blob/main/doc/troubleshooting.md');
+            expect(sentHtml).toContain('/integrations/firebot-mage-kick-integration/link/streamer');
+            expect(sentHtml).toContain('Try Again');
+            expect(sentHtml).toContain('channel:write');
+            expect(mockRes.status).toHaveBeenCalledWith(200);
         });
 
         it('should return 500 on HTTP call failure with direct auth', async () => {
@@ -267,7 +294,8 @@ describe('AuthManager.handleAuthCallback', () => {
             const mockResponse = {
                 access_token: 'bot-access-token',
                 refresh_token: 'bot-refresh-token',
-                expires_in: 3600
+                expires_in: 3600,
+                scope: IntegrationConstants.BOT_SCOPES.join(' ')
                 // No proxy_poll_key for bot
             };
             mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
@@ -290,7 +318,7 @@ describe('AuthManager.handleAuthCallback', () => {
             expect(mockIntegration.disconnect).toHaveBeenCalled();
             expect(mockIntegration.connect).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for bot!'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for bot account!'));
         });
 
         it('should return 400 when bot has proxy_poll_key with webhook proxy', async () => {
@@ -400,7 +428,8 @@ describe('AuthManager.handleAuthCallback', () => {
             const mockResponse = {
                 access_token: 'bot-access-token',
                 refresh_token: 'bot-refresh-token',
-                expires_in: 3600
+                expires_in: 3600,
+                scope: IntegrationConstants.BOT_SCOPES.join(' ')
             };
             mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
 
@@ -418,7 +447,7 @@ describe('AuthManager.handleAuthCallback', () => {
             expect(mockIntegration.disconnect).toHaveBeenCalled();
             expect(mockIntegration.connect).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for bot!'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for bot account!'));
         });
 
         it('should return 400 when broadcaster is not available for bot authorization', async () => {

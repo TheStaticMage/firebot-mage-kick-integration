@@ -562,7 +562,8 @@ export class KickIntegration extends EventEmitter {
             refreshToken: "",
             tokenExpiresAt: streamerStatus.tokenExpiresAt,
             ready: streamerStatus.ready,
-            username: ""
+            username: "",
+            missingScopes: streamerStatus.missingScopes
         };
 
         const botConnection: KickConnection = {
@@ -571,19 +572,22 @@ export class KickIntegration extends EventEmitter {
             refreshToken: "",
             tokenExpiresAt: botStatus.tokenExpiresAt,
             ready: botStatus.ready,
-            username: ""
+            username: "",
+            missingScopes: botStatus.missingScopes
         };
 
         const streamerData: ConnectionUpdateData = {
             ready: streamerStatus.ready,
             status: getConnectionStatusMessage(streamerConnection, this.connected),
-            tokenExpiresAt: streamerStatus.tokenExpiresAt
+            tokenExpiresAt: streamerStatus.tokenExpiresAt,
+            missingScopes: streamerStatus.missingScopes
         };
 
         const botData: ConnectionUpdateData = {
             ready: botStatus.ready,
             status: getConnectionStatusMessage(botConnection, this.connected),
-            tokenExpiresAt: botStatus.tokenExpiresAt
+            tokenExpiresAt: botStatus.tokenExpiresAt,
+            missingScopes: botStatus.missingScopes
         };
 
         const update: ConnectionStateUpdate = {

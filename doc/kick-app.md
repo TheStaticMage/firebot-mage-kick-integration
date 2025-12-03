@@ -16,14 +16,7 @@ If you are going to use Firebot without the [Webhook Proxy](/server/), follow th
     - App Description: Firebot access to Kick API
     - Redirect URL: `http://localhost:7472/integrations/firebot-mage-kick-integration/auth/callback`
     - Enable webhooks: (Unchecked)
-    - Scopes Requested:
-        - [x] Read user information (including email address)
-        - [x] Update channel information
-        - [x] Execute moderation actions for moderators
-        - [ ] Read stream key
-        - [x] Write to Chat feed
-        - [x] Read channel information
-        - [x] Subscribe to events (read chat feed, follows, subscribes, gifts)
+    - Scopes Requested: Check all except "Read stream key"
 
 5. Click **Create App**
 

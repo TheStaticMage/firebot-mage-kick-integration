@@ -12,12 +12,14 @@ const kickAccountsPage: AngularJsPage = {
             streamer: {
                 ready: false,
                 status: "Authorization required",
-                tokenExpiresAt: undefined
+                tokenExpiresAt: undefined,
+                missingScopes: []
             },
             bot: {
                 ready: false,
                 status: "Authorization required",
-                tokenExpiresAt: undefined
+                tokenExpiresAt: undefined,
+                missingScopes: []
             }
         };
 
@@ -33,7 +35,17 @@ const kickAccountsPage: AngularJsPage = {
 
         // Listen for connection updates
         backendCommunicator.on("kick:connections-update", (data: any) => {
-            $scope.connections = data;
+            $scope.connections = {
+                ...data,
+                streamer: {
+                    ...data.streamer,
+                    missingScopes: data.streamer.missingScopes || []
+                },
+                bot: {
+                    ...data.bot,
+                    missingScopes: data.bot.missingScopes || []
+                }
+            };
 
             // Close modal if authorization completed
             if ($scope.currentAuthType && $scope.connections[$scope.currentAuthType].ready) {
@@ -239,8 +251,16 @@ const kickAccountsPage: AngularJsPage = {
                     {{ connections.streamer.status }}
                 </div>
 
+                <div class="missing-scope-block" ng-if="connections.streamer.missingScopes.length">
+                    <div class="missing-title">Missing Kick permissions</div>
+                    <p class="missing-copy">Update your Kick app scopes and authorize again so chat tools and channel controls work correctly.</p>
+                    <ul>
+                        <li ng-repeat="scope in connections.streamer.missingScopes track by scope"><code>{{ scope }}</code></li>
+                    </ul>
+                </div>
+
                 <div class="button-group">
-                    <button class="btn btn-authorize" ng-click="authorizeStreamer()" ng-disabled="connections.streamer.tokenExpiresAt">
+                    <button class="btn btn-authorize" ng-click="authorizeStreamer()" ng-disabled="connections.streamer.tokenExpiresAt && !connections.streamer.missingScopes.length">
                         Authorize Streamer
                     </button>
                     <button class="btn btn-deauthorize" ng-click="deauthorizeStreamer()" ng-disabled="!connections.streamer.tokenExpiresAt">
@@ -262,8 +282,16 @@ const kickAccountsPage: AngularJsPage = {
                     {{ connections.bot.status }}
                 </div>
 
+                <div class="missing-scope-block" ng-if="connections.bot.missingScopes.length">
+                    <div class="missing-title">Missing Kick permissions</div>
+                    <p class="missing-copy">Turn on these permissions for the bot account, then authorize again.</p>
+                    <ul>
+                        <li ng-repeat="scope in connections.bot.missingScopes track by scope"><code>{{ scope }}</code></li>
+                    </ul>
+                </div>
+
                 <div class="button-group">
-                    <button class="btn btn-authorize" ng-click="authorizeBot()" ng-disabled="connections.bot.tokenExpiresAt">
+                    <button class="btn btn-authorize" ng-click="authorizeBot()" ng-disabled="connections.bot.tokenExpiresAt && !connections.bot.missingScopes.length">
                         Authorize Bot
                     </button>
                     <button class="btn btn-deauthorize" ng-click="deauthorizeBot()" ng-disabled="!connections.bot.tokenExpiresAt">
@@ -364,6 +392,31 @@ const kickAccountsPage: AngularJsPage = {
                 border-radius: 4px;
                 font-size: 14px;
                 color: #666;
+            }
+
+            .kick-accounts-container .missing-scope-block {
+                margin: 10px 0 0;
+                padding: 12px 14px;
+                background: #fff6e6;
+                border: 1px solid #e0a800;
+                border-radius: 6px;
+                color: #5b3b00;
+            }
+
+            .kick-accounts-container .missing-title {
+                font-weight: 700;
+                margin-bottom: 6px;
+                font-size: 14px;
+            }
+
+            .kick-accounts-container .missing-copy {
+                margin: 0 0 6px;
+                font-size: 13px;
+            }
+
+            .kick-accounts-container .missing-scope-block ul {
+                margin: 0;
+                padding-left: 18px;
             }
 
             .kick-accounts-container .button-group {

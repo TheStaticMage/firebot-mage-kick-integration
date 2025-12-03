@@ -174,6 +174,22 @@ describe('connection-utils', () => {
             expect(message).toBe('Ready');
         });
 
+        it('returns missing scopes message when ready but scopes are missing', () => {
+            const connection: KickConnection = {
+                type: 'streamer',
+                accessToken: 'access-token',
+                refreshToken: 'refresh-token',
+                tokenExpiresAt: 0,
+                ready: true,
+                username: 'test-user',
+                missingScopes: ['chatroom:read', 'chatroom:write']
+            };
+
+            const message = getConnectionStatusMessage(connection, true);
+
+            expect(message).toBe('Partial - Missing permissions');
+        });
+
         it('formats expiration date correctly when tokenExpiresAt is set', () => {
             const expiryTime = new Date(2025, 11, 25, 14, 30, 45).getTime(); // Dec 25, 2025 2:30:45 PM
             const connection: KickConnection = {
@@ -190,6 +206,22 @@ describe('connection-utils', () => {
             // Message should follow format: "Ready - Token expires YYYY-MM-DD at HH:mm:ss"
             expect(message).toContain('Ready - Token expires');
             expect(message).toMatch(/2025-12-25 at 14:30:45/);
+        });
+
+        it('prioritizes missing scopes over expiration', () => {
+            const connection: KickConnection = {
+                type: 'streamer',
+                accessToken: 'access-token',
+                refreshToken: 'refresh-token',
+                tokenExpiresAt: Date.now() + 100000,
+                ready: true,
+                username: 'test-user',
+                missingScopes: ['chat:write']
+            };
+
+            const message = getConnectionStatusMessage(connection, true);
+
+            expect(message).toBe('Partial - Missing permissions');
         });
 
         it('handles edge case with tokenExpiresAt at midnight', () => {

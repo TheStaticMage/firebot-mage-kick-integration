@@ -23,6 +23,11 @@ export function getConnectionStatusMessage(connection: KickConnection, isIntegra
         return "Awaiting connection";
     }
 
+    const missingScopes = connection.missingScopes || [];
+    if (missingScopes.length > 0) {
+        return "Partial - Missing permissions";
+    }
+
     if (connection.tokenExpiresAt) {
         const expiresAt = new Date(connection.tokenExpiresAt);
         const year = expiresAt.getFullYear();
