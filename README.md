@@ -156,6 +156,8 @@ This integration is experimental and aimed at users comfortable with technical s
 
 There is no official support available. Using this may jeopardize Firebot's stability or future upgrades. Always maintain reliable backups.
 
+[Troubleshooting guide](/doc/troubleshooting.md)
+
 ## Contributions
 
 Contributions are welcome via [Pull Requests](https://github.com/TheStaticMage/firebot-mage-kick-integration/pulls). I _strongly suggest_ that you contact me before making significant changes, because I'd feel really bad if you spent a lot of time working on something that is not consistent with my vision for the project. Please refer to the [Contribution Guidelines](/.github/contributing.md) for specifics.

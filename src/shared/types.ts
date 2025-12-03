@@ -207,6 +207,7 @@ export interface KickConnection {
     tokenExpiresAt: number;
     ready: boolean;
     username: string;
+    missingScopes?: string[];
 }
 
 export interface ConnectionStatus {
@@ -214,12 +215,14 @@ export interface ConnectionStatus {
     status: string;
     tokenExpiresAt: number;
     username: string;
+    missingScopes?: string[];
 }
 
 export interface ConnectionUpdateData {
     ready: boolean;
     status: string;
     tokenExpiresAt: number;
+    missingScopes: string[];
 }
 
 export interface ConnectionStateUpdate {

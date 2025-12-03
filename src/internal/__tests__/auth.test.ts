@@ -23,6 +23,7 @@ jest.mock('../http', () => ({
 import { AuthManager } from '../auth';
 import { httpCallWithTimeout } from '../http';
 import { integration } from '../../integration';
+import { IntegrationConstants } from '../../constants';
 
 describe('AuthManager', () => {
     let authManager: AuthManager;
@@ -471,7 +472,8 @@ describe('AuthManager', () => {
             mockHttpCallWithTimeout.mockResolvedValueOnce({
                 'access_token': 'bot-token',
                 'refresh_token': 'bot-refresh',
-                'expires_in': 3600
+                'expires_in': 3600,
+                'scope': IntegrationConstants.BOT_SCOPES.join(' ')
             });
 
             // Mock bot user verification returning same user ID as broadcaster
@@ -511,7 +513,8 @@ describe('AuthManager', () => {
             mockHttpCallWithTimeout.mockResolvedValueOnce({
                 'access_token': 'bot-token',
                 'refresh_token': 'bot-refresh',
-                'expires_in': 3600
+                'expires_in': 3600,
+                'scope': IntegrationConstants.BOT_SCOPES.join(' ')
             });
 
             // Mock bot user verification returning different user ID
@@ -542,7 +545,7 @@ describe('AuthManager', () => {
             await authManager.handleAuthCallback(req, res);
 
             expect(res.status).toHaveBeenCalledWith(200);
-            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for bot!'));
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for bot account!'));
         });
 
         it('handles verification error during bot authorization', async () => {
@@ -550,7 +553,8 @@ describe('AuthManager', () => {
             mockHttpCallWithTimeout.mockResolvedValueOnce({
                 'access_token': 'bot-token',
                 'refresh_token': 'bot-refresh',
-                'expires_in': 3600
+                'expires_in': 3600,
+                'scope': IntegrationConstants.BOT_SCOPES.join(' ')
             });
 
             // Mock bot user verification failure
@@ -587,7 +591,8 @@ describe('AuthManager', () => {
             mockHttpCallWithTimeout.mockResolvedValueOnce({
                 'access_token': 'bot-token',
                 'refresh_token': 'bot-refresh',
-                'expires_in': 3600
+                'expires_in': 3600,
+                'scope': IntegrationConstants.BOT_SCOPES.join(' ')
             });
 
             // Set up callback request
@@ -618,7 +623,8 @@ describe('AuthManager', () => {
             mockHttpCallWithTimeout.mockResolvedValueOnce({
                 'access_token': 'streamer-token',
                 'refresh_token': 'streamer-refresh',
-                'expires_in': 3600
+                'expires_in': 3600,
+                'scope': IntegrationConstants.STREAMER_SCOPES.join(' ')
             });
 
             // Set up callback request
@@ -642,6 +648,43 @@ describe('AuthManager', () => {
 
             expect(res.status).toHaveBeenCalledWith(400);
             expect(res.send).toHaveBeenCalledWith(expect.stringContaining('it is configured as a bot account in the webhook proxy'));
+        });
+
+        it('sends critical error when streamer scopes are missing', async () => {
+            mockHttpCallWithTimeout.mockResolvedValueOnce({
+                'access_token': 'streamer-token',
+                'refresh_token': 'streamer-refresh',
+                'expires_in': 3600,
+                'scope': 'user:read chat:write',
+                'proxy_poll_key': 'test-proxy-key'
+            });
+
+            const req = {
+                query: {
+                    code: 'auth-code',
+                    state: 'test-state'
+                }
+            };
+
+            const res = {
+                status: jest.fn().mockReturnThis(),
+                send: jest.fn()
+            };
+
+            (authManager as any).tokenRequests['test-state'] = 'streamer';
+            (authManager as any).codeChallenges['test-state'] = 'code-verifier';
+
+            await authManager.handleAuthCallback(req, res);
+
+            expect(res.status).toHaveBeenCalledWith(200);
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('partially authorized for streamer account'));
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Important permissions were not granted'));
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Try Again'));
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('/integrations/firebot-mage-kick-integration/link/streamer'));
+            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('https://github.com/TheStaticMage/firebot-mage-kick-integration/blob/main/doc/troubleshooting.md'));
+            expect(mockIntegration.sendCriticalErrorNotification).toHaveBeenCalledWith(
+                expect.stringContaining('streamer token is missing required scopes')
+            );
         });
 
         it('verifyBotUser returns correct user information', async () => {
@@ -748,7 +791,8 @@ describe('AuthManager', () => {
                 mockHttpCall.mockResolvedValue({
                     access_token: 'new-streamer-access-token',
                     refresh_token: 'new-streamer-refresh-token',
-                    expires_in: 3600
+                    expires_in: 3600,
+                    scope: IntegrationConstants.STREAMER_SCOPES.join(' ')
                 });
 
                 await (authManager as any).refreshAuthTokenReal('streamer');
@@ -773,7 +817,8 @@ describe('AuthManager', () => {
                 mockHttpCall.mockResolvedValue({
                     access_token: 'new-bot-access-token',
                     refresh_token: 'new-bot-refresh-token',
-                    expires_in: 3600
+                    expires_in: 3600,
+                    scope: IntegrationConstants.BOT_SCOPES.join(' ')
                 });
 
                 await (authManager as any).refreshAuthTokenReal('bot');
@@ -811,7 +856,8 @@ describe('AuthManager', () => {
                 mockHttpCall.mockResolvedValue({
                     access_token: 'new-access-token',
                     refresh_token: 'new-refresh-token',
-                    expires_in: 3600
+                    expires_in: 3600,
+                    scope: IntegrationConstants.STREAMER_SCOPES.join(' ')
                 });
 
                 await (authManager as any).refreshAuthTokenReal('streamer');
@@ -824,6 +870,36 @@ describe('AuthManager', () => {
                         refresh_token: "streamer-refresh-token"
                     })
                 });
+            });
+
+            it('should surface missing streamer scopes during refresh', async () => {
+                mockHttpCall.mockResolvedValue({
+                    access_token: 'new-streamer-access-token',
+                    refresh_token: 'new-streamer-refresh-token',
+                    expires_in: 3600,
+                    scope: 'user:read'
+                });
+
+                await (authManager as any).refreshAuthTokenReal('streamer');
+                expect(mockIntegration.sendCriticalErrorNotification).toHaveBeenCalledWith(
+                    expect.stringContaining('streamer token is missing required scopes')
+                );
+                expect(mockIntegration.kick.setAuthToken).toHaveBeenCalledWith('new-streamer-access-token');
+            });
+
+            it('should surface missing bot scopes during refresh', async () => {
+                mockHttpCall.mockResolvedValue({
+                    access_token: 'new-bot-access-token',
+                    refresh_token: 'new-bot-refresh-token',
+                    expires_in: 3600,
+                    scope: 'user:read'
+                });
+
+                await (authManager as any).refreshAuthTokenReal('bot');
+                expect(mockIntegration.sendCriticalErrorNotification).toHaveBeenCalledWith(
+                    expect.stringContaining('bot token is missing required scopes')
+                );
+                expect(mockIntegration.kick.setBotAuthToken).toHaveBeenCalledWith('new-bot-access-token');
             });
         });
 
@@ -847,7 +923,8 @@ describe('AuthManager', () => {
                 mockHttpCall.mockResolvedValue({
                     access_token: 'new-streamer-access-token',
                     refresh_token: 'new-streamer-refresh-token',
-                    expires_in: 3600
+                    expires_in: 3600,
+                    scope: IntegrationConstants.STREAMER_SCOPES.join(' ')
                 });
 
                 await (authManager as any).refreshAuthTokenReal('streamer');
@@ -869,7 +946,8 @@ describe('AuthManager', () => {
                 mockHttpCall.mockResolvedValue({
                     access_token: 'new-bot-access-token',
                     refresh_token: 'new-bot-refresh-token',
-                    expires_in: 3600
+                    expires_in: 3600,
+                    scope: IntegrationConstants.BOT_SCOPES.join(' ')
                 });
 
                 await (authManager as any).refreshAuthTokenReal('bot');
@@ -966,7 +1044,8 @@ describe('AuthManager', () => {
                 mockHttpCall.mockResolvedValue({
                     access_token: 'new-access-token',
                     refresh_token: 'new-refresh-token',
-                    expires_in: 3600
+                    expires_in: 3600,
+                    scope: IntegrationConstants.STREAMER_SCOPES.join(' ')
                 });
 
                 await (authManager as any).refreshAuthTokenReal('streamer');
@@ -1002,7 +1081,8 @@ describe('AuthManager', () => {
                 mockHttpCall.mockResolvedValue({
                     access_token: 'new-access-token',
                     refresh_token: 'new-refresh-token',
-                    expires_in: 3600
+                    expires_in: 3600,
+                    scope: IntegrationConstants.STREAMER_SCOPES.join(' ')
                 });
 
                 await (authManager as any).refreshAuthTokenReal('streamer');
@@ -1026,6 +1106,7 @@ describe('AuthManager', () => {
 
             expect(status.ready).toBe(true);
             expect(status.tokenExpiresAt).toBe(0);
+            expect(status.missingScopes).toEqual([]);
         });
 
         it('returns ready: false when streamerRefreshToken is missing', () => {
@@ -1036,6 +1117,7 @@ describe('AuthManager', () => {
             const status = authManager.getStreamerConnectionStatus();
 
             expect(status.ready).toBe(false);
+            expect(status.missingScopes).toEqual([]);
         });
 
         it('returns ready: false when streamerAuthToken is missing', () => {
@@ -1046,6 +1128,7 @@ describe('AuthManager', () => {
             const status = authManager.getStreamerConnectionStatus();
 
             expect(status.ready).toBe(false);
+            expect(status.missingScopes).toEqual([]);
         });
 
         it('returns tokenExpiresAt from streamerTokenExpiresAt', () => {
@@ -1057,6 +1140,7 @@ describe('AuthManager', () => {
             const status = authManager.getStreamerConnectionStatus();
 
             expect(status.tokenExpiresAt).toBe(expiryTime);
+            expect(status.missingScopes).toEqual([]);
         });
 
         it('returns tokenExpiresAt as 0 when not set', () => {
@@ -1067,6 +1151,18 @@ describe('AuthManager', () => {
             const status = authManager.getStreamerConnectionStatus();
 
             expect(status.tokenExpiresAt).toBe(0);
+            expect(status.missingScopes).toEqual([]);
+        });
+
+        it('surfaces missing scopes when present', () => {
+            (authManager as any).streamerRefreshToken = 'refresh-token';
+            (authManager as any).streamerAuthToken = 'auth-token';
+            (authManager as any).streamerTokenExpiresAt = 0;
+            (authManager as any).streamerMissingScopes = ['chat:write'];
+
+            const status = authManager.getStreamerConnectionStatus();
+
+            expect(status.missingScopes).toEqual(['chat:write']);
         });
     });
 
@@ -1080,6 +1176,7 @@ describe('AuthManager', () => {
 
             expect(status.ready).toBe(true);
             expect(status.tokenExpiresAt).toBe(0);
+            expect(status.missingScopes).toEqual([]);
         });
 
         it('returns ready: false when botRefreshToken is missing', () => {
@@ -1090,6 +1187,7 @@ describe('AuthManager', () => {
             const status = authManager.getBotConnectionStatus();
 
             expect(status.ready).toBe(false);
+            expect(status.missingScopes).toEqual([]);
         });
 
         it('returns ready: false when botAuthToken is missing', () => {
@@ -1100,6 +1198,7 @@ describe('AuthManager', () => {
             const status = authManager.getBotConnectionStatus();
 
             expect(status.ready).toBe(false);
+            expect(status.missingScopes).toEqual([]);
         });
 
         it('returns tokenExpiresAt from botTokenExpiresAt', () => {
@@ -1111,6 +1210,7 @@ describe('AuthManager', () => {
             const status = authManager.getBotConnectionStatus();
 
             expect(status.tokenExpiresAt).toBe(expiryTime);
+            expect(status.missingScopes).toEqual([]);
         });
 
         it('returns tokenExpiresAt as 0 when not set', () => {
@@ -1121,6 +1221,18 @@ describe('AuthManager', () => {
             const status = authManager.getBotConnectionStatus();
 
             expect(status.tokenExpiresAt).toBe(0);
+            expect(status.missingScopes).toEqual([]);
+        });
+
+        it('surfaces missing scopes when present', () => {
+            (authManager as any).botRefreshToken = 'bot-refresh-token';
+            (authManager as any).botAuthToken = 'bot-auth-token';
+            (authManager as any).botTokenExpiresAt = 0;
+            (authManager as any).botMissingScopes = ['chat:write', 'chat:read'];
+
+            const status = authManager.getBotConnectionStatus();
+
+            expect(status.missingScopes).toEqual(['chat:write', 'chat:read']);
         });
     });
 
@@ -1139,6 +1251,14 @@ describe('AuthManager', () => {
             authManager.deauthorizeStreamer();
 
             expect((authManager as any).streamerAuthToken).toBe('');
+        });
+
+        it('clears streamerMissingScopes', () => {
+            (authManager as any).streamerMissingScopes = ['chat:write'];
+
+            authManager.deauthorizeStreamer();
+
+            expect((authManager as any).streamerMissingScopes).toEqual([]);
         });
 
         it('sets streamerTokenExpiresAt to 0', () => {
@@ -1208,6 +1328,14 @@ describe('AuthManager', () => {
             authManager.deauthorizeBot();
 
             expect((authManager as any).botAuthToken).toBe('');
+        });
+
+        it('clears botMissingScopes', () => {
+            (authManager as any).botMissingScopes = ['chat:write'];
+
+            authManager.deauthorizeBot();
+
+            expect((authManager as any).botMissingScopes).toEqual([]);
         });
 
         it('sets botTokenExpiresAt to 0', () => {
