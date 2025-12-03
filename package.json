@@ -34,8 +34,10 @@
     "dependencies": {
         "@seald-io/nedb": "^4.1.2",
         "@twurple/api": "^7.4.0",
+        "@types/semver": "^7.7.1",
         "node-cache": "^5.1.2",
         "node-json-db": "^1.6.0",
-        "pusher-js": "^8.4.0"
+        "pusher-js": "^8.4.0",
+        "semver": "^7.7.3"
     }
 }

@@ -38,51 +38,6 @@ describe('reflectEvent', () => {
         jest.useRealTimers();
     });
 
-    describe('version checking', () => {
-        it('should throw error for Firebot version < 5.65', async () => {
-            (firebot.firebot as any).version = '5.64.0';
-
-            await expect(reflectEvent('test-event', { data: 'test' }))
-                .rejects
-                .toThrow('Firebot version must be >= 5.65 to use this feature (got 5.64.0).');
-        });
-
-        it('should throw error for Firebot version < 5', async () => {
-            (firebot.firebot as any).version = '4.99.0';
-
-            await expect(reflectEvent('test-event', { data: 'test' }))
-                .rejects
-                .toThrow('Firebot version must be >= 5.65 to use this feature (got 4.99.0).');
-        });
-
-        it('should work with Firebot version = 5.65', async () => {
-            (firebot.firebot as any).version = '5.65.0';
-            mockFrontendCommunicator.fireEventAsync.mockResolvedValue({ result: 'success' });
-
-            const result = await reflectEvent('test-event', { data: 'test' });
-
-            expect(result).toEqual({ result: 'success' });
-        });
-
-        it('should work with Firebot version > 5.65', async () => {
-            (firebot.firebot as any).version = '6.0.0';
-            mockFrontendCommunicator.fireEventAsync.mockResolvedValue({ result: 'success' });
-
-            const result = await reflectEvent('test-event', { data: 'test' });
-
-            expect(result).toEqual({ result: 'success' });
-        });
-
-        it('should handle complex version numbers', async () => {
-            (firebot.firebot as any).version = '5.65.1-beta.2';
-            mockFrontendCommunicator.fireEventAsync.mockResolvedValue({ result: 'success' });
-
-            const result = await reflectEvent('test-event', { data: 'test' });
-
-            expect(result).toEqual({ result: 'success' });
-        });
-    });
-
     describe('successful event reflection', () => {
         beforeEach(() => {
             (firebot.firebot as any).version = '5.65.0';

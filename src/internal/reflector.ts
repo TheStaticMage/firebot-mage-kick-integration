@@ -2,7 +2,6 @@ import { AngularJsFactory, UIExtension } from "@crowbartools/firebot-custom-scri
 import { IntegrationConstants } from "../constants";
 import { firebot, logger } from "../main";
 import { ReflectedEvent } from "../shared/types";
-import { requireVersion } from "./version";
 
 const kickReflectorService: AngularJsFactory = {
     name: "kickReflectorService",
@@ -30,9 +29,6 @@ export const reflectorExtension: UIExtension = {
 };
 
 export async function reflectEvent<T>(eventName: string, eventData: any, isAsync = true): Promise<T> {
-    // Needs commit d4352b4
-    requireVersion("5.65");
-
     const payload: ReflectedEvent = {
         async: isAsync,
         eventName,
