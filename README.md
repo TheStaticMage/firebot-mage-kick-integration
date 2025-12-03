@@ -43,6 +43,7 @@ _Effects are calls to the Kick API made by Firebot as a result of event handlers
 | ------ | --------- | ----- |
 | Ban/Unban viewer | :white_check_mark: | |
 | Chat (send message) | :white_check_mark: | Can chat as streamer or second "bot" account |
+| Delete message | :white_check_mark: | Version 0.8.0+ |
 | Stream category change | :white_check_mark: | |
 | Stream title change | :white_check_mark: | |
 | Timeout viewer | :white_check_mark: | Unban the viewer to un-timeout |
@@ -72,7 +73,7 @@ _Events are generally trigged by receiving a webhook or a websocket event from K
 | Host (raid) (incoming) | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
 | Host (raid) (outgoing) | :white_check_mark: &#42; | :white_check_mark: &#42; | No public API support |
 | Kicks (like bits) | :white_check_mark: | :white_check_mark: &#42; | Public API support as of 0.7.0 |
-| Message deleted | Possible * | Possible * | No public API support |
+| Message deleted | :white_check_mark: | :white_check_mark: &#42; | |
 | Message pinned | Possible * | Possible * | No public API support |
 | Message un-pinned | Possible * | Possible * | No public API support |
 | Stream category (game) updated | :white_check_mark: | :x: &dagger; | |

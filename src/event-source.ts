@@ -19,6 +19,19 @@ export const eventSource: EventSource = {
             }
         },
         {
+            id: "chat-message-deleted",
+            name: "Chat Message Deleted (Kick)",
+            description: "When a chat message is deleted in your channel on Kick",
+            cached: false,
+            manualMetadata: {
+                username: "firebot@kick",
+                userDisplayName: "Firebot",
+                userId: "k1234567",
+                messageText: "Test message",
+                messageId: "kick-msg-123456"
+            }
+        },
+        {
             id: "follow",
             name: "Follow (Kick)",
             description: "When someone follows your channel on Kick",

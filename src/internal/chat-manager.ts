@@ -1,3 +1,4 @@
+import type { FirebotChatMessage } from "@crowbartools/firebot-custom-scripts-types/types/chat";
 import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { integration } from "../integration";
 import { firebot, logger } from "../main";
@@ -15,6 +16,9 @@ export class ChatManager {
     private isRunning = false;
     private kick: Kick;
     private messagePlatform: Record<string, 'twitch' | 'kick' | 'unknown'> = {};
+    private messageCache: Record<string, FirebotChatMessage> = {};
+    private messageCacheOrder: string[] = [];
+    private readonly maxCachedMessages = 100;
     private viewerArrivedCache = new Set<string>();
 
     constructor(kick: Kick) {
@@ -27,6 +31,7 @@ export class ChatManager {
         if (!this.isListeningForChatMessages) {
             const { frontendCommunicator } = firebot.modules;
             frontendCommunicator.onAsync("send-chat-message", this.handleChatMessageTypedInChatFeed.bind(this));
+            frontendCommunicator.onAsync("delete-message", this.handleDeleteMessage.bind(this));
             this.isListeningForChatMessages = true;
         }
 
@@ -69,12 +74,52 @@ export class ChatManager {
         return this.sendKickChatMessage(payload.message, payload.accountType, payload.replyToMessageId);
     }
 
-    async registerMessage(messageId: string, platform: 'twitch' | 'kick' | 'unknown'): Promise<boolean> {
+    async handleDeleteMessage(messageId: string): Promise<boolean> {
+        // Check if this is a Kick message
+        const platform = this.messagePlatform[messageId];
+        if (platform !== 'kick') {
+            logger.debug(`Message ${messageId} is not a Kick message (platform: ${platform}). Skipping Kick deletion.`);
+            return false;
+        }
+
+        return this.deleteKickChatMessage(messageId);
+    }
+
+    async registerMessage(
+        messageId: string,
+        platform: 'twitch' | 'kick' | 'unknown',
+        chatMessage?: FirebotChatMessage
+    ): Promise<boolean> {
         if (this.messagePlatform[messageId]) {
             return false;
         }
         this.messagePlatform[messageId] = platform;
+        if (chatMessage) {
+            this.messageCache[messageId] = chatMessage;
+            this.messageCacheOrder.push(messageId);
+            if (this.messageCacheOrder.length > this.maxCachedMessages) {
+                const evictedId = this.messageCacheOrder.shift();
+                if (evictedId) {
+                    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+                    delete this.messageCache[evictedId];
+                    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+                    delete this.messagePlatform[evictedId];
+                }
+            }
+        }
         return true;
+    }
+
+    getChatMessage(messageId: string): FirebotChatMessage | undefined {
+        return this.messageCache[messageId];
+    }
+
+    forgetMessage(messageId: string): void {
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete this.messagePlatform[messageId];
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete this.messageCache[messageId];
+        this.messageCacheOrder = this.messageCacheOrder.filter(id => id !== messageId);
     }
 
     async sendKickChatMessage(msg: string, chatter: "Streamer" | "Bot", replyToMessageId: string | undefined = undefined): Promise<boolean> {
@@ -135,6 +180,22 @@ export class ChatManager {
             logger.debug(`Successfully sent chat message as ${chatter}`);
         } catch (error) {
             logger.error(`Failed to send chat message: ${error}`);
+        }
+    }
+
+    async deleteKickChatMessage(messageId: string): Promise<boolean> {
+        if (!this.kick.broadcaster) {
+            logger.error("Cannot delete chat message, broadcaster info not available.");
+            return false;
+        }
+
+        try {
+            await this.kick.httpCallWithTimeout(`/public/v1/chat/${messageId}`, "DELETE", "", null, undefined, this.kick.getAuthToken());
+            logger.debug(`Successfully deleted chat message: ${messageId}`);
+            return true;
+        } catch (error) {
+            logger.error(`Failed to delete chat message (${messageId}): ${error}`);
+            return false;
         }
     }
 

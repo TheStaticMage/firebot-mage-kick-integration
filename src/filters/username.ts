@@ -9,6 +9,7 @@ export const usernameFilter: EventFilter = {
     description: "Checks if the username equals or matches the provided value. Comparisons are case-insensitive. This removes the '@kick' suffix.",
     events: [
         { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "chat-message" },
+        { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "chat-message-deleted" },
         { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "follow" },
         { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "viewer-arrived" },
         { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "banned" },

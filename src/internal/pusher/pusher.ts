@@ -1,4 +1,5 @@
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
+import { handleMessageDeletedEvent } from "../../events/message-deleted";
 import { kicksHandler } from "../../events/kicks";
 import { livestreamStatusUpdatedHandler } from "../../events/livestream-status-updated";
 import { moderationBannedEventHandler } from "../../events/moderation-banned";
@@ -10,7 +11,7 @@ import { handleChannelSubscriptionGiftsEvent } from "../../events/sub-events";
 import { integration } from "../../integration";
 import { logger } from "../../main";
 import { KickUser } from "../../shared/types";
-import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseGiftSubEvent, parseKicksGiftedEvent, parseRewardRedeemedEvent, parseStopStreamBroadcast, parseStreamerIsLiveEvent, parseStreamHostedEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
+import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseGiftSubEvent, parseKicksGiftedEvent, parseMessageDeletedEvent, parseRewardRedeemedEvent, parseStopStreamBroadcast, parseStreamerIsLiveEvent, parseStreamHostedEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
 
 const Pusher = require('pusher-js');
 
@@ -136,6 +137,9 @@ export class KickPusher {
                     }
                     break;
                 }
+                case 'App\\Events\\MessageDeletedEvent':
+                    await handleMessageDeletedEvent(parseMessageDeletedEvent(data));
+                    break;
                 case 'App\\Events\\StreamHostedEvent':
                     await handleStreamHostedEvent(parseStreamHostedEvent(data));
                     break;

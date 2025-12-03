@@ -9,6 +9,7 @@ import { ComparisonType } from "./common";
 
 const events: string[] = [
     "chat-message",
+    "chat-message-deleted",
     "follow",
     "viewer-arrived",
     "banned",
