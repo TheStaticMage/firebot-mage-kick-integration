@@ -9,6 +9,8 @@ export const IntegrationConstants = {
     STREAMER_SCOPES: [
         "user:read",
         "channel:read",
+        "channel:rewards:read",
+        "channel:rewards:write",
         "channel:write",
         "chat:write",
         "events:subscribe",
