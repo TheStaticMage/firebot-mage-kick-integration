@@ -1,18 +1,19 @@
 import {
     ChannelFollowEvent,
     ChatMessageEvent,
+    EventBadge,
+    EventUser,
+    EventUserWithIdentity,
     Channel as KickApiChannel,
     KicksGiftedEvent as KickApiKicksGiftedEvent,
-    KicksGiftedWebhookUser,
+    KicksGiftedEventUser,
     ModerationBannedEvent as KickApiModerationBannedEvent,
     LivestreamMetadataUpdatedEvent,
     LivestreamStatusUpdatedEvent,
     NewSubscriptionEvent,
     SubscriptionGiftEvent,
     SubscriptionRenewalEvent,
-    User,
-    WebhookUser,
-    WebhookUserWithIdentity
+    User
 } from "kick-api-types/v1";
 
 import {
@@ -48,7 +49,7 @@ function parseRawData(rawData: string): any {
     }
 }
 
-export function parseKickUser(user: WebhookUser): KickUser {
+export function parseKickUser(user: EventUser): KickUser {
     return {
         isAnonymous: user.is_anonymous || false,
         userId: (user.user_id ?? 0).toString(),
@@ -61,7 +62,7 @@ export function parseKickUser(user: WebhookUser): KickUser {
 }
 
 // Parser for kicks.gifted events where Kick's API doesn't provide is_anonymous
-export function parseKicksGiftedUser(user: KicksGiftedWebhookUser): KickUser {
+export function parseKicksGiftedUser(user: KicksGiftedEventUser): KickUser {
     return {
         isAnonymous: false, // Default to false since kicks.gifted API doesn't provide this field
         userId: (user.user_id ?? 0).toString(),
@@ -73,13 +74,13 @@ export function parseKicksGiftedUser(user: KicksGiftedWebhookUser): KickUser {
     };
 }
 
-export function parseKickUserWithIdentity(user: WebhookUserWithIdentity): KickUserWithIdentity {
+export function parseKickUserWithIdentity(user: EventUserWithIdentity): KickUserWithIdentity {
     const base = parseKickUser(user);
     return {
         ...base,
         identity: {
             usernameColor: user.identity.username_color || "",
-            badges: user.identity.badges ? user.identity.badges.map(badge => ({
+            badges: user.identity.badges ? user.identity.badges.map((badge: EventBadge) => ({
                 text: badge.text || "",
                 type: badge.type || "",
                 count: badge.count || 0
@@ -164,10 +165,9 @@ export function parseLivestreamMetadataUpdatedEvent(rawData: string): Livestream
             language: data.metadata.language || "",
             hasMatureContent: data.metadata.has_mature_content || false,
             category: {
-                // category and Category are due to https://github.com/KickEngineering/KickDevDocs/issues/238
-                id: data.metadata.category?.id || data.metadata.Category?.id || 0,
-                name: data.metadata.category?.name || data.metadata.Category?.name || "",
-                thumbnail: data.metadata.category?.thumbnail || data.metadata.Category?.thumbnail || ""
+                id: data.metadata.category?.id || 0,
+                name: data.metadata.category?.name || "",
+                thumbnail: data.metadata.category?.thumbnail || ""
             }
         }
     };
