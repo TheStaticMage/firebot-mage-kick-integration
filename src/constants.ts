@@ -3,9 +3,22 @@ export const IntegrationConstants = {
     INTEGRATION_NAME: "MageKickIntegration",
     INTEGRATION_DESCRIPTION: "A preliminary, experimental, and generally not-recommended Kick integration for Firebot.",
     INTEGRATION_URI: "firebot-mage-kick-integration",
+    WEBHOOK_NAME: "kick-events",
     KICK_API_SERVER: "https://api.kick.com",
     KICK_AUTH_SERVER: "https://id.kick.com",
     PUSHER_APP_KEY: "32cbd69e4b950bf97679",
+    WEBHOOK_PUBLIC_KEY: `-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq/+l1WnlRrGSolDMA+A8
+6rAhMbQGmQ2SapVcGM3zq8ANXjnhDWocMqfWcTd95btDydITa10kDvHzw9WQOqp2
+MZI7ZyrfzJuz5nhTPCiJwTwnEtWft7nV14BYRDHvlfqPUaZ+1KR4OCaO/wWIk/rQ
+L/TjY0M70gse8rlBkbo2a8rKhu69RQTRsoaf4DVhDPEeSeI5jVrRDGAMGL3cGuyY
+6CLKGdjVEM78g3JfYOvDU/RvfqD7L89TZ3iN94jrmWdGz34JNlEI5hqK8dd7C5EF
+BEbZ5jgB8s8ReQV8H+MkuffjdAj3ajDDX3DOJMIut1lBrUVD1AaSrGCKHooWoL2e
+twIDAQAB
+-----END PUBLIC KEY-----`,
+    TEST_WEBHOOK_PUBLIC_KEY: `-----BEGIN PUBLIC KEY-----
+MCowBQYDK2VwAyEAj9XGw3VWzkE0lj+tkkqGT+VqopbSJus5Uxe4syhmF+M=
+-----END PUBLIC KEY-----`,
     STREAMER_SCOPES: [
         "user:read",
         "channel:read",

@@ -36,24 +36,10 @@ jest.mock('../main', () => ({
 }));
 
 import { IntegrationConstants } from '../constants';
-import { KickPusher } from '../internal/pusher/pusher';
 import { webhookHandler } from '../internal/webhook-handler/webhook-handler';
 
-interface InboundWebhook {
-    kick_event_message_id: string;
-    kick_event_subscription_id: string;
-    kick_event_message_timestamp: string;
-    kick_event_type: string;
-    kick_event_version: string;
-    is_test_event: boolean;
-    raw_data: string;
-}
-
 describe('e2e livestream status updated', () => {
-    let pusher: KickPusher;
-
     beforeEach(() => {
-        pusher = new KickPusher();
         jest.clearAllMocks();
 
         // Set default integration settings
@@ -67,30 +53,6 @@ describe('e2e livestream status updated', () => {
             logging: { logWebhooks: false }
         });
     });
-
-    // Pusher stream start payload (StreamerIsLiveEvent)
-    /* eslint-disable camelcase */
-    const pusherStreamStartPayload = {
-        livestream: {
-            session_title: "Testing Stream Title",
-            created_at: "2025-09-02T10:00:00+00:00"
-        }
-    };
-    /* eslint-enable camelcase */
-    const pusherStreamStartEvent = 'App\\Events\\StreamerIsLiveEvent';
-
-    // Different payload for disabled test to avoid any potential conflicts
-    /* eslint-disable camelcase */
-    const pusherStreamStartPayloadDisabled = {
-        livestream: {
-            session_title: "Testing Stream Title Disabled",
-            created_at: "2025-09-02T10:01:00+00:00"
-        }
-    };
-    /* eslint-enable camelcase */
-
-    // Pusher stream stop payload (StopStreamBroadcast) - no data payload
-    const pusherStreamStopEvent = 'App\\Events\\StopStreamBroadcast';
 
     // Webhook stream start payload - base64 encoded JSON
     const webhookStreamStartData = Buffer.from(JSON.stringify({
@@ -109,17 +71,14 @@ describe('e2e livestream status updated', () => {
         "ended_at": null
     })).toString('base64');
 
-    /* eslint-disable camelcase */
     const webhookStreamStartPayload: InboundWebhook = {
-        kick_event_message_id: "msg-stream-start-123",
-        kick_event_subscription_id: "sub-livestream-456",
-        kick_event_message_timestamp: "1693589518",
-        kick_event_type: "livestream.status.updated",
-        kick_event_version: "1",
-        is_test_event: false,
-        raw_data: webhookStreamStartData
+        kickEventMessageId: "msg-stream-start-123",
+        kickEventSubscriptionId: "sub-livestream-456",
+        kickEventMessageTimestamp: "1693589518",
+        kickEventType: "livestream.status.updated",
+        kickEventVersion: "1",
+        rawData: webhookStreamStartData
     };
-    /* eslint-enable camelcase */
 
     // Webhook stream start payload for disabled test - different content to avoid conflicts
     const webhookStreamStartDataDisabled = Buffer.from(JSON.stringify({
@@ -138,17 +97,14 @@ describe('e2e livestream status updated', () => {
         "ended_at": null
     })).toString('base64');
 
-    /* eslint-disable camelcase */
     const webhookStreamStartPayloadDisabled: InboundWebhook = {
-        kick_event_message_id: "msg-stream-start-disabled-123",
-        kick_event_subscription_id: "sub-livestream-disabled-456",
-        kick_event_message_timestamp: "1693589519",
-        kick_event_type: "livestream.status.updated",
-        kick_event_version: "1",
-        is_test_event: false,
-        raw_data: webhookStreamStartDataDisabled
+        kickEventMessageId: "msg-stream-start-disabled-123",
+        kickEventSubscriptionId: "sub-livestream-disabled-456",
+        kickEventMessageTimestamp: "1693589519",
+        kickEventType: "livestream.status.updated",
+        kickEventVersion: "1",
+        rawData: webhookStreamStartDataDisabled
     };
-    /* eslint-enable camelcase */
 
     // Webhook stream stop payload - base64 encoded JSON
     const webhookStreamStopData = Buffer.from(JSON.stringify({
@@ -167,17 +123,14 @@ describe('e2e livestream status updated', () => {
         "ended_at": "2025-09-02T12:05:00+00:00"
     })).toString('base64');
 
-    /* eslint-disable camelcase */
     const webhookStreamStopPayload: InboundWebhook = {
-        kick_event_message_id: "msg-stream-stop-789",
-        kick_event_subscription_id: "sub-livestream-101",
-        kick_event_message_timestamp: "1693589518",
-        kick_event_type: "livestream.status.updated",
-        kick_event_version: "1",
-        is_test_event: false,
-        raw_data: webhookStreamStopData
+        kickEventMessageId: "msg-stream-stop-789",
+        kickEventSubscriptionId: "sub-livestream-101",
+        kickEventMessageTimestamp: "1693589518",
+        kickEventType: "livestream.status.updated",
+        kickEventVersion: "1",
+        rawData: webhookStreamStopData
     };
-    /* eslint-enable camelcase */
 
     // Webhook stream stop payload for disabled test - different content to avoid conflicts
     const webhookStreamStopDataDisabled = Buffer.from(JSON.stringify({
@@ -196,113 +149,14 @@ describe('e2e livestream status updated', () => {
         "ended_at": "2025-09-02T12:07:00+00:00"
     })).toString('base64');
 
-    /* eslint-disable camelcase */
     const webhookStreamStopPayloadDisabled: InboundWebhook = {
-        kick_event_message_id: "msg-stream-stop-disabled-789",
-        kick_event_subscription_id: "sub-livestream-disabled-101",
-        kick_event_message_timestamp: "1693589519",
-        kick_event_type: "livestream.status.updated",
-        kick_event_version: "1",
-        is_test_event: false,
-        raw_data: webhookStreamStopDataDisabled
+        kickEventMessageId: "msg-stream-stop-disabled-789",
+        kickEventSubscriptionId: "sub-livestream-disabled-101",
+        kickEventMessageTimestamp: "1693589519",
+        kickEventType: "livestream.status.updated",
+        kickEventVersion: "1",
+        rawData: webhookStreamStopDataDisabled
     };
-    /* eslint-enable camelcase */
-
-    describe('stream start via pusher', () => {
-        const expectedStreamOnlineMetadata = {
-            username: 'teststreamer@kick',
-            userId: 'k123456',
-            userDisplayName: 'teststreamer',
-            platform: 'kick'
-        };
-
-        describe('twitch forwarding enabled', () => {
-            beforeEach(() => {
-                const integration = require('../integration').integration;
-                integration.getSettings = () => ({
-                    triggerTwitchEvents: {
-                        streamOnline: true,
-                        streamOffline: false
-                    },
-                    logging: { logWebhooks: false }
-                });
-            });
-
-            it('triggers all expected events', async () => {
-                await expect((pusher as any).dispatchChannelEvent(pusherStreamStartEvent, pusherStreamStartPayload)).resolves.not.toThrow();
-                expect(triggerEventMock).toHaveBeenCalledTimes(2);
-                expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-online", expectedStreamOnlineMetadata);
-                expect(triggerEventMock).toHaveBeenCalledWith("twitch", "stream-online", expectedStreamOnlineMetadata);
-            });
-        });
-
-        describe('twitch forwarding disabled', () => {
-            beforeEach(() => {
-                const integration = require('../integration').integration;
-                integration.getSettings = () => ({
-                    triggerTwitchEvents: {
-                        streamOnline: false,
-                        streamOffline: false
-                    },
-                    logging: { logWebhooks: false }
-                });
-            });
-
-            it('triggers only kick events', async () => {
-                await expect((pusher as any).dispatchChannelEvent(pusherStreamStartEvent, pusherStreamStartPayloadDisabled)).resolves.not.toThrow();
-                expect(triggerEventMock).toHaveBeenCalledTimes(1);
-                expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-online", expectedStreamOnlineMetadata);
-            });
-        });
-    });
-
-    describe('stream stop via pusher', () => {
-        const expectedStreamOfflineMetadata = {
-            username: 'teststreamer@kick',
-            userId: 'k123456',
-            userDisplayName: 'teststreamer',
-            platform: 'kick'
-        };
-
-        describe('twitch forwarding enabled', () => {
-            beforeEach(() => {
-                const integration = require('../integration').integration;
-                integration.getSettings = () => ({
-                    triggerTwitchEvents: {
-                        streamOnline: false,
-                        streamOffline: true
-                    },
-                    logging: { logWebhooks: false }
-                });
-            });
-
-            it('triggers all expected events', async () => {
-                await expect((pusher as any).dispatchChannelEvent(pusherStreamStopEvent, {})).resolves.not.toThrow();
-                expect(triggerEventMock).toHaveBeenCalledTimes(2);
-                expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-offline", expectedStreamOfflineMetadata);
-                expect(triggerEventMock).toHaveBeenCalledWith("twitch", "stream-offline", expectedStreamOfflineMetadata);
-            });
-        });
-
-        describe('twitch forwarding disabled', () => {
-            beforeEach(() => {
-                const integration = require('../integration').integration;
-                integration.getSettings = () => ({
-                    triggerTwitchEvents: {
-                        streamOnline: false,
-                        streamOffline: false
-                    },
-                    logging: { logWebhooks: false }
-                });
-            });
-
-            it('triggers only kick events', async () => {
-                await expect((pusher as any).dispatchChannelEvent(pusherStreamStopEvent, {})).resolves.not.toThrow();
-                expect(triggerEventMock).toHaveBeenCalledTimes(1);
-                expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-offline", expectedStreamOfflineMetadata);
-            });
-        });
-    });
 
     describe('stream start via webhook', () => {
         const expectedStreamOnlineMetadata = {
@@ -458,16 +312,6 @@ describe('e2e livestream status updated', () => {
                 },
                 logging: { logWebhooks: false }
             });
-        });
-
-        it('does not trigger events when status unchanged via pusher stream start', async () => {
-            await expect((pusher as any).dispatchChannelEvent(pusherStreamStartEvent, pusherStreamStartPayload)).resolves.not.toThrow();
-            expect(triggerEventMock).not.toHaveBeenCalled();
-        });
-
-        it('does not trigger events when status unchanged via pusher stream stop', async () => {
-            await expect((pusher as any).dispatchChannelEvent(pusherStreamStopEvent, {})).resolves.not.toThrow();
-            expect(triggerEventMock).not.toHaveBeenCalled();
         });
 
         it('does not trigger stream events when status unchanged via webhook stream start', async () => {

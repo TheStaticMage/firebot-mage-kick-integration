@@ -84,13 +84,11 @@ export class Kick implements IKick {
                 integration.sendCriticalErrorNotification(`Bot account is the same as streamer account (${this.broadcaster.name}). Bot functionality has been disabled. Please authorize a different account for the bot in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
             }
 
-            if (integration.getSettings().webhookProxy) {
-                try {
-                    await this.webhookSubscriptionManager.initialize();
-                } catch (error) {
-                    logger.error(`Failed to subscribe to events: ${error}`);
-                    throw error;
-                }
+            try {
+                await this.webhookSubscriptionManager.initialize();
+            } catch (error) {
+                logger.error(`Failed to subscribe to events: ${error}`);
+                throw error;
             }
 
             this.channelManager.start();

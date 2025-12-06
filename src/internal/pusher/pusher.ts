@@ -1,31 +1,19 @@
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleMessageDeletedEvent } from "../../events/message-deleted";
-import { kicksHandler } from "../../events/kicks";
-import { livestreamStatusUpdatedHandler } from "../../events/livestream-status-updated";
-import { moderationBannedEventHandler } from "../../events/moderation-banned";
 import { handleModerationUnbannedEvent } from "../../events/moderation-unbanned";
 import { handleRaidSentOffEvent } from "../../events/raid-sent-off-event";
 import { handleRewardRedeemedEvent } from "../../events/reward-redeemed-event";
 import { handleStreamHostedEvent } from "../../events/stream-hosted-event";
-import { handleChannelSubscriptionGiftsEvent } from "../../events/sub-events";
 import { integration } from "../../integration";
 import { logger } from "../../main";
-import { KickUser } from "../../shared/types";
-import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseGiftSubEvent, parseKicksGiftedEvent, parseMessageDeletedEvent, parseRewardRedeemedEvent, parseStopStreamBroadcast, parseStreamerIsLiveEvent, parseStreamHostedEvent, parseViewerBannedOrTimedOutEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
+import { ChatMessage, KickUser, KickUserWithIdentity } from "../../shared/types";
+import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseMessageDeletedEvent, parseRewardRedeemedEvent, parseStreamHostedEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
 
 const Pusher = require('pusher-js');
 
 export class KickPusher {
     // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     private pusher: typeof Pusher | null = null;
-    private giftSubEventDelay = 10000; // Default 10 seconds
-
-    /**
-     * Creates a delay promise that can be easily mocked in tests
-     */
-    private delay(ms: number): Promise<void> {
-        return new Promise(resolve => setTimeout(resolve, ms));
-    }
 
     connect(pusherAppKey: string, chatroomId: string, channelId: string): void {
         if (!pusherAppKey) {
@@ -94,25 +82,6 @@ export class KickPusher {
                 case "App\\Events\\ChatMoveToSupportedChannelEvent":
                     await handleRaidSentOffEvent(parseChatMoveToSupportedChannelEvent(data));
                     break;
-                case "App\\Events\\LuckyUsersWhoGotGiftSubscriptionsEvent": // Yup, it's actually named that
-                    // Webhook has more information; give it a chance to arrive first
-                    await this.delay(this.giftSubEventDelay).then(async () => {
-                        try {
-                            await handleChannelSubscriptionGiftsEvent(await parseGiftSubEvent(data));
-                        } catch (error) {
-                            logger.error(`Error handling delayed gift subscription event: ${error}`);
-                        }
-                    });
-                    break;
-                case "App\\Events\\StopStreamBroadcast":
-                    await livestreamStatusUpdatedHandler.handleLivestreamStatusUpdatedEvent(parseStopStreamBroadcast());
-                    break;
-                case "App\\Events\\StreamerIsLiveEvent":
-                    await livestreamStatusUpdatedHandler.handleLivestreamStatusUpdatedEvent(parseStreamerIsLiveEvent(data));
-                    break;
-                case "KicksGifted":
-                    await kicksHandler.handleKicksGiftedEvent(parseKicksGiftedEvent(data));
-                    break;
                 case 'pusher:subscription_succeeded':
                     logger.info("Pusher subscribed successfully to channel events.");
                     break;
@@ -137,14 +106,17 @@ export class KickPusher {
                     }
                     break;
                 }
+                case 'message.add': {
+                    // Test webhook event format with broadcaster info embedded in payload
+                    const chatMessage = this.parseChatMessageFromWebhookPayload(data);
+                    await handleChatMessageSentEvent(chatMessage);
+                    break;
+                }
                 case 'App\\Events\\MessageDeletedEvent':
                     await handleMessageDeletedEvent(parseMessageDeletedEvent(data));
                     break;
                 case 'App\\Events\\StreamHostedEvent':
                     await handleStreamHostedEvent(parseStreamHostedEvent(data));
-                    break;
-                case 'App\\Events\\UserBannedEvent':
-                    await moderationBannedEventHandler.handleModerationBannedEvent(parseViewerBannedOrTimedOutEvent(data));
                     break;
                 case 'App\\Events\\UserUnbannedEvent':
                     await handleModerationUnbannedEvent(parseViewerUnbannedEvent(data));
@@ -197,6 +169,49 @@ export class KickPusher {
             profilePicture: broadcaster.profilePicture || '',
             isVerified: false, // Worth checking?
             channelSlug: broadcaster.name
+        };
+    }
+
+    private parseChatMessageFromWebhookPayload(data: any): ChatMessage {
+        // Parse webhook payload format (from test webhooks) where broadcaster/sender info is embedded
+        return {
+            messageId: data.message_id,
+            repliesTo: data.replies_to ? {
+                messageId: data.replies_to.message_id,
+                content: data.replies_to.content,
+                sender: this.parseWebhookUser(data.replies_to.sender)
+            } : undefined,
+            broadcaster: this.parseWebhookUser(data.broadcaster),
+            sender: this.parseWebhookUserWithIdentity(data.sender),
+            content: data.content,
+            createdAt: data.created_at ? new Date(data.created_at) : new Date()
+        };
+    }
+
+    private parseWebhookUser(user: any): KickUser {
+        return {
+            isAnonymous: user.is_anonymous || false,
+            userId: (user.user_id ?? 0).toString(),
+            username: user.username || "",
+            displayName: user.username || "",
+            isVerified: user.is_verified || false,
+            profilePicture: user.profile_picture || "",
+            channelSlug: user.channel_slug || ""
+        };
+    }
+
+    private parseWebhookUserWithIdentity(user: any): KickUserWithIdentity {
+        const base = this.parseWebhookUser(user);
+        return {
+            ...base,
+            identity: {
+                usernameColor: user.identity?.username_color || "",
+                badges: user.identity?.badges ? user.identity.badges.map((badge: any) => ({
+                    text: badge.text || "",
+                    type: badge.type || "",
+                    count: badge.count || 0
+                })) : []
+            }
         };
     }
 }

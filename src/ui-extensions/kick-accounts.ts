@@ -27,11 +27,21 @@ const kickAccountsPage: AngularJsPage = {
         $scope.modalTitle = "";
         $scope.authUrl = "";
         $scope.currentAuthType = null;
+        $scope.webhookUrl = "";
         let statusCheckInterval: any = null;
         let copyButtonTimeout: any = null;
 
         // Initialize - request current status
         backendCommunicator.fireEvent("kick:get-connections", {});
+
+        // Request webhook data
+        const updateWebhookData = () => {
+            const data = backendCommunicator.fireEventSync("kick:get-webhook-data", {});
+            if (data) {
+                $scope.webhookUrl = data.url || "";
+            }
+        };
+        updateWebhookData();
 
         // Listen for connection updates
         backendCommunicator.on("kick:connections-update", (data: any) => {
@@ -46,6 +56,9 @@ const kickAccountsPage: AngularJsPage = {
                     missingScopes: data.bot.missingScopes || []
                 }
             };
+
+            // Refresh webhook status when connection state changes
+            updateWebhookData();
 
             // Close modal if authorization completed
             if ($scope.currentAuthType && $scope.connections[$scope.currentAuthType].ready) {
@@ -101,6 +114,9 @@ const kickAccountsPage: AngularJsPage = {
             if (copyButton) {
                 copyButton.textContent = "Copy Link";
             }
+
+            // Refresh webhook status when modal closes
+            updateWebhookData();
         }
 
         $scope.closeModal = closeAuthModal;
@@ -233,6 +249,63 @@ const kickAccountsPage: AngularJsPage = {
             }
             return "Not Ready";
         };
+
+        $scope.copyWebhookUrl = () => {
+            const url = $scope.webhookUrl;
+            if (!url) {
+                return;
+            }
+            const originalText = "Copy URL";
+            const copyButton = document.getElementById("btn-copy-webhook-url");
+
+            // Ensure window has focus before attempting clipboard operation
+            window.focus();
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(url).then(() => {
+                    if (copyButton) {
+                        $timeout(() => {
+                            copyButton.textContent = "Copied!";
+                        });
+                        if (copyButtonTimeout) {
+                            $timeout.cancel(copyButtonTimeout);
+                        }
+                        copyButtonTimeout = $timeout(() => {
+                            copyButton.textContent = originalText;
+                            copyButtonTimeout = null;
+                        }, 2000);
+                    }
+                }).catch(() => {
+                    // Fallback: create a temporary textarea to copy the URL
+                    const textarea = document.createElement('textarea');
+                    textarea.value = url;
+                    textarea.style.position = 'fixed';
+                    textarea.style.opacity = '0';
+                    document.body.appendChild(textarea);
+                    textarea.focus();
+                    textarea.select();
+                    try {
+                        // eslint-disable-next-line @typescript-eslint/no-deprecated
+                        document.execCommand('copy');
+                        if (copyButton) {
+                            $timeout(() => {
+                                copyButton.textContent = "Copied!";
+                            });
+                            if (copyButtonTimeout) {
+                                $timeout.cancel(copyButtonTimeout);
+                            }
+                            copyButtonTimeout = $timeout(() => {
+                                copyButton.textContent = originalText;
+                                copyButtonTimeout = null;
+                            }, 2000);
+                        }
+                    } catch {
+                        // Silently ignore if both methods fail
+                    }
+                    document.body.removeChild(textarea);
+                });
+            }
+        };
     },
     type: "angularjs",
     icon: "fa-key",
@@ -297,6 +370,22 @@ const kickAccountsPage: AngularJsPage = {
                     <button class="btn btn-deauthorize" ng-click="deauthorizeBot()" ng-disabled="!connections.bot.tokenExpiresAt">
                         Deauthorize
                     </button>
+                </div>
+            </div>
+
+            <!-- Webhook Section -->
+            <div class="connection-section" ng-if="connections.connected && webhookUrl">
+                <div class="connection-header">
+                    <div class="connection-title">Webhook Configuration</div>
+                </div>
+
+                <div class="webhook-tip-message">
+                    This needs to be entered as the webhook URL when you create your Kick app.
+                </div>
+
+                <div class="webhook-url-container">
+                    <div class="webhook-url">{{ webhookUrl }}</div>
+                    <button id="btn-copy-webhook-url" class="btn btn-copy" ng-click="copyWebhookUrl()">Copy URL</button>
                 </div>
             </div>
 
@@ -392,6 +481,16 @@ const kickAccountsPage: AngularJsPage = {
                 border-radius: 4px;
                 font-size: 14px;
                 color: #666;
+            }
+
+            .kick-accounts-container .webhook-tip-message {
+                margin: 10px 0;
+                padding: 10px;
+                background: #e8f4f8; /* Light blue */
+                border: 1px solid #0084d6; /* Blue border */
+                border-radius: 4px;
+                font-size: 14px;
+                color: #333;
             }
 
             .kick-accounts-container .missing-scope-block {
@@ -541,6 +640,41 @@ const kickAccountsPage: AngularJsPage = {
                 font-size: 12px;
                 max-height: 100px;
                 overflow-y: auto;
+            }
+
+            .kick-accounts-container .webhook-url-container {
+                display: flex;
+                gap: 10px;
+                margin: 15px 0;
+            }
+
+            .kick-accounts-container .webhook-url {
+                flex: 1;
+                padding: 10px;
+                background: #fff;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                color: #0066cc;
+                word-break: break-all;
+                font-family: monospace;
+                font-size: 12px;
+                max-height: 100px;
+                overflow-y: auto;
+            }
+
+            .kick-accounts-container .webhook-info {
+                margin: 10px 0;
+                padding: 10px;
+                background: #f0f8ff;
+                border: 1px solid #b0d4ff;
+                border-radius: 4px;
+                color: #333;
+                font-size: 13px;
+            }
+
+            .kick-accounts-container .webhook-info p {
+                margin: 0;
+                line-height: 1.4;
             }
         </style>
     `

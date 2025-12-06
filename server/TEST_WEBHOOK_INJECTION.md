@@ -2,117 +2,62 @@
 
 ## Overview
 
-The webhook proxy server now supports admin users injecting test webhook events directly through the main webhook endpoint. This allows for end-to-end testing of webhook functionality without requiring actual events from Kick's servers.
+Test webhook events can be injected directly into the integration for end-to-end testing. This is accomplished by sending a specially crafted webhook to the Crowbar Tools webhook relay URL.
 
 ## Authentication
 
-Test webhook injection requires **dual authentication**:
+Test webhook injection requires a cryptographic signature to verify the authenticity of the request. This prevents unauthorized test injections and ensures security.
 
-1. **Bearer Token**: Valid admin token in Authorization header
-2. **Test Signature**: Special `Kick-Event-Signature: valid` header
+The signature is generated using a private Ed25519 key and verified by the integration using the corresponding public key.
 
-Both are required - this prevents accidental test injections and provides security.
+## Key Generation
+
+First, you need to generate a private/public key pair. You can do this using `openssl`:
+
+```bash
+# Generate the private key
+openssl genpkey -algorithm Ed25519 -out private_key.pem
+
+# Extract the public key
+openssl pkey -in private_key.pem -pubout -out public_key.pem
+```
+
+The `private_key.pem` file should be kept secret. The contents of `public_key.pem` need to be placed into the `src/constants.ts` file, replacing the placeholder key in the `IntegrationConstants.TEST_WEBHOOK_PUBLIC_KEY` constant.
 
 ## Usage
 
-### Basic Test Injection
+A Node.js script is provided to simplify sending test webhooks.
+
+### Sending a Test Webhook
 
 ```bash
-curl -X POST http://localhost:8080/webhook \
-  -H "Authorization: Bearer your-admin-token-here" \
-  -H "Kick-Event-Type: kicks.gifted" \
-  -H "Kick-Event-Signature: valid" \
-  -H "Content-Type: application/json" \
-  -d @test-payloads/webhook-kicks-gifted.json
+./scripts/send-test-webhook.mjs <webhook-url> <payload-file>
 ```
 
-### Headers Required for Test Injection
+**Arguments:**
 
-- `Authorization: Bearer <admin-token>` - Admin bearer token
-- `Kick-Event-Signature: valid` - Special test signature (literal "valid")
-- `Kick-Event-Type: <event-type>` - The webhook event type (e.g., "kicks.gifted")
-- `Kick-Event-Version: <version>` (optional) - Defaults to "1" if not provided
-- `Content-Type: application/json`
+* `<webhook-url>`: The URL of the webhook as configured in the Crowbar Tools webhook relay.
+* `<payload-file>`: The path to a JSON file containing the webhook payload.
 
-### Payload Format
+**Example:**
 
-The JSON payload should match the webhook event structure. For kicks.gifted:
-
-```json
-{
-  "broadcaster": {
-    "id": 2408714,
-    "username": "thestaticmage",
-    "slug": "thestaticmage"
-  },
-  "sender": {
-    "id": 123456,
-    "username": "testuser",
-    "slug": "testuser"
-  },
-  "gift": {
-    "amount": 10,
-    "name": "HYPE",
-    "type": "BASIC",
-    "tier": "BASIC",
-    "message": "Test gift message!"
-  },
-  "created_at": "2025-10-23T15:30:42Z"
-}
+```bash
+./scripts/send-test-webhook.mjs https://api.crowbar.tools/... ./test-payloads/webhook-kicks-gifted.json
 ```
 
-## Test Event Markers
+Before running the script, you may need to make it executable:
 
-Test events are automatically marked with:
-- `is_test_event: true`
-- Generated test IDs for message and subscription
-- Current timestamp
+```bash
+chmod +x ./scripts/send-test-webhook.mjs
+```
+
+### Webhook URL
+
+The Crowbar Tools webhook URL for this integration can be found in Firebot at:
+**Settings > Advanced > Proxied Webhooks > Edit Webhooks > kick-events**
 
 ## Security Features
 
-1. **Admin Only**: Only valid admin tokens can inject test webhooks
-2. **Dual Auth**: Requires both bearer token AND special signature
-3. **User Validation**: Broadcaster must be a registered user
-4. **Test Marking**: Test events are clearly marked with `is_test_event: true`
-5. **Separate Endpoint Logic**: Uses same endpoint but different processing path
-
-## Error Responses
-
-- `401 Unauthorized`: Invalid or missing admin token
-- `400 Bad Request`: Missing headers, invalid payload, or unregistered user
-- `500 Internal Server Error`: Server-side processing error
-
-## Differences from Regular Injection
-
-This method uses the main webhook endpoint (`/webhook`) with special headers, while the existing injection uses dedicated endpoints (`/inject/<key>`). Benefits:
-
-1. **Full E2E Testing**: Tests complete webhook flow including authentication
-2. **Real Webhook Processing**: Uses same parsing and validation as production
-3. **Consistent Interface**: Same endpoint as production webhooks
-4. **Security**: Dual authentication prevents misuse
-
-## Example Test Scenarios
-
-### Test kicks.gifted Webhook
-```bash
-# Test a 10-kick HYPE gift
-curl -X POST http://localhost:8080/webhook \
-  -H "Authorization: Bearer admin-token" \
-  -H "Kick-Event-Type: kicks.gifted" \
-  -H "Kick-Event-Signature: valid" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "broadcaster": {"id": 2408714, "username": "thestaticmage", "slug": "thestaticmage"},
-    "sender": {"id": 123456, "username": "testuser", "slug": "testuser"},
-    "gift": {"amount": 10, "name": "HYPE", "type": "BASIC", "tier": "BASIC", "message": "Test!"},
-    "created_at": "2025-10-23T15:30:42Z"
-  }'
-```
-
-### Success Response
-```json
-{
-  "success": true,
-  "test_injection": true
-}
-```
+1. **Cryptographic Signature**: Ensures that only authorized users can inject test webhooks.
+2. **Configurable**: Test webhook injection can be enabled or disabled in the integration settings.
+3. **Test Marking**: Test events are clearly marked with `is_test_event: true` in the integration's internal processing.

@@ -35,3 +35,5 @@ node_modules/
 /.claude
 /.github/copilot-instructions.md
 /AGENTS.md
+/GEMINI.md
+private_key.pem

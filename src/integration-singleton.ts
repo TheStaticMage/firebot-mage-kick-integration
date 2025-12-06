@@ -21,15 +21,15 @@ import { usernameFilter } from "./filters/username";
 import { viewerRolesFilter } from "./filters/viewer-roles";
 import { webhookReceivedEventTypeFilter, webhookReceivedLatencyFilter } from "./filters/webhook-received";
 import { AuthManager } from "./internal/auth";
+import { getConnectionStatusMessage } from "./internal/connection-utils";
 import { Kick } from "./internal/kick";
-import { Poller } from "./internal/poll";
 import { KickPusher } from "./internal/pusher/pusher";
 import { reflectorExtension } from "./internal/reflector";
-import { getConnectionStatusMessage } from "./internal/connection-utils";
-import { KickConnection, ConnectionUpdateData, ConnectionStateUpdate } from "./shared/types";
+import { verifyWebhookSignature, WebhookSignatureVerificationError } from "./internal/webhook-handler/webhook-signature-verifier";
 import { firebot, logger } from "./main";
-import { kickAccountsExtension } from "./ui-extensions/kick-accounts";
 import { platformRestriction } from "./restrictions/platform";
+import { ConnectionStateUpdate, ConnectionUpdateData, KickConnection } from "./shared/types";
+import { kickAccountsExtension } from "./ui-extensions/kick-accounts";
 import { getDataFilePath } from "./util/datafile";
 import { kickCategoryVariable } from "./variables/category";
 import { kickCategoryIdVariable } from "./variables/category-id";
@@ -77,9 +77,6 @@ type IntegrationParameters = {
         channelId: string;
         chatroomId: string;
     };
-    webhookProxy: {
-        webhookProxyUrl: string;
-    };
     kickApp: {
         clientId: string;
         clientSecret: string;
@@ -123,20 +120,12 @@ export class KickIntegration extends EventEmitter {
     // rather than using a method.
     connected = false;
 
-    // proxyPollKey is learned upon linking and subsequently read from the
-    // integration data file. It is used to identify the poller on the upstream
-    // server.
-    private proxyPollKey = "";
-
     // kick is an instance of the Kick class, which handles HTTP calls to the Kick API.
     kick = new Kick();
 
     // pusher is an instance of the KickPusher class, which handles websocket
     // connections to Kick for real-time events.
     pusher = new KickPusher();
-
-    // poller is an instance of the Poller class, which handles polling for events.
-    private poller = new Poller();
 
     // authManager is an instance of the AuthManager class, which handles authentication
     private authManager = new AuthManager();
@@ -154,9 +143,6 @@ export class KickIntegration extends EventEmitter {
             pusherAppKey: IntegrationConstants.PUSHER_APP_KEY,
             channelId: "",
             chatroomId: ""
-        },
-        webhookProxy: {
-            webhookProxyUrl: ""
         },
         kickApp: {
             clientId: "",
@@ -362,7 +348,6 @@ export class KickIntegration extends EventEmitter {
         const fileData = this.loadIntegrationData();
         if (fileData) {
             this.authManager.init(fileData.refreshToken, fileData.botRefreshToken);
-            this.proxyPollKey = fileData.proxyPollKey;
         } else {
             logger.warn("Kick integration data file not found or invalid. Please link the integration.");
             this.authManager.init("", "");
@@ -376,6 +361,33 @@ export class KickIntegration extends EventEmitter {
         }
 
         this.emit("connecting", IntegrationConstants.INTEGRATION_ID);
+
+        // Initialize Crowbar webhook
+        const { webhookManager } = firebot.modules;
+        try {
+            // Verify existing webhook or create new one
+            let webhook = webhookManager.getWebhook(IntegrationConstants.WEBHOOK_NAME);
+            if (webhook) {
+                logger.debug("Crowbar webhook already exists. Not creating a new one.");
+            } else {
+                logger.info("Kick webhook not found. Creating new webhook.");
+                webhook = webhookManager.saveWebhook(IntegrationConstants.WEBHOOK_NAME);
+                if (webhook) {
+                    logger.info("Crowbar webhook registered successfully.");
+                } else {
+                    logger.error("Failed to register Crowbar webhook. Webhook events will not be received.");
+                }
+            }
+
+            // Register webhook event handler
+            webhookManager.on("webhook-received", async ({ config, payload, headers }: any) => {
+                if (config.name === IntegrationConstants.WEBHOOK_NAME) {
+                    await this.handleCrowbarWebhook(payload, headers);
+                }
+            });
+        } catch (error) {
+            logger.error(`Failed to initialize Crowbar webhooks: ${error}`);
+        }
 
         // Refresh the auth token (we always do this upon connecting)
         try {
@@ -399,9 +411,6 @@ export class KickIntegration extends EventEmitter {
             return;
         }
 
-        // Start the poller
-        await this.poller.connect(this.proxyPollKey);
-
         // Websocket (pusher) connection setup
         try {
             this.pusher.connect(this.settings.connectivity.pusherAppKey, this.settings.connectivity.chatroomId, this.settings.connectivity.channelId);
@@ -424,7 +433,6 @@ export class KickIntegration extends EventEmitter {
         this.connected = false;
         this.authManager.disconnect();
         await this.kick.disconnect();
-        await this.poller.disconnect(this.proxyPollKey);
         this.pusher.disconnect();
         this.notifyConnectionStateChange();
         this.emit("disconnected", IntegrationConstants.INTEGRATION_ID);
@@ -438,28 +446,12 @@ export class KickIntegration extends EventEmitter {
             this.settings = JSON.parse(JSON.stringify(integrationData.userSettings));
             let mustReconnect = false;
 
-            if (integrationData.userSettings.webhookProxy.webhookProxyUrl !== oldSettings.webhookProxy.webhookProxyUrl) {
-                logger.info("Kick integration webhook proxy URL has changed. You may need to re-link the integration.");
-                this.kick.setAuthToken('');
-                this.kick.setBotAuthToken('');
-                mustReconnect = true;
-            }
-
             if (integrationData.userSettings.kickApp.clientId !== oldSettings.kickApp.clientId
                 || integrationData.userSettings.kickApp.clientSecret !== oldSettings.kickApp.clientSecret
             ) {
-                logger.info("Kick integration webhook client credentials have changed. You may need to re-link the integration.");
-                if (!integrationData.userSettings.webhookProxy.webhookProxyUrl) {
-                    this.kick.setAuthToken('');
-                    this.kick.setBotAuthToken('');
-                    mustReconnect = true;
-                }
-            }
-
-            if (!integrationData.userSettings.webhookProxy.webhookProxyUrl && this.proxyPollKey) {
-                logger.info("Webhook proxy URL removed but a proxy key was previously set.");
-                this.proxyPollKey = '';
-                this.saveIntegrationTokenData(this.authManager.streamerRefreshToken, this.authManager.botRefreshToken, null);
+                logger.info("Kick integration client credentials have changed. You may need to re-link the integration.");
+                this.kick.setAuthToken('');
+                this.kick.setBotAuthToken('');
                 mustReconnect = true;
             }
 
@@ -473,8 +465,6 @@ export class KickIntegration extends EventEmitter {
             if (mustReconnect) {
                 logger.info("Reconnecting integration due to settings change...");
                 await this.disconnect();
-                this.poller.setProxyPollKey(this.proxyPollKey);
-                this.poller.setProxyPollUrl(integrationData.userSettings.webhookProxy.webhookProxyUrl);
                 await this.connect();
             }
         }
@@ -517,6 +507,54 @@ export class KickIntegration extends EventEmitter {
         logger.info(`Chat feed notification sent: ${JSON.stringify(message)}`);
     }
 
+    private async handleCrowbarWebhook(payload: any, headers: any): Promise<void> {
+        try {
+            // Import webhook handler
+            const { webhookHandler } = await import('./internal/webhook-handler/webhook-handler');
+
+            // Verify webhook signature
+            try {
+                verifyWebhookSignature({
+                    payload,
+                    headers: {
+                        'kick-event-signature': headers['kick-event-signature'],
+                        'kick-event-message-id': headers['kick-event-message-id'],
+                        'kick-event-message-timestamp': headers['kick-event-message-timestamp']
+                    },
+                    allowTestWebhooks: this.settings.advanced.allowTestWebhooks,
+                    testWebhookPublicKey: IntegrationConstants.TEST_WEBHOOK_PUBLIC_KEY,
+                    productionWebhookPublicKey: IntegrationConstants.WEBHOOK_PUBLIC_KEY
+                });
+            } catch (e) {
+                if (e instanceof WebhookSignatureVerificationError) {
+                    logger.warn(`Webhook signature verification failed: ${e.message}`);
+                    return;
+                }
+                logger.error(`Error verifying webhook signature: ${e}`);
+                return;
+            }
+
+            const isTestEvent = payload.is_test_event === true;
+            const messageId = headers['kick-event-message-id'];
+            const timestamp = headers['kick-event-message-timestamp'];
+
+            // Transform Crowbar format to InboundWebhook format
+            const webhook: InboundWebhook = {
+                kickEventMessageId: messageId || '',
+                kickEventSubscriptionId: headers['kick-event-subscription-id'] || '',
+                kickEventMessageTimestamp: timestamp || '',
+                kickEventType: headers['kick-event-type'] || '',
+                kickEventVersion: headers['kick-event-version'] || '',
+                rawData: JSON.stringify(payload),
+                isTestEvent
+            };
+
+            await webhookHandler.handleWebhook(webhook);
+        } catch (error) {
+            logger.error(`Failed to handle Crowbar webhook: ${error}. Payload: ${JSON.stringify(payload)}. Headers: ${JSON.stringify(headers)}`);
+        }
+    }
+
     private loadIntegrationData(): integrationFileData | null {
         const { fs } = firebot.modules;
         if (!fs.existsSync(this.dataFilePath)) {
@@ -533,18 +571,15 @@ export class KickIntegration extends EventEmitter {
         }
     }
 
-    saveIntegrationTokenData(refreshToken: string, botRefreshToken: string, proxyPollKey: string | null = null): void {
+    saveIntegrationTokenData(refreshToken: string, botRefreshToken: string): void {
         const data: integrationFileData = {
             refreshToken: refreshToken,
-            botRefreshToken: botRefreshToken,
-            proxyPollKey: proxyPollKey || this.proxyPollKey
+            botRefreshToken: botRefreshToken
         };
 
         const { fs } = firebot.modules;
         fs.writeFileSync(this.dataFilePath, JSON.stringify(data, null, 2));
         logger.debug("Kick integration token data saved.");
-
-        this.proxyPollKey = data.proxyPollKey;
     }
 
     private notifyConnectionStateChange(): void {
@@ -606,13 +641,37 @@ export class KickIntegration extends EventEmitter {
         this.authManager.registerUIExtensionEvents(frontendCommunicator, firebotUrl, () => {
             this.notifyConnectionStateChange();
         });
+
+        // Register webhook data handler
+        frontendCommunicator.on("kick:get-webhook-data", () => {
+            try {
+                logger.debug("Received request for Kick integration webhook data.");
+                const { webhookManager } = firebot.modules;
+                if (!webhookManager) {
+                    return { url: "" };
+                }
+
+                logger.debug("Fetching Kick integration webhook data from Crowbar...");
+                const webhook = webhookManager.getWebhook(IntegrationConstants.WEBHOOK_NAME);
+                if (!webhook) {
+                    return { url: "" };
+                }
+
+                logger.debug("Retrieving Kick integration webhook URL...");
+                const url = webhookManager.getWebhookUrl(IntegrationConstants.WEBHOOK_NAME);
+                logger.debug(`Retrieved webhook URL: ${url}`);
+                return { url: url || "" };
+            } catch (error) {
+                logger.error(`Failed to retrieve webhook data: ${error}`);
+                return { url: "" };
+            }
+        });
     }
 }
 
 interface integrationFileData {
     refreshToken: string;
     botRefreshToken: string;
-    proxyPollKey: string;
 }
 
 export const integration = new KickIntegration();
