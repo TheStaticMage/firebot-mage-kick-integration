@@ -17,25 +17,14 @@ After re-authorizing with all scopes, chat moderation and channel update effects
 
 If re-authorizing still shows missing scopes, make sure the Kick app actually grants them.
 
-### Your own Kick app (or your own webhook proxy)
-
 1. Sign in to Kick.
 2. Click your profile image > **Settings**.
 3. Open the **Developer** tab and click **View** on the app used for this integration.
-4. Under **Scopes Requested**, all of the checkboxes _except_ **Read stream key**.
-5. Click **Edit**, check any missing boxes, then **Save changes**.
-6. Re-authorize the streamer and bot accounts in Firebot so the new scopes take effect.
+4. Under **Scopes Requested**, make sure that all of the checkboxes _except_ **Read stream key** are checked.
 
-### Using someone else's webhook proxy
+If not all of the boxes are checked, continue:
 
-Ask the proxy administrator to enable the scopes listed above, then re-authorize in Firebot.
+1. Click **Edit**, check any missing boxes, then **Save changes**.
+2. Re-authorize the streamer and bot accounts in Firebot so the new scopes take effect.
 
-## Invalid or expired refresh token
-
-If you get repeated pop-up errors about invalid tokens, the refresh token may have expired.
-
-1. Open the Kick Accounts screen.
-2. Deauthorize the affected account.
-3. Authorize it again and confirm the prompt.
-
-The integration will reconnect automatically after a valid token is stored.
+_Note_: These steps must be performed _in this order_ to work. Authorizing in Firebot and then adding permissions to your app won't fix anything until you re-authorize.

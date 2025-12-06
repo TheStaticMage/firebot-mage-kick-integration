@@ -45,33 +45,20 @@ export const definition: IntegrationDefinition = {
                 }
             }
         },
-        webhookProxy: {
-            title: "Webhook Proxy Settings",
-            sortRank: 2,
-            settings: {
-                webhookProxyUrl: {
-                    title: "Webhook Proxy URL",
-                    tip: "The URL of the webhook proxy server to use for Kick events. Leave blank if you want to use your own Kick app. See documentation.",
-                    type: "string",
-                    default: "",
-                    sortRank: 1
-                }
-            }
-        },
         kickApp: {
             title: "Kick App Settings",
-            sortRank: 3,
+            sortRank: 2,
             settings: {
                 clientId: {
                     title: "Client ID",
-                    tip: "The Client ID for your Kick app. Ignored when using webhook proxy. See documentation.",
+                    tip: "The Client ID for your Kick app. See documentation for setup instructions.",
                     type: "string",
                     default: "",
                     sortRank: 1
                 },
                 clientSecret: {
                     title: "Client Secret",
-                    tip: "The Client Secret for your Kick app. Ignored when using webhook proxy. See documentation.",
+                    tip: "The Client Secret for your Kick app. See documentation for setup instructions.",
                     type: "string",
                     default: "",
                     sortRank: 2
@@ -80,7 +67,7 @@ export const definition: IntegrationDefinition = {
         },
         chat: {
             title: "Chat Settings",
-            sortRank: 4,
+            sortRank: 3,
             settings: {
                 chatFeed: {
                     title: "Chat Feed",
@@ -100,7 +87,7 @@ export const definition: IntegrationDefinition = {
         },
         triggerTwitchEvents: {
             title: "Trigger Twitch Events",
-            sortRank: 5,
+            sortRank: 4,
             settings: {
                 chatMessage: {
                     title: "Chat Message",
@@ -227,7 +214,7 @@ export const definition: IntegrationDefinition = {
             settings: {
                 allowTestWebhooks: {
                     title: "Allow Test Webhooks",
-                    tip: "Process test webhooks from the webhook proxy as if they were real webhooks. Enable this only if you are actively developing the integration and you know exactly what this does.",
+                    tip: "Process test webhooks as if they were real webhooks. Enable this only if you are actively developing the integration and you know exactly what this does.",
                     type: "boolean",
                     default: false,
                     sortRank: 1

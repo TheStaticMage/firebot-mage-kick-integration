@@ -34,32 +34,34 @@ jest.mock('../main', () => ({
 }));
 
 import { IntegrationConstants } from '../constants';
-import { KickPusher } from '../internal/pusher/pusher';
+import { webhookHandler } from '../internal/webhook-handler/webhook-handler';
 
 describe('e2e kicks gifted events', () => {
-    let pusher: KickPusher;
-
-    const pusherEvent = 'KicksGifted';
-
     /* eslint-disable camelcase */
-    const pusherPayload = {
-        message: "Test message",
-        sender: {
-            id: 12345678,
-            username: "gifter-username",
-            username_color: "#ffffcc"
-        },
-        gift: {
-            gift_id: "super_gift",
-            name: "Super Gift",
-            type: "BASIC",
-            tier: "BASIC",
-            character_limit: 69,
-            pinned_time: 123456789,
-            amount: 25
-        }
+    const webhookKicksGiftedPayload: InboundWebhook = {
+        kickEventMessageId: "msg-kicks-gifted-1",
+        kickEventSubscriptionId: "sub-kicks-123",
+        kickEventMessageTimestamp: "1693589518",
+        kickEventType: "kicks.gifted",
+        kickEventVersion: "1",
+        rawData: Buffer.from(JSON.stringify({
+            sender: {
+                user_id: 12345678,
+                username: "gifter-username",
+                username_color: "#ffffcc"
+            },
+            gift: {
+                gift_id: "super_gift",
+                name: "Super Gift",
+                type: "BASIC",
+                tier: "BASIC",
+                character_limit: 69,
+                pinned_time: 123456789,
+                amount: 25,
+                message: "Test message"
+            }
+        })).toString('base64')
     };
-    /* eslint-enable camelcase */
 
     const expectedKickMetadata = {
         userId: 'k12345678',
@@ -67,20 +69,17 @@ describe('e2e kicks gifted events', () => {
         userDisplayName: 'gifter-username',
         amount: 25,
         bits: 25, // Mapped to bits for Twitch compatibility
-        characterLimit: 69,
+        characterLimit: 0,
         cheerMessage: 'Test message',
-        giftId: 'super_gift',
+        giftId: '',
         giftName: 'Super Gift',
         giftType: 'BASIC',
         giftTier: 'BASIC',
-        pinnedTime: 123456789,
+        pinnedTime: 0,
         platform: 'kick'
     };
 
     beforeEach(() => {
-        pusher = new KickPusher();
-        // Mock the delay method to resolve immediately for testing
-        jest.spyOn(pusher as any, 'delay').mockResolvedValue(undefined);
         jest.clearAllMocks();
         mockGetSettings.mockReturnValue({
             triggerTwitchEvents: { cheer: false },
@@ -88,15 +87,10 @@ describe('e2e kicks gifted events', () => {
         });
     });
 
-    describe('pusher only - KicksGifted', () => {
-        it('handles pusher kicks gifted event', async () => {
+    describe('webhook only - kicks.gifted', () => {
+        it('handles webhook kicks gifted event', async () => {
 
-            // Simulate pusher event dispatch
-            await (pusher as any).dispatchChannelEvent(pusherEvent, pusherPayload);
-
-            // With mocked delay, the event should process immediately
-            // Allow all async operations to complete
-            await new Promise(resolve => setImmediate(resolve));
+            await expect(webhookHandler.handleWebhook(webhookKicksGiftedPayload)).resolves.not.toThrow();
 
             // Should trigger kicks-gifted event
             expect(triggerEventMock).toHaveBeenCalledWith(
@@ -113,18 +107,37 @@ describe('e2e kicks gifted events', () => {
             );
         });
 
-        it('handles pusher kicks gifted event with twitch forwarding enabled', async () => {
+        it('handles webhook kicks gifted event with twitch forwarding enabled', async () => {
             // Enable Twitch cheer forwarding
             mockGetSettings.mockReturnValue({
                 triggerTwitchEvents: { cheer: true },
                 logging: { logWebhooks: false }
             });
 
-            // Simulate pusher event dispatch
-            await (pusher as any).dispatchChannelEvent(pusherEvent, pusherPayload);
+            const uniqueWebhookPayload: InboundWebhook = {
+                ...webhookKicksGiftedPayload,
+                kickEventMessageId: "msg-kicks-gifted-2",
+                rawData: Buffer.from(JSON.stringify({
+                    sender: {
+                        user_id: 12345678,
+                        username: "gifter-username",
+                        username_color: "#cccccc" // Different color to avoid payload hash collision
+                    },
+                    gift: {
+                        gift_id: "super_gift",
+                        name: "Super Gift",
+                        type: "BASIC",
+                        tier: "BASIC",
+                        character_limit: 69,
+                        pinned_time: 123456789,
+                        amount: 25,
+                        message: "Test message"
+                    }
+                })).toString('base64')
+            };
+            /* eslint-enable camelcase */
 
-            // Allow all async operations to complete
-            await new Promise(resolve => setImmediate(resolve));
+            await expect(webhookHandler.handleWebhook(uniqueWebhookPayload)).resolves.not.toThrow();
 
             // Should trigger both kicks-gifted and Twitch cheer events
             expect(triggerEventMock).toHaveBeenCalledWith(

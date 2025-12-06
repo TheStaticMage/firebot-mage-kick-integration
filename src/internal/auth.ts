@@ -136,38 +136,15 @@ export class AuthManager {
         // Are we getting this for the streamer or bot?
         this.tokenRequests[state] = tokenType;
 
-        // Depending on configuration, use either the webhook proxy or direct authorization
-        if (integration.getSettings().webhookProxy.webhookProxyUrl) {
-            return this.getAuthorizationRequestUrlWebhookProxy(state, codeChallengeSha256);
-        }
+        // Use direct authorization with Kick app credentials
         if (integration.getSettings().kickApp.clientId && integration.getSettings().kickApp.clientSecret) {
             return this.getAuthorizationRequestUrlDirect(state, codeChallengeSha256);
         }
-        throw new Error("Cannot generate authorization URL: Missing webhook proxy URL or client credentials.");
+        throw new Error("Cannot generate authorization URL: Missing Kick app client ID or secret in settings.");
     }
 
     private getLocalRedirectUri(): string {
         return `${integration.getSettings().connectivity.firebotUrl}/integrations/${IntegrationConstants.INTEGRATION_URI}/callback`;
-    }
-
-    private getAuthorizationRequestUrlWebhookProxy(state: string, codeChallengeSha256: string): string {
-        const tokenType = this.tokenRequests[state];
-
-        // Upstream webhook proxy adds the client ID
-        const params = new URLSearchParams({
-            // eslint-disable-next-line camelcase
-            redirect_uri: this.getLocalRedirectUri(),
-            scope: (tokenType === 'streamer' ? IntegrationConstants.STREAMER_SCOPES : IntegrationConstants.BOT_SCOPES).join(" "),
-            // eslint-disable-next-line camelcase
-            code_challenge: codeChallengeSha256,
-            // eslint-disable-next-line camelcase
-            code_challenge_method: "S256",
-            state
-        });
-        const queryString = params.toString();
-        const webhookProxyUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/+$/, "");
-        const authUrl = `${webhookProxyUrl}/auth/authorize?${queryString}`;
-        return authUrl;
     }
 
     private getAuthorizationRequestUrlDirect(state: string, codeChallengeSha256: string): string {
@@ -227,26 +204,17 @@ export class AuthManager {
             grant_type: "authorization_code",
             code: code,
             // eslint-disable-next-line camelcase
-            code_verifier: this.codeChallenges[state]
+            code_verifier: this.codeChallenges[state],
+            // eslint-disable-next-line camelcase
+            client_id: integration.getSettings().kickApp.clientId || "",
+            // eslint-disable-next-line camelcase
+            client_secret: integration.getSettings().kickApp.clientSecret || "",
+            // eslint-disable-next-line camelcase
+            redirect_uri: this.getLocalRedirectUri()
         };
 
-        let url = "";
-        let payloadString = "";
-
-        if (integration.getSettings().webhookProxy.webhookProxyUrl) {
-            const webhookProxyUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/+$/, "");
-            url = `${webhookProxyUrl}/auth/token`;
-            payloadString = JSON.stringify(payload);
-        } else {
-            url = `${IntegrationConstants.KICK_AUTH_SERVER}/oauth/token`;
-            // eslint-disable-next-line camelcase
-            Object.assign(payload, { client_id: integration.getSettings().kickApp.clientId || "" });
-            // eslint-disable-next-line camelcase
-            Object.assign(payload, { client_secret: integration.getSettings().kickApp.clientSecret || "" });
-            // eslint-disable-next-line camelcase
-            Object.assign(payload, { redirect_uri: this.getLocalRedirectUri() });
-            payloadString = new URLSearchParams(payload).toString();
-        }
+        const url = `${IntegrationConstants.KICK_AUTH_SERVER}/oauth/token`;
+        const payloadString = new URLSearchParams(payload).toString();
 
         try {
             const req: HttpCallRequest = {
@@ -259,12 +227,6 @@ export class AuthManager {
 
             if (tokenType === 'bot') {
                 missingScopes = this.verifyTokenScopes(response.scope, IntegrationConstants.BOT_SCOPES, 'bot');
-
-                if (integration.getSettings().webhookProxy.webhookProxyUrl && response.proxy_poll_key) {
-                    logger.warn(`Received proxy_poll_key (${response.proxy_poll_key}) when authorizing bot account via webhook proxy`);
-                    res.status(400).send(`<p>This account cannot be authorized as a bot account because it is configured as a streamer account in the webhook proxy.</p><p>Please contact the webhook proxy administrator if this is in error, or <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/streamer">authorize this account as the streamer account</a> if that is what you intended to do.</p>`);
-                    return;
-                }
 
                 if (!integration.kick.broadcaster) {
                     logger.warn("Broadcaster info not available when verifying bot account during authorization");
@@ -290,24 +252,18 @@ export class AuthManager {
                 this.botRefreshToken = response.refresh_token;
                 this.botTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
                 integration.kick.setBotAuthToken(this.botAuthToken);
-                integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken, null);
+                integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken);
                 logger.info(`Kick integration token for bot refreshed successfully. Valid until: ${new Date(this.botTokenExpiresAt).toISOString()}`);
             }
 
             if (tokenType === 'streamer') {
                 missingScopes = this.verifyTokenScopes(response.scope, IntegrationConstants.STREAMER_SCOPES, 'streamer');
 
-                if (integration.getSettings().webhookProxy.webhookProxyUrl && !response.proxy_poll_key) {
-                    logger.warn("No proxy_poll_key when authorizing streamer account via webhook proxy");
-                    res.status(400).send(`<p>This account cannot be authorized as a streamer account because it is configured as a bot account in the webhook proxy.</p><p>Please contact the webhook proxy administrator if you believe this is an error, or <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/bot">authorize this account as the bot account</a> if that is what you intended to do.</p>`);
-                    return;
-                }
-
                 this.streamerAuthToken = response.access_token;
                 this.streamerRefreshToken = response.refresh_token;
                 this.streamerTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
                 integration.kick.setAuthToken(this.streamerAuthToken);
-                integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken, response.proxy_poll_key);
+                integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken);
                 logger.info(`Kick integration token for streamer refreshed successfully. Valid until: ${new Date(this.streamerTokenExpiresAt).toISOString()}`);
             }
 
@@ -319,11 +275,7 @@ export class AuthManager {
             res.status(200).send(successPage);
         } catch (error) {
             logger.error(`Failed to exchange code for tokens: ${error}`);
-            if (integration.getSettings().webhookProxy.webhookProxyUrl) {
-                res.status(500).send(`<p>Failed to exchange code for tokens via webhook proxy: ${error}.</p><p>Please contact the webhook proxy administrator for assistance.</p>`);
-            } else {
-                res.status(500).send(`<p>Failed to exchange code for tokens: ${error}</p>`);
-            }
+            res.status(500).send(`<p>Failed to exchange code for tokens: ${error}</p>`);
         }
     }
 
@@ -553,26 +505,17 @@ export class AuthManager {
             // eslint-disable-next-line camelcase
             grant_type: "refresh_token",
             // eslint-disable-next-line camelcase
-            refresh_token: tokenType === 'streamer' ? this.streamerRefreshToken : this.botRefreshToken
+            refresh_token: tokenType === 'streamer' ? this.streamerRefreshToken : this.botRefreshToken,
+            // eslint-disable-next-line camelcase
+            client_id: integration.getSettings().kickApp.clientId || "",
+            // eslint-disable-next-line camelcase
+            client_secret: integration.getSettings().kickApp.clientSecret || "",
+            // eslint-disable-next-line camelcase
+            redirect_uri: this.getLocalRedirectUri()
         };
 
-        let url = "";
-        let payloadString = "";
-
-        if (integration.getSettings().webhookProxy.webhookProxyUrl) {
-            const webhookProxyUrl = integration.getSettings().webhookProxy.webhookProxyUrl.replace(/\/+$/, "");
-            url = `${webhookProxyUrl}/auth/token`;
-            payloadString = JSON.stringify(payload);
-        } else {
-            url = `${IntegrationConstants.KICK_AUTH_SERVER}/oauth/token`;
-            // eslint-disable-next-line camelcase
-            Object.assign(payload, { client_id: integration.getSettings().kickApp.clientId || "" });
-            // eslint-disable-next-line camelcase
-            Object.assign(payload, { client_secret: integration.getSettings().kickApp.clientSecret || "" });
-            // eslint-disable-next-line camelcase
-            Object.assign(payload, { redirect_uri: this.getLocalRedirectUri() });
-            payloadString = new URLSearchParams(payload).toString();
-        }
+        const url = `${IntegrationConstants.KICK_AUTH_SERVER}/oauth/token`;
+        const payloadString = new URLSearchParams(payload).toString();
 
         try {
             const req: HttpCallRequest = {

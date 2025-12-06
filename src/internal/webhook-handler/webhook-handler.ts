@@ -32,29 +32,29 @@ export class WebhookHandler {
             logger.debug(`Received webhook: ${JSON.stringify(webhook)}`);
         }
 
-        if (!webhook.kick_event_message_id || !webhook.kick_event_subscription_id || !webhook.kick_event_message_timestamp ||
-        !webhook.kick_event_type || !webhook.kick_event_version || !webhook.raw_data) {
+        if (!webhook.kickEventMessageId || !webhook.kickEventSubscriptionId || !webhook.kickEventMessageTimestamp ||
+        !webhook.kickEventType || !webhook.kickEventVersion || !webhook.rawData) {
             throw new Error("Invalid webhook data");
         }
 
         // Duplicate webhook detection based on Kick's message ID. These should
         // always be safely discarded.
-        if (this.eventIdCache.has(webhook.kick_event_message_id)) {
-            logger.warn(`Duplicate webhook detected (id: ${webhook.kick_event_message_id}, type: ${webhook.kick_event_type}, version: ${webhook.kick_event_version}), ignoring.`);
+        if (this.eventIdCache.has(webhook.kickEventMessageId)) {
+            logger.warn(`Duplicate webhook detected (id: ${webhook.kickEventMessageId}, type: ${webhook.kickEventType}, version: ${webhook.kickEventVersion}), ignoring.`);
             return;
         }
-        this.eventIdCache.set(webhook.kick_event_message_id, true);
+        this.eventIdCache.set(webhook.kickEventMessageId, true);
 
         // When Kick subscriptions get messed up, it can send the same payload
         // multiple times under different subscription IDs and message IDs. So here
-        // we hash the payload (raw_data) and then check it against a cache so that
+        // we hash the payload (rawData) and then check it against a cache so that
         // we can reject duplicate payloads.
-        if (!webhook.is_test_event) {
+        if (!webhook.isTestEvent) {
             const crypto = await import('crypto');
-            const payloadHash = crypto.createHash('sha256').update(webhook.raw_data).digest('hex');
+            const payloadHash = crypto.createHash('sha256').update(webhook.rawData).digest('hex');
 
             if (this.payloadCache.has(payloadHash)) {
-                logger.warn(`Duplicate webhook payload detected (id: ${webhook.kick_event_message_id}, type: ${webhook.kick_event_type}, version: ${webhook.kick_event_version}, hash: ${payloadHash}), ignoring.`);
+                logger.warn(`Duplicate webhook payload detected (id: ${webhook.kickEventMessageId}, type: ${webhook.kickEventType}, version: ${webhook.kickEventVersion}, hash: ${payloadHash}), ignoring.`);
                 return;
             }
             this.payloadCache.set(payloadHash, true);
@@ -62,10 +62,10 @@ export class WebhookHandler {
 
         // For performance checks and other debugging on webhooks
         const webhookReceivedEvent = {
-            kickEventType: webhook.kick_event_type,
-            kickEventVersion: webhook.kick_event_version,
-            isTestEvent: webhook.is_test_event || false,
-            timestamp: parseDate(webhook.kick_event_message_timestamp) || null
+            kickEventType: webhook.kickEventType,
+            kickEventVersion: webhook.kickEventVersion,
+            isTestEvent: webhook.isTestEvent ?? false,
+            timestamp: parseDate(webhook.kickEventMessageTimestamp) || null
         };
         handleWebhookReceivedEvent(webhookReceivedEvent);
 
@@ -73,67 +73,67 @@ export class WebhookHandler {
         // trusting the proxy owner and they could just send you fake data. Rather,
         // it's meant to protect you against innocent mistakes (e.g. developer
         // accidentally sending test webhooks with the wrong key).
-        if (webhook.is_test_event && !integration.getSettings().advanced.allowTestWebhooks) {
+        if (webhook.isTestEvent && !integration.getSettings().advanced.allowTestWebhooks) {
             logger.warn(`Received test webhook but test webhooks are disabled: ${JSON.stringify(webhook)}`);
             return;
         }
 
         // This is not a real event from Kick, but is rather used for testing.
-        if (webhook.is_test_event && webhook.kick_event_type === "pusher.test") {
-            const payload = parsePusherTestWebhook(webhook.raw_data);
+        if (webhook.isTestEvent && webhook.kickEventType === "pusher.test") {
+            const payload = parsePusherTestWebhook(webhook.rawData);
             await integration.pusher.dispatchTestEvent(payload);
             return;
         }
 
         // Handle real webhooks
-        switch (webhook.kick_event_type) {
+        switch (webhook.kickEventType) {
             case "chat.message.sent": {
-                const event = parseChatMessageEvent(webhook.raw_data);
+                const event = parseChatMessageEvent(webhook.rawData);
                 handleChatMessageSentEvent(event);
                 break;
             }
             case "channel.followed": {
-                const event = parseFollowEvent(webhook.raw_data);
+                const event = parseFollowEvent(webhook.rawData);
                 handleFollowerEvent(event);
                 break;
             }
             case "channel.subscription.renewal": {
-                const event = parseChannelSubscriptionRenewalEvent(webhook.raw_data);
+                const event = parseChannelSubscriptionRenewalEvent(webhook.rawData);
                 handleChannelSubscriptionEvent(event);
                 break;
             }
             case "channel.subscription.gifts": {
-                const event = parseChannelSubscriptionGiftsEvent(webhook.raw_data);
+                const event = parseChannelSubscriptionGiftsEvent(webhook.rawData);
                 await handleChannelSubscriptionGiftsEvent(event);
                 break;
             }
             case "channel.subscription.new": {
-                const event = parseChannelSubscriptionNewEvent(webhook.raw_data);
+                const event = parseChannelSubscriptionNewEvent(webhook.rawData);
                 handleChannelSubscriptionEvent(event);
                 break;
             }
             case "livestream.metadata.updated": {
-                const event = parseLivestreamMetadataUpdatedEvent(webhook.raw_data);
+                const event = parseLivestreamMetadataUpdatedEvent(webhook.rawData);
                 handleLivestreamMetadataUpdatedEvent(event);
                 break;
             }
             case "livestream.status.updated": {
-                const event = parseLivestreamStatusUpdatedEvent(webhook.raw_data);
+                const event = parseLivestreamStatusUpdatedEvent(webhook.rawData);
                 livestreamStatusUpdatedHandler.handleLivestreamStatusUpdatedEvent(event);
                 break;
             }
             case "moderation.banned": {
-                const event = parseModerationBannedEvent(webhook.raw_data);
+                const event = parseModerationBannedEvent(webhook.rawData);
                 moderationBannedEventHandler.handleModerationBannedEvent(event);
                 break;
             }
             case "kicks.gifted": {
-                const event = parseKicksGiftedEvent(webhook.raw_data);
+                const event = parseKicksGiftedEvent(webhook.rawData);
                 await kicksHandler.handleKicksGiftedEvent(event);
                 break;
             }
             default: {
-                throw new Error(`Unsupported event type: ${webhook.kick_event_type}`);
+                throw new Error(`Unsupported event type: ${webhook.kickEventType}`);
             }
         }
     }

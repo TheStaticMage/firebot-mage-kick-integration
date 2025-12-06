@@ -1,36 +1,42 @@
-# Upgrading
+# Upgrading Instructions
 
 ## Version Requirements
 
 - **Version 0.7.0 and higher** require Firebot 5.65
 - **Version 0.6.2 and lower** require Firebot 5.64
 
-If you have Firebot 5.64, stay with version 0.6.2 of this integration. If you upgrade to Firebot 5.65 or higher, upgrade to version 0.7.0 or higher of this integration.
-
 ## Versioning Philosophy
 
-- A **patch release** changes the last number (e.g. `0.0.3` -> `0.0.4`). These releases may fix bugs or add features, but your existing setup should continue to work just fine. _You may review the upgrade notes for any specific information, e.g. to take advantage of new features._
+- A **patch release** changes the last number (e.g. `0.0.3` -> `0.0.4`). These releases may fix bugs or add features, but your existing setup should continue to work just fine.
 
-- A **minor release** changes the middle number (e.g. `0.0.4` -> `0.1.0`). These releases typically make some kind of considerable (but generally backward-compatible) change, in addition to possibly fixing bugs or adding features. In most cases, your existing setup should continue to work just fine. Due to the evolving nature of this project, Firebot, and the Kick API, backward compatibility cannot be assured. Known issues will be noted in the release notes.
+- A **minor release** changes the middle number (e.g. `0.0.4` -> `0.1.0`). These releases typically make considerable changes. Backward compatibility cannot be assured.
 
-- A **major release** changes the first number (e.g. `0.1.5` -> `1.0.0`). Since version 1.0 typically implies stability and production-readiness, and that is highly unlikely ever to happen with this project, I do not intend to release version 1.0 or higher of this project, unless this somehow becomes an officially supported plugin for Firebot version 6.
+- A **major release** changes the first number (e.g. `0.1.5` -> `1.0.0`). I do not intend to release version 1.0.
 
-## General Upgrade Procedure
+## Breaking Change Alerts
 
-1. Review the upgrade notes below, especially if you are upgrading more than just a patch release.
+:boom: **Version 0.9.0 no longer supports webhook proxy**: Upon upgrading to version 0.9.0 or higher, all users will be required to create a Kick App in their own account and configure a webhook URL. Instructions are provided here: [Configuration](/doc/configuration.md).
 
-2. From the latest [Release](https://github.com/TheStaticMage/firebot-mage-kick-integration/releases), download: `firebot-mage-kick-integration-<version>.js` into your Firebot scripts directory
+## Upgrade Procedure
 
-    (File &gt; Open Data Folder, then select the "scripts" directory)
+1. Download the new version `firebot-mage-kick-integration-<version>.js` from the [Releases](https://github.com/TheStaticMage/firebot-mage-kick-integration/releases) page.
 
-    :warning: Be sure you download the file from the releases page, not the source code of the GitHub repository!
+2. Go to Settings &gt; Scripts &gt; Manage Startup Scripts in Firebot.
 
-3. Go in to Settings &gt; Scripts &gt; Manage Startup Scripts and click the **Edit** button next to On-Screen Chat Overlay. Select the correctly versioned script from the dropdown. (If necessary, click on the icon to refresh the directory contents.)
+3. Edit the existing script entry and select the new file.
 
-4. Restart Firebot. (The new version of the script will _not_ be loaded until you actually restart Firebot.)
-
-:bulb: You may optionally remove older versions of the script from the scripts directory once you have installed new ones.
+4. Restart Firebot.
 
 ## Upgrade Notes
 
-:boom: Version 0.8.0 adds the `moderation:chat_message:manage` scope for the streamer token. After upgrading, you will need to re-authorize the streamer account to enable the Delete Message effect.
+### :boom: MAJOR CHANGE :boom: Version 0.9.0: Removal of webhook proxy
+
+This version introduces a major architectural change. **The Webhook Proxy is no longer supported.** Instead, this integration now uses Firebot's built-in "Crowbar Tools" webhook proxy system to receive webhooks from Kick.
+
+If you were using someone else's webhook proxy before, you never created a Kick App. You will need to do so now.
+
+Follow the [Configuration](/doc/configuration.md) instructions.
+
+### Version 0.8.0
+
+:boom: Adds the `moderation:chat_message:manage` scope. You must re-authorize the streamer account to use the Delete Message effect.

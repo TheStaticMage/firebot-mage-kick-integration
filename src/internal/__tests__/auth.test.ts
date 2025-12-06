@@ -449,8 +449,12 @@ describe('AuthManager', () => {
 
             // Mock integration settings
             mockIntegration.getSettings = jest.fn().mockReturnValue({
-                webhookProxy: {
-                    webhookProxyUrl: 'https://proxy.example.com'
+                kickApp: {
+                    clientId: 'test-client-id',
+                    clientSecret: 'test-client-secret'
+                },
+                connectivity: {
+                    firebotUrl: 'http://localhost:7472'
                 }
             });
 
@@ -458,6 +462,7 @@ describe('AuthManager', () => {
             mockIntegration.saveIntegrationTokenData = jest.fn();
             mockIntegration.disconnect = jest.fn();
             mockIntegration.connect = jest.fn();
+            mockIntegration.sendCriticalErrorNotification = jest.fn();
 
             // Mock kick instance methods
             if (!mockIntegration.kick) {
@@ -618,45 +623,12 @@ describe('AuthManager', () => {
             expect(res.send).toHaveBeenCalledWith(expect.stringContaining('until the streamer account has been authorized'));
         });
 
-        it('prevents a bot account from the webhook proxy from being registered as a streamer account', async () => {
-            // Mock successful token exchange
-            mockHttpCallWithTimeout.mockResolvedValueOnce({
-                'access_token': 'streamer-token',
-                'refresh_token': 'streamer-refresh',
-                'expires_in': 3600,
-                'scope': IntegrationConstants.STREAMER_SCOPES.join(' ')
-            });
-
-            // Set up callback request
-            const req = {
-                query: {
-                    code: 'auth-code',
-                    state: 'test-state'
-                }
-            };
-
-            const res = {
-                status: jest.fn().mockReturnThis(),
-                send: jest.fn()
-            };
-
-            // Set up token request state
-            (authManager as any).tokenRequests['test-state'] = 'streamer';
-            (authManager as any).codeChallenges['test-state'] = 'code-verifier';
-
-            await authManager.handleAuthCallback(req, res);
-
-            expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.send).toHaveBeenCalledWith(expect.stringContaining('it is configured as a bot account in the webhook proxy'));
-        });
-
         it('sends critical error when streamer scopes are missing', async () => {
             mockHttpCallWithTimeout.mockResolvedValueOnce({
                 'access_token': 'streamer-token',
                 'refresh_token': 'streamer-refresh',
                 'expires_in': 3600,
-                'scope': 'user:read chat:write',
-                'proxy_poll_key': 'test-proxy-key'
+                'scope': 'user:read chat:write'
             });
 
             const req = {
@@ -753,9 +725,11 @@ describe('AuthManager', () => {
         const mockHttpCall = httpCallWithTimeout as jest.MockedFunction<typeof httpCallWithTimeout>;
 
         beforeEach(() => {
-            // Set up default refresh tokens
+            // Set up default refresh tokens and auth tokens
             (authManager as any).streamerRefreshToken = 'streamer-refresh-token';
             (authManager as any).botRefreshToken = 'bot-refresh-token';
+            (authManager as any).streamerAuthToken = '';
+            (authManager as any).botAuthToken = '';
 
             // Mock Date.now() for consistent testing
             jest.spyOn(Date, 'now').mockReturnValue(1000000);
@@ -771,146 +745,13 @@ describe('AuthManager', () => {
             jest.restoreAllMocks();
         });
 
-        describe('Webhook Proxy flow', () => {
-            beforeEach(() => {
-                mockIntegration.getSettings.mockReturnValue({
-                    connectivity: {
-                        firebotUrl: 'http://localhost:7472'
-                    },
-                    webhookProxy: {
-                        webhookProxyUrl: 'https://webhook-proxy.example.com/'
-                    },
-                    kickApp: {
-                        clientId: 'test-client-id',
-                        clientSecret: 'test-client-secret'
-                    }
-                });
-            });
-
-            it('should successfully refresh streamer token via webhook proxy', async () => {
-                mockHttpCall.mockResolvedValue({
-                    access_token: 'new-streamer-access-token',
-                    refresh_token: 'new-streamer-refresh-token',
-                    expires_in: 3600,
-                    scope: IntegrationConstants.STREAMER_SCOPES.join(' ')
-                });
-
-                await (authManager as any).refreshAuthTokenReal('streamer');
-
-                expect(mockHttpCall).toHaveBeenCalledWith({
-                    url: 'https://webhook-proxy.example.com/auth/token',
-                    method: 'POST',
-                    body: JSON.stringify({
-                        grant_type: "refresh_token",
-                        refresh_token: "streamer-refresh-token"
-                    })
-                });
-
-                expect((authManager as any).streamerAuthToken).toBe('new-streamer-access-token');
-                expect((authManager as any).streamerRefreshToken).toBe('new-streamer-refresh-token');
-                expect((authManager as any).streamerTokenExpiresAt).toBe(1000000 + (3600 * 1000));
-                expect(mockIntegration.kick.setAuthToken).toHaveBeenCalledWith('new-streamer-access-token');
-                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('new-streamer-refresh-token', 'bot-refresh-token');
-            });
-
-            it('should successfully refresh bot token via webhook proxy', async () => {
-                mockHttpCall.mockResolvedValue({
-                    access_token: 'new-bot-access-token',
-                    refresh_token: 'new-bot-refresh-token',
-                    expires_in: 3600,
-                    scope: IntegrationConstants.BOT_SCOPES.join(' ')
-                });
-
-                await (authManager as any).refreshAuthTokenReal('bot');
-
-                expect(mockHttpCall).toHaveBeenCalledWith({
-                    url: 'https://webhook-proxy.example.com/auth/token',
-                    method: 'POST',
-                    body: JSON.stringify({
-                        grant_type: "refresh_token",
-                        refresh_token: "bot-refresh-token"
-                    })
-                });
-
-                expect((authManager as any).botAuthToken).toBe('new-bot-access-token');
-                expect((authManager as any).botRefreshToken).toBe('new-bot-refresh-token');
-                expect((authManager as any).botTokenExpiresAt).toBe(1000000 + (3600 * 1000));
-                expect(mockIntegration.kick.setBotAuthToken).toHaveBeenCalledWith('new-bot-access-token');
-                expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalledWith('streamer-refresh-token', 'new-bot-refresh-token');
-            });
-
-            it('should remove trailing slashes from webhook proxy URL', async () => {
-                mockIntegration.getSettings.mockReturnValue({
-                    connectivity: {
-                        firebotUrl: 'http://localhost:7472'
-                    },
-                    webhookProxy: {
-                        webhookProxyUrl: 'https://webhook-proxy.example.com///' // Multiple trailing slashes
-                    },
-                    kickApp: {
-                        clientId: 'test-client-id',
-                        clientSecret: 'test-client-secret'
-                    }
-                });
-
-                mockHttpCall.mockResolvedValue({
-                    access_token: 'new-access-token',
-                    refresh_token: 'new-refresh-token',
-                    expires_in: 3600,
-                    scope: IntegrationConstants.STREAMER_SCOPES.join(' ')
-                });
-
-                await (authManager as any).refreshAuthTokenReal('streamer');
-
-                expect(mockHttpCall).toHaveBeenCalledWith({
-                    url: 'https://webhook-proxy.example.com/auth/token', // Should have trailing slashes removed
-                    method: 'POST',
-                    body: JSON.stringify({
-                        grant_type: "refresh_token",
-                        refresh_token: "streamer-refresh-token"
-                    })
-                });
-            });
-
-            it('should surface missing streamer scopes during refresh', async () => {
-                mockHttpCall.mockResolvedValue({
-                    access_token: 'new-streamer-access-token',
-                    refresh_token: 'new-streamer-refresh-token',
-                    expires_in: 3600,
-                    scope: 'user:read'
-                });
-
-                await (authManager as any).refreshAuthTokenReal('streamer');
-                expect(mockIntegration.sendCriticalErrorNotification).toHaveBeenCalledWith(
-                    expect.stringContaining('streamer token is missing required scopes')
-                );
-                expect(mockIntegration.kick.setAuthToken).toHaveBeenCalledWith('new-streamer-access-token');
-            });
-
-            it('should surface missing bot scopes during refresh', async () => {
-                mockHttpCall.mockResolvedValue({
-                    access_token: 'new-bot-access-token',
-                    refresh_token: 'new-bot-refresh-token',
-                    expires_in: 3600,
-                    scope: 'user:read'
-                });
-
-                await (authManager as any).refreshAuthTokenReal('bot');
-                expect(mockIntegration.sendCriticalErrorNotification).toHaveBeenCalledWith(
-                    expect.stringContaining('bot token is missing required scopes')
-                );
-                expect(mockIntegration.kick.setBotAuthToken).toHaveBeenCalledWith('new-bot-access-token');
-            });
-        });
-
         describe('Direct auth flow', () => {
             beforeEach(() => {
+                mockHttpCall.mockClear();
+
                 mockIntegration.getSettings.mockReturnValue({
                     connectivity: {
                         firebotUrl: 'http://localhost:7472'
-                    },
-                    webhookProxy: {
-                        webhookProxyUrl: '' // Empty webhook proxy URL triggers direct auth
                     },
                     kickApp: {
                         clientId: 'test-client-id',
@@ -968,12 +809,11 @@ describe('AuthManager', () => {
 
         describe('Error handling', () => {
             beforeEach(() => {
+                mockHttpCall.mockClear();
+
                 mockIntegration.getSettings.mockReturnValue({
                     connectivity: {
                         firebotUrl: 'http://localhost:7472'
-                    },
-                    webhookProxy: {
-                        webhookProxyUrl: 'https://webhook-proxy.example.com'
                     },
                     kickApp: {
                         clientId: 'test-client-id',
@@ -1064,13 +904,14 @@ describe('AuthManager', () => {
         });
 
         describe('Edge cases', () => {
+            beforeEach(() => {
+                mockHttpCall.mockClear();
+            });
+
             it('should handle empty client credentials gracefully in direct auth', async () => {
                 mockIntegration.getSettings.mockReturnValue({
                     connectivity: {
                         firebotUrl: 'http://localhost:7472'
-                    },
-                    webhookProxy: {
-                        webhookProxyUrl: ''
                     },
                     kickApp: {
                         clientId: '', // Empty client ID

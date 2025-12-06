@@ -53,6 +53,15 @@ Learnings:
   - Browser confirm dialogs can cause document to lose focus, breaking subsequent clipboard operations
   - Solution: call `window.focus()` before clipboard operations and provide fallback using `document.execCommand('copy')` with temporary textarea
   - Always use Angular's `$timeout` instead of native `setTimeout` for button state management in AngularJS controllers
+- **Webhook Signature Verification:**
+  - Production webhooks use RSA-SHA256 signatures (base64-encoded)
+  - Test webhooks use Ed25519 signatures (hex-encoded)
+  - Signature verification is in `src/internal/webhook-handler/webhook-signature-verifier.ts`
+  - Test fixtures for keys are in `src/internal/webhook-handler/__fixtures__/` (checked into git)
+  - Real production keys in `IntegrationConstants.WEBHOOK_PUBLIC_KEY`
+  - Real test webhook keys: `private_key.pem` (git-ignored), `IntegrationConstants.TEST_WEBHOOK_PUBLIC_KEY`
+  - Production webhook signature input: `${messageId}.${timestamp}.${JSON.stringify(payload)}`
+  - Test webhook signature input: `JSON.stringify(payload)`
 
 Conventions:
 

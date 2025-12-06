@@ -240,11 +240,24 @@ export function parseChannelSubscriptionGiftsEvent(rawData: string): ChannelGift
 }
 
 export function parsePusherTestWebhook(rawData: string): InboundPayload {
-    const data: InboundPayload = parseRawData(rawData);
+    const data = parseRawData(rawData);
+
+    // Test webhooks contain the message data in the 'payload' field
+    // Extract the message and construct a Pusher-like event
+    if (data.payload && typeof data.payload === 'object') {
+        // This is a test chat message
+        return {
+            event: 'message.add',
+            channel: `chatrooms.${data.payload.broadcaster?.channel_slug || 'unknown'}`,
+            data: data.payload
+        };
+    }
+
+    // Fallback for other test event types
     return {
-        event: data.event,
-        channel: data.channel,
-        data: data.data
+        event: data.event || 'unknown',
+        channel: data.channel || 'unknown',
+        data: data.data || data.payload || {}
     };
 }
 
