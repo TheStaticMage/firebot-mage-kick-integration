@@ -2,17 +2,17 @@
 
 Before you can use this integration, you need to perform the following setup:
 
-1. Create a Kick App to get a Client ID and Client Secret.
+1. Create a Kick App
 
-2. Determine the Channel and Chatroom IDs for your Kick channel.
+2. Determine the Channel and Chatroom IDs for your Kick channel
 
-3. Enter the configuration into Firebot.
+3. Enter the configuration into Firebot
 
-4. Authenticate the streamer account.
+4. Authenticate the streamer account
 
-5. Optional: authenticate the bot account.
+5. Optional: authenticate the bot account
 
-6. Enter the Webhook URL into your Kick App configuration.
+6. Enter the Webhook URL into your Kick App configuration
 
 ## 1) Create a Kick App
 
@@ -27,8 +27,8 @@ Before you can use this integration, you need to perform the following setup:
     - **Application Name**: `Firebot` (or `YourNameFirebot`)
     - **App Description**: `Firebot integration`
     - **Redirect URL**: `http://localhost:7472/integrations/firebot-mage-kick-integration/auth/callback`
-    - **Enable webhooks**: Checked :white_check_mark:
-    - **Webhook URL**: Enter `https://example.com` for now. You will update this later.
+    - **Enable webhooks**: Unchecked
+    - **Webhook URL**: Leave blank
     - **Scopes Requested**: Check **ALL** scopes **EXCEPT** "Read stream key". (It is very important to select all the other scopes, otherwise the integration will not work correctly.)
 
 5. Click **Create App**.
@@ -135,16 +135,16 @@ _If you want to have a separate "bot" account that posts messages on behalf of F
 
 4. Click **Edit** to open the settings.
 
-5. In Firebot, click **Kick Accounts** in the left menu.
+5. Check the box for **Enable webhooks**.
 
-6. If "Webhook Configuration" appears, click the "Copy URL" button. (If this does not appear, restart Firebot and try again.)
+6. Switch over to Firebot and do these steps to get your webhook URL:
 
-7. Click the **Copy URL** button.
+    - Click **Kick Accounts** in the left menu.
+    - If "Webhook Configuration" appears, click the "Copy URL" button. (If this does not appear, restart Firebot and try again.)
+    - Click the **Copy URL** button.
 
-8. Go back to your browser. Paste the URL into the box under "Enable webhooks."
+7. Switch back to your browser. Paste the URL into the box under "Enable webhooks."
 
-9. While you're here, make sure that other settings are correct: the checkbox for "Enable webhooks" should be enabled, and all scopes _except_ "Read stream key" should be selected.
+8. Click **Save changes**.
 
-10. Click **Save changes**.
-
-_Note:_ Kick _pushes_ notifications (webhooks) out when activity occurs, like a follow or a message being posted in chat. Crowbar Tools (the Firebot authors) operate a service on the internet that listens for webhooks and makes them available to your Firebot instance, without forcing you to run a server yourself. Operating these servers costs the Firebot authors actual money. Consider chipping in with a [donation](https://opencollective.com/crowbartools) if you are able.
+_Note:_ Kick _pushes_ notifications (webhooks) out when activity occurs, like a follow or a message being posted in chat. A service operated by Crowbar Tools (the Firebot authors) runs on an internet server, listening for webhooks from Kick (and others) and makes that content available to your Firebot instance. This provides webhook receiving capabilities without forcing you to run a server yourself. However, operating these servers costs the Firebot authors actual money, so please consider chipping in with a [donation](https://opencollective.com/crowbartools) if you are able.
