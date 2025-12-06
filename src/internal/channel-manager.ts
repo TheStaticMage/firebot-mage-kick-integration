@@ -115,13 +115,13 @@ export class KickChannelManager {
     private refreshChannel(): void {
         this.getChannelReal()
             .then((channelStatus: Channel) => {
-                this.channel = channelStatus;
                 if (this.updateCategory(channelStatus.category)) {
                     triggerCategoryChangedEvent(channelStatus.category);
                 }
                 if (this.updateTitle(channelStatus.streamTitle || "")) {
                     triggerTitleChangedEvent(channelStatus.streamTitle);
                 }
+                this.channel = channelStatus;
                 this.triggerChannelDataUpdatedEvent();
                 logger.debug(`Channel status updated: isLive=${channelStatus.stream.isLive}, title=${channelStatus.streamTitle || ''}, category=${channelStatus.category.id}, viewers=${channelStatus.stream.viewerCount}`);
             })
@@ -181,10 +181,9 @@ export class KickChannelManager {
             return false;
         }
 
-        const categoryWasEmpty = this.channel.category.id === 0;
         this.channel.category = category;
         logger.debug(`Category updated to id=${category.id} name=${this.channel.category.name}.`);
-        return !categoryWasEmpty;
+        return true;
     }
 
     updateTitle(title: string): boolean {
@@ -206,7 +205,7 @@ export class KickChannelManager {
         const titleWasEmpty = this.channel.streamTitle === '';
         this.channel.streamTitle = title;
         logger.debug(`Title ${titleWasEmpty ? 'initially set' : 'updated'} to "${title}".`);
-        return !titleWasEmpty;
+        return true;
     }
 
     updateLiveStatus(isLive: boolean): boolean {

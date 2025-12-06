@@ -1,4 +1,4 @@
 [submodule "kick-api-types"]
 	path = kick-api-types
 	url = https://github.com/TheStaticMage/kick-api-types.git
-	branch = missing-chat-fields
+	branch = running
