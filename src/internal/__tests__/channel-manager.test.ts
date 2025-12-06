@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import { KickChannelManager } from '../channel-manager';
 import { createMockKick } from '../mock-kick';
 
@@ -12,16 +13,27 @@ jest.mock('../../main', () => ({
 }));
 
 jest.mock('../webhook-handler/webhook-parsers', () => ({
-    parseChannel: jest.fn().mockReturnValue({
-        id: 123,
-        userId: 456,
-        slug: 'test-channel'
-    })
+    parseChannel: jest.fn()
 }));
+
+import { logger } from '../../main';
+import { parseChannel as mockParseChannelImport } from '../webhook-handler/webhook-parsers';
+
+const mockParseChannel = mockParseChannelImport as jest.MockedFunction<typeof mockParseChannelImport>;
 
 jest.mock('../../events/livestream-metadata-updated', () => ({
     triggerCategoryChangedEvent: jest.fn(),
     triggerTitleChangedEvent: jest.fn()
+}));
+
+jest.mock('../../integration', () => ({
+    integration: {
+        getSettings: jest.fn(() => ({
+            logging: { logWebhooks: false },
+            advanced: { allowTestWebhooks: false },
+            triggerTwitchEvents: { titleChanged: false }
+        }))
+    }
 }));
 
 describe('KickChannelManager', () => {
@@ -349,6 +361,310 @@ describe('KickChannelManager async fixes - Issue #1 Promise rejection fixes', ()
             // Restore original handlers
             process.removeAllListeners('unhandledRejection');
             originalHandler.forEach(handler => process.on('unhandledRejection', handler));
+        });
+    });
+
+    describe('updateTitle method', () => {
+        beforeEach(() => {
+            manager.start = jest.fn();
+            manager.stop = jest.fn();
+            manager['channel'] = {
+                bannerPicture: '',
+                broadcasterUserId: 2,
+                category: { id: 0, name: '', thumbnail: '' },
+                channelDescription: '',
+                slug: 'test',
+                stream: { isLive: false, isMature: false, key: '', language: '', thumbnail: '', url: '', viewerCount: 0 },
+                streamTitle: ''
+            };
+        });
+
+        it('should return true and trigger event when title is updated from empty', () => {
+            const result = manager.updateTitle('New Title');
+            expect(result).toBe(true);
+        });
+
+        it('should return true when title is updated from non-empty', () => {
+            if (manager['channel']) {
+                manager['channel'].streamTitle = 'Old Title';
+            }
+            const result = manager.updateTitle('New Title');
+            expect(result).toBe(true);
+        });
+
+        it('should return false when title is the same', () => {
+            if (manager['channel']) {
+                manager['channel'].streamTitle = 'Existing Title';
+            }
+            const result = manager.updateTitle('Existing Title');
+            expect(result).toBe(false);
+        });
+
+        it('should return false when title is empty string', () => {
+            const result = manager.updateTitle('');
+            expect(result).toBe(false);
+        });
+
+        it('should return false when title is whitespace only', () => {
+            const result = manager.updateTitle('   ');
+            expect(result).toBe(false);
+        });
+
+        it('should return false when channel is not initialized', () => {
+            manager['channel'] = null;
+            const result = manager.updateTitle('New Title');
+            expect(result).toBe(false);
+        });
+
+        it('should update the channel title property', () => {
+            manager.updateTitle('Updated Title');
+            if (manager['channel']) {
+                expect(manager['channel'].streamTitle).toBe('Updated Title');
+            }
+        });
+    });
+
+    describe('updateCategory method', () => {
+        beforeEach(() => {
+            manager.start = jest.fn();
+            manager.stop = jest.fn();
+            manager['channel'] = {
+                bannerPicture: '',
+                broadcasterUserId: 2,
+                category: { id: 0, name: '', thumbnail: '' },
+                channelDescription: '',
+                slug: 'test',
+                stream: { isLive: false, isMature: false, key: '', language: '', thumbnail: '', url: '', viewerCount: 0 },
+                streamTitle: 'Test Stream'
+            };
+        });
+
+        it('should return true when category is updated from empty', () => {
+            const newCategory = { id: 123, name: 'Gaming', thumbnail: 'url' };
+            const result = manager.updateCategory(newCategory);
+            expect(result).toBe(true);
+        });
+
+        it('should return true when category is updated from non-empty', () => {
+            if (manager['channel']) {
+                manager['channel'].category = { id: 100, name: 'Old Category', thumbnail: '' };
+            }
+            const newCategory = { id: 123, name: 'New Category', thumbnail: '' };
+            const result = manager.updateCategory(newCategory);
+            expect(result).toBe(true);
+        });
+
+        it('should return false when category is the same', () => {
+            const category = { id: 123, name: 'Gaming', thumbnail: '' };
+            if (manager['channel']) {
+                manager['channel'].category = category;
+            }
+            const result = manager.updateCategory(category);
+            expect(result).toBe(false);
+        });
+
+        it('should return false when category ID is 0', () => {
+            const invalidCategory = { id: 0, name: 'Invalid', thumbnail: '' };
+            const result = manager.updateCategory(invalidCategory);
+            expect(result).toBe(false);
+        });
+
+        it('should return false when channel is not initialized', () => {
+            manager['channel'] = null;
+            const category = { id: 123, name: 'Gaming', thumbnail: '' };
+            const result = manager.updateCategory(category);
+            expect(result).toBe(false);
+        });
+
+        it('should update the channel category property', () => {
+            const newCategory = { id: 456, name: 'Music', thumbnail: '' };
+            manager.updateCategory(newCategory);
+            if (manager['channel']) {
+                expect(manager['channel'].category).toBe(newCategory);
+            }
+        });
+    });
+
+    describe('refreshChannel method', () => {
+        const { triggerCategoryChangedEvent, triggerTitleChangedEvent } = require('../../events/livestream-metadata-updated');
+
+        beforeEach(() => {
+            manager.start = jest.fn();
+            manager.stop = jest.fn();
+            jest.clearAllMocks();
+            manager['channel'] = {
+                bannerPicture: '',
+                broadcasterUserId: 2,
+                category: { id: 0, name: '', thumbnail: '' },
+                channelDescription: '',
+                slug: 'test',
+                stream: { isLive: false, isMature: false, key: '', language: '', thumbnail: '', url: '', viewerCount: 0 },
+                streamTitle: ''
+            };
+        });
+
+        it('should update channel when getChannelReal succeeds with new title and category', async () => {
+            const newChannelData = {
+                bannerPicture: 'banner.jpg',
+                broadcasterUserId: 2,
+                category: { id: 123, name: 'Gaming', thumbnail: 'thumb.jpg' },
+                channelDescription: 'Test channel',
+                slug: 'test',
+                stream: { isLive: true, isMature: false, key: 'key', language: 'en', thumbnail: 'stream.jpg', url: 'url', viewerCount: 100 },
+                streamTitle: 'New Stream Title'
+            };
+
+            mockKick.httpCallWithTimeout.mockResolvedValue({
+                data: [newChannelData]
+            });
+            mockParseChannel.mockReturnValue(newChannelData);
+
+            manager['refreshChannel']();
+            await new Promise(resolve => setImmediate(resolve));
+
+            if (manager['channel']) {
+                expect(manager['channel'].streamTitle).toBe('New Stream Title');
+                expect(manager['channel'].category.id).toBe(123);
+                expect(manager['channel'].stream.viewerCount).toBe(100);
+            }
+        });
+
+        it('should trigger category changed event when category is updated', async () => {
+            const newChannelData = {
+                bannerPicture: '',
+                broadcasterUserId: 2,
+                category: { id: 456, name: 'Music', thumbnail: '' },
+                channelDescription: '',
+                slug: 'test',
+                stream: { isLive: false, isMature: false, key: '', language: '', thumbnail: '', url: '', viewerCount: 0 },
+                streamTitle: ''
+            };
+
+            mockKick.httpCallWithTimeout.mockResolvedValue({
+                data: [newChannelData]
+            });
+            mockParseChannel.mockReturnValue(newChannelData);
+
+            triggerCategoryChangedEvent.mockClear();
+
+            manager['refreshChannel']();
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(triggerCategoryChangedEvent).toHaveBeenCalledWith({ id: 456, name: 'Music', thumbnail: '' });
+        });
+
+        it('should trigger title changed event when title is updated', async () => {
+            const newChannelData = {
+                bannerPicture: '',
+                broadcasterUserId: 2,
+                category: { id: 0, name: '', thumbnail: '' },
+                channelDescription: '',
+                slug: 'test',
+                stream: { isLive: false, isMature: false, key: '', language: '', thumbnail: '', url: '', viewerCount: 0 },
+                streamTitle: 'Brand New Title'
+            };
+
+            mockKick.httpCallWithTimeout.mockResolvedValue({
+                data: [newChannelData]
+            });
+            mockParseChannel.mockReturnValue(newChannelData);
+
+            triggerTitleChangedEvent.mockClear();
+
+            manager['refreshChannel']();
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            expect(triggerTitleChangedEvent).toHaveBeenCalledWith('Brand New Title');
+        });
+
+        it('should not trigger events when values do not change', async () => {
+            if (manager['channel']) {
+                manager['channel'].streamTitle = 'Existing Title';
+                manager['channel'].category = { id: 100, name: 'Gaming', thumbnail: '' };
+            }
+
+            const newChannelData = {
+                bannerPicture: '',
+                broadcasterUserId: 2,
+                category: { id: 100, name: 'Gaming', thumbnail: '' },
+                channelDescription: '',
+                slug: 'test',
+                stream: { isLive: false, isMature: false, key: '', language: '', thumbnail: '', url: '', viewerCount: 0 },
+                streamTitle: 'Existing Title'
+            };
+
+            mockKick.httpCallWithTimeout.mockResolvedValue({
+                data: [newChannelData]
+            });
+            mockParseChannel.mockReturnValue(newChannelData);
+
+            triggerCategoryChangedEvent.mockClear();
+            triggerTitleChangedEvent.mockClear();
+
+            manager['refreshChannel']();
+            await new Promise(resolve => setImmediate(resolve));
+
+            expect(triggerCategoryChangedEvent).not.toHaveBeenCalled();
+            expect(triggerTitleChangedEvent).not.toHaveBeenCalled();
+        });
+
+        it('should handle HTTP errors gracefully', async () => {
+            const error = new Error('Network error');
+            mockKick.httpCallWithTimeout.mockRejectedValue(error);
+
+            manager['refreshChannel']();
+            await new Promise(resolve => setImmediate(resolve));
+
+            expect(logger.error).toHaveBeenCalledWith(`Failed to refresh channel status: ${error}`);
+        });
+
+        it('should trigger channel data updated event on success', async () => {
+            const newChannelData = {
+                bannerPicture: '',
+                broadcasterUserId: 2,
+                category: { id: 100, name: 'Gaming', thumbnail: '' },
+                channelDescription: '',
+                slug: 'test',
+                stream: { isLive: true, isMature: false, key: '', language: '', thumbnail: '', url: '', viewerCount: 50 },
+                streamTitle: 'Updated Title'
+            };
+
+            mockKick.httpCallWithTimeout.mockResolvedValue({
+                data: [newChannelData]
+            });
+            mockParseChannel.mockReturnValue(newChannelData);
+
+            const triggerChannelDataUpdatedEventSpy = jest.spyOn(manager, 'triggerChannelDataUpdatedEvent' as any).mockImplementation(jest.fn());
+
+            manager['refreshChannel']();
+            await new Promise(resolve => setImmediate(resolve));
+
+            expect(triggerChannelDataUpdatedEventSpy).toHaveBeenCalled();
+            triggerChannelDataUpdatedEventSpy.mockRestore();
+        });
+
+        it('should handle missing title gracefully', async () => {
+            const newChannelData = {
+                bannerPicture: '',
+                broadcasterUserId: 2,
+                category: { id: 100, name: 'Gaming', thumbnail: '' },
+                channelDescription: '',
+                slug: 'test',
+                stream: { isLive: false, isMature: false, key: '', language: '', thumbnail: '', url: '', viewerCount: 0 },
+                streamTitle: null as any
+            };
+
+            mockKick.httpCallWithTimeout.mockResolvedValue({
+                data: [newChannelData]
+            });
+            mockParseChannel.mockReturnValue(newChannelData);
+
+            triggerTitleChangedEvent.mockClear();
+
+            manager['refreshChannel']();
+            await new Promise(resolve => setImmediate(resolve));
+
+            expect(triggerTitleChangedEvent).not.toHaveBeenCalled();
         });
     });
 });
