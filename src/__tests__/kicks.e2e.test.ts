@@ -34,6 +34,7 @@ jest.mock('../main', () => ({
 }));
 
 import { IntegrationConstants } from '../constants';
+import { InboundWebhook } from '../internal/webhook-handler/webhook';
 import { webhookHandler } from '../internal/webhook-handler/webhook-handler';
 
 describe('e2e kicks gifted events', () => {

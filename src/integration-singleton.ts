@@ -9,13 +9,13 @@ import { deleteChatMessageEffect } from "./effects/delete-chat-message";
 import { maintenanceEffect } from "./effects/maintenance";
 import { moderatorBanEffect } from "./effects/moderator-ban";
 import { moderatorTimeoutEffect } from "./effects/moderator-timeout";
+import { rewardEnableDisableEffect } from "./effects/reward-enable-disable";
+import { rewardManageEffect } from "./effects/reward-manage";
 import { streamGameEffect } from "./effects/stream-game";
 import { streamTitleEffect } from "./effects/stream-title";
-import { triggerCustomChannelRewardEffect } from "./effects/trigger-custom-channel-reward";
 import { eventSource } from './event-source';
 import { hostViewerCountFilter } from "./filters/host-viewer-count";
 import { platformFilter } from "./filters/platform";
-import { rewardTitleFilter } from "./filters/reward-title";
 import { streamerOrBotFilter } from "./filters/streamer-or-bot";
 import { usernameFilter } from "./filters/username";
 import { viewerRolesFilter } from "./filters/viewer-roles";
@@ -23,13 +23,17 @@ import { webhookReceivedEventTypeFilter, webhookReceivedLatencyFilter } from "./
 import { AuthManager } from "./internal/auth";
 import { getConnectionStatusMessage } from "./internal/connection-utils";
 import { Kick } from "./internal/kick";
+import { kickRewardsBackend } from "./internal/kick-rewards-backend";
+import { KickRewardsState } from "./internal/kick-rewards-state";
 import { KickPusher } from "./internal/pusher/pusher";
 import { reflectorExtension } from "./internal/reflector";
+import { webhookHandler } from './internal/webhook-handler/webhook-handler';
 import { verifyWebhookSignature, WebhookSignatureVerificationError } from "./internal/webhook-handler/webhook-signature-verifier";
+import { InboundWebhook } from './internal/webhook-handler/webhook';
 import { firebot, logger } from "./main";
 import { platformRestriction } from "./restrictions/platform";
 import { ConnectionStateUpdate, ConnectionUpdateData, KickConnection } from "./shared/types";
-import { kickAccountsExtension } from "./ui-extensions/kick-accounts";
+import { kickExtension } from "./ui-extensions/kick";
 import { getDataFilePath } from "./util/datafile";
 import { kickCategoryVariable } from "./variables/category";
 import { kickCategoryIdVariable } from "./variables/category-id";
@@ -110,7 +114,6 @@ type IntegrationParameters = {
     advanced: {
         allowTestWebhooks: boolean;
         suppressChatFeedNotifications: boolean;
-        dangerousOperations: boolean;
     };
 };
 
@@ -127,6 +130,9 @@ export class KickIntegration extends EventEmitter {
     // connections to Kick for real-time events.
     pusher = new KickPusher();
 
+    // kickRewardsState handles the synchronization state of Kick channel rewards
+    private kickRewardsState = new KickRewardsState();
+
     // authManager is an instance of the AuthManager class, which handles authentication
     private authManager = new AuthManager();
 
@@ -134,9 +140,7 @@ export class KickIntegration extends EventEmitter {
     // refresh token, broadcaster ID, and proxy poll key.
     private dataFilePath = "";
 
-    // Can be toggled to true to enable dangerous operations that can create
-    // and modify users in the Firebot database. THIS COULD BREAK FIREBOT!
-    // READ DOCUMENTATION CAREFULLY BEFORE ENABLING!
+    // Integration Parameters with default settings
     private settings: IntegrationParameters = {
         connectivity: {
             firebotUrl: "http://localhost:7472",
@@ -176,8 +180,7 @@ export class KickIntegration extends EventEmitter {
         },
         advanced: {
             allowTestWebhooks: false,
-            suppressChatFeedNotifications: false,
-            dangerousOperations: false
+            suppressChatFeedNotifications: false
         }
     };
 
@@ -211,9 +214,10 @@ export class KickIntegration extends EventEmitter {
         effectManager.registerEffect(maintenanceEffect);
         effectManager.registerEffect(moderatorBanEffect);
         effectManager.registerEffect(moderatorTimeoutEffect);
+        effectManager.registerEffect(rewardEnableDisableEffect);
+        effectManager.registerEffect(rewardManageEffect);
         effectManager.registerEffect(streamGameEffect);
         effectManager.registerEffect(streamTitleEffect);
-        effectManager.registerEffect(triggerCustomChannelRewardEffect);
 
         const { eventManager } = firebot.modules;
         eventManager.registerEventSource(eventSource);
@@ -221,7 +225,6 @@ export class KickIntegration extends EventEmitter {
         const { eventFilterManager } = firebot.modules;
         eventFilterManager.registerFilter(hostViewerCountFilter);
         eventFilterManager.registerFilter(platformFilter);
-        eventFilterManager.registerFilter(rewardTitleFilter);
         eventFilterManager.registerFilter(streamerOrBotFilter);
         eventFilterManager.registerFilter(usernameFilter);
         eventFilterManager.registerFilter(viewerRolesFilter);
@@ -304,12 +307,13 @@ export class KickIntegration extends EventEmitter {
         const { uiExtensionManager } = firebot.modules;
         if (uiExtensionManager) {
             uiExtensionManager.registerUIExtension(reflectorExtension);
-            uiExtensionManager.registerUIExtension(kickAccountsExtension);
+            uiExtensionManager.registerUIExtension(kickExtension);
         } else {
             logger.error("UI Extension Manager module not found. The Kick integration UI extension cannot be registered.");
         }
 
         this.registerUIExtensionEvents();
+        this.registerKickRewardsIpcHandlers();
 
         // Add events to effects, filters, and variables (new Firebot 5.65+ feature)
 
@@ -336,9 +340,6 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.addEventToVariable("raidTargetUsername", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
         replaceVariableManager.addEventToVariable("raidViewerCount", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
         replaceVariableManager.addEventToVariable("raidViewerCount", IntegrationConstants.INTEGRATION_ID, "raid");
-        replaceVariableManager.addEventToVariable("rewardId", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
-        replaceVariableManager.addEventToVariable("rewardMessage", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
-        replaceVariableManager.addEventToVariable("rewardName", IntegrationConstants.INTEGRATION_ID, "channel-reward-redemption");
         replaceVariableManager.addEventToVariable("timeoutDuration", IntegrationConstants.INTEGRATION_ID, "timeout");
     }
 
@@ -380,9 +381,9 @@ export class KickIntegration extends EventEmitter {
             }
 
             // Register webhook event handler
-            webhookManager.on("webhook-received", async ({ config, payload, headers }: any) => {
+            webhookManager.on("webhook-received", async ({ config, payload, rawPayload, headers }: any) => {
                 if (config.name === IntegrationConstants.WEBHOOK_NAME) {
-                    await this.handleCrowbarWebhook(payload, headers);
+                    await this.handleCrowbarWebhook(payload, rawPayload, headers);
                 }
             });
         } catch (error) {
@@ -404,6 +405,8 @@ export class KickIntegration extends EventEmitter {
             const streamerToken = await this.authManager.getStreamerAuthToken();
             const botToken = await this.authManager.getBotAuthToken();
             await this.kick.connect(streamerToken, botToken);
+            this.kickRewardsState.loadManagementState();
+            this.notifyRewardManagementStateChange();
             logger.info("Kick API integration connected successfully.");
         } catch (error) {
             logger.error(`Failed to connect Kick API integration: ${error}`);
@@ -433,6 +436,7 @@ export class KickIntegration extends EventEmitter {
         this.connected = false;
         this.authManager.disconnect();
         await this.kick.disconnect();
+        this.kickRewardsState.clearState();
         this.pusher.disconnect();
         this.notifyConnectionStateChange();
         this.emit("disconnected", IntegrationConstants.INTEGRATION_ID);
@@ -470,10 +474,6 @@ export class KickIntegration extends EventEmitter {
         }
     }
 
-    areDangerousOpsEnabled(): boolean {
-        return this.settings.advanced.dangerousOperations;
-    }
-
     isChatFeedEnabled(): boolean {
         return this.settings.chat.chatFeed;
     }
@@ -484,6 +484,10 @@ export class KickIntegration extends EventEmitter {
 
     getSettings(): IntegrationParameters {
         return this.settings;
+    }
+
+    getKickRewardsState(): KickRewardsState {
+        return this.kickRewardsState;
     }
 
     sendCriticalErrorNotification(message: string) {
@@ -507,15 +511,13 @@ export class KickIntegration extends EventEmitter {
         logger.info(`Chat feed notification sent: ${JSON.stringify(message)}`);
     }
 
-    private async handleCrowbarWebhook(payload: any, headers: any): Promise<void> {
+    private async handleCrowbarWebhook(payload: any, rawPayload: string | undefined, headers: any): Promise<void> {
         try {
-            // Import webhook handler
-            const { webhookHandler } = await import('./internal/webhook-handler/webhook-handler');
-
             // Verify webhook signature
             try {
                 verifyWebhookSignature({
                     payload,
+                    rawPayload,
                     headers: {
                         'kick-event-signature': headers['kick-event-signature'],
                         'kick-event-message-id': headers['kick-event-message-id'],
@@ -666,6 +668,15 @@ export class KickIntegration extends EventEmitter {
                 return { url: "" };
             }
         });
+    }
+
+    private registerKickRewardsIpcHandlers(): void {
+        kickRewardsBackend.registerHandlers();
+    }
+
+    private notifyRewardManagementStateChange(): void {
+        const { frontendCommunicator } = firebot.modules;
+        frontendCommunicator.send("kick:reward-management-state-updated", this.kickRewardsState.getAllManagementData());
     }
 }
 

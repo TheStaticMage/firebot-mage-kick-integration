@@ -1,4 +1,4 @@
-interface InboundWebhook {
+export interface InboundWebhook {
     kickEventMessageId: string;
     kickEventSubscriptionId: string;
     kickEventMessageTimestamp: string;

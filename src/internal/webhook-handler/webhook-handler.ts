@@ -8,6 +8,7 @@ import { handleChannelSubscriptionEvent, handleChannelSubscriptionGiftsEvent } f
 import { handleWebhookReceivedEvent } from "../../events/webhook-received";
 import { integration } from "../../integration";
 import { logger } from "../../main";
+import { rewardRedemptionHandler } from "./reward-redemption-handler";
 import { parseDate } from "../util";
 import {
     parseChannelSubscriptionGiftsEvent,
@@ -19,8 +20,10 @@ import {
     parseLivestreamMetadataUpdatedEvent,
     parseLivestreamStatusUpdatedEvent,
     parseModerationBannedEvent,
-    parsePusherTestWebhook
+    parsePusherTestWebhook,
+    parseRewardRedemptionWebhook
 } from "./webhook-parsers";
+import { InboundWebhook } from './webhook';
 import NodeCache from 'node-cache';
 
 export class WebhookHandler {
@@ -130,6 +133,11 @@ export class WebhookHandler {
             case "kicks.gifted": {
                 const event = parseKicksGiftedEvent(webhook.rawData);
                 await kicksHandler.handleKicksGiftedEvent(event);
+                break;
+            }
+            case "channel.reward.redemption.updated": {
+                const event = parseRewardRedemptionWebhook(webhook.rawData);
+                await rewardRedemptionHandler.handleRewardRedemptionEvent(event);
                 break;
             }
             default: {

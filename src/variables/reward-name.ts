@@ -1,20 +1,22 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
 import { TriggersObject } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
-import { IntegrationConstants } from '../constants';
 
-const triggers: TriggersObject = {};
-triggers["event"] = [`${IntegrationConstants.INTEGRATION_ID}:channel-reward-redemption`];
-triggers["manual"] = true;
-triggers["preset"] = true;
+const triggers: TriggersObject = {
+    // eslint-disable-next-line camelcase -- Firebot trigger id is snake_case
+    channel_reward: true,
+    manual: true,
+    preset: true
+};
 
-export const kickRewardNameVariable : ReplaceVariable = {
+export const kickRewardNameVariable: ReplaceVariable = {
     definition: {
         handle: "kickRewardName",
         description: "The name of the reward",
         categories: ["common"],
-        possibleDataOutput: ["text"]
+        possibleDataOutput: ["text"],
+        triggers
     },
     evaluator: async (trigger) => {
-        return trigger.metadata.eventData ? trigger.metadata.eventData.rewardName : trigger.metadata.rewardName;
+        return trigger.metadata.rewardName ?? "";
     }
 };

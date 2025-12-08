@@ -38,6 +38,10 @@ const subscriptionsToRequest = [
     {
         name: "kicks.gifted",
         version: 1
+    },
+    {
+        name: "channel.reward.redemption.updated",
+        version: 1
     }
 ];
 
@@ -75,6 +79,10 @@ export class WebhookSubscriptionManager {
         this.isInitialized = false;
     }
 
+    areWebhooksActive(): boolean {
+        return this.isInitialized && !this.kickIsBroken;
+    }
+
     async resetWebhookSubscriptions(): Promise<void> {
         logger.debug("Resetting webhook subscriptions...");
         const subscriptions = await this.getSubscriptions();
@@ -104,11 +112,13 @@ export class WebhookSubscriptionManager {
         }
 
         if (currentSubs.length !== subscriptionsToRequest.length || mismatch) {
+            this.kickIsBroken = true;
             logger.warn(`Post-reconciliation webhook subscription mismatch: ${currentSubs.length} found, expected ${subscriptionsToRequest.length}`);
             integration.sendChatFeedErrorNotification(`Webhook subscriptions are not being created or updated correctly on Kick. This can happen when Kick is under heavy load or having problems, and unfortunately there's not anything you can do about it. Parts of the integration will remain functional, but events that depend on webhooks may be delayed or unreliable until this is resolved. Sometimes this will clear up on its own. You can also try disconnecting and reconnecting the integration in a few minutes to see if that clears things up.`);
             return;
         }
 
+        this.kickIsBroken = false;
         logger.debug("Webhook subscriptions verified as correct.");
     }
 

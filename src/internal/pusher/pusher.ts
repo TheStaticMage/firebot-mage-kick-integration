@@ -2,12 +2,11 @@ import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleMessageDeletedEvent } from "../../events/message-deleted";
 import { handleModerationUnbannedEvent } from "../../events/moderation-unbanned";
 import { handleRaidSentOffEvent } from "../../events/raid-sent-off-event";
-import { handleRewardRedeemedEvent } from "../../events/reward-redeemed-event";
 import { handleStreamHostedEvent } from "../../events/stream-hosted-event";
 import { integration } from "../../integration";
 import { logger } from "../../main";
 import { ChatMessage, KickUser, KickUserWithIdentity } from "../../shared/types";
-import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseMessageDeletedEvent, parseRewardRedeemedEvent, parseStreamHostedEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
+import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseMessageDeletedEvent, parseStreamHostedEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
 
 const Pusher = require('pusher-js');
 
@@ -87,7 +86,6 @@ export class KickPusher {
                     break;
                 default:
                     logger.debug(`Unhandled channel event: ${event}, data: ${JSON.stringify(data)}`);
-                    throw new Error(`Unhandled event type: ${event}`);
             }
         } catch (error) {
             logger.error(`Error handling Pusher channel event: ${event}, error: ${error}`);
@@ -121,15 +119,11 @@ export class KickPusher {
                 case 'App\\Events\\UserUnbannedEvent':
                     await handleModerationUnbannedEvent(parseViewerUnbannedEvent(data));
                     break;
-                case 'RewardRedeemedEvent':
-                    await handleRewardRedeemedEvent(parseRewardRedeemedEvent(data));
-                    break;
                 case 'pusher:subscription_succeeded':
                     logger.info("Pusher subscribed successfully to chatroom events.");
                     break;
                 default:
                     logger.debug(`Unhandled chatroom event: ${event}, data: ${JSON.stringify(data)}`);
-                    throw new Error(`Unhandled event type: ${event}`);
             }
         } catch (error) {
             logger.error(`Error handling Pusher chatroom event: ${event}, error: ${error}`);

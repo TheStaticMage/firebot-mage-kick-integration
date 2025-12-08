@@ -11,14 +11,13 @@ describe('verifyWebhookSignature', () => {
     const prodPrivateKey = readFileSync(join(fixturesDir, 'production-webhook-rsa-private.pem'), 'utf-8');
     const prodPublicKey = readFileSync(join(fixturesDir, 'production-webhook-rsa-public.pem'), 'utf-8');
 
-    function signTestWebhook(payload: any): string {
+    function signTestWebhook(rawPayload: string): string {
         const key = createPrivateKey(testPrivateKey);
-        const payloadString = JSON.stringify(payload);
-        return sign(null, Buffer.from(payloadString), key).toString('hex');
+        return sign(null, Buffer.from(rawPayload), key).toString('hex');
     }
 
-    function signProductionWebhook(payload: any, messageId: string, timestamp: string): string {
-        const signatureInput = `${messageId}.${timestamp}.${JSON.stringify(payload)}`;
+    function signProductionWebhook(rawPayload: string, messageId: string, timestamp: string): string {
+        const signatureInput = `${messageId}.${timestamp}.${rawPayload}`;
         const signer = createSign('SHA256');
         signer.update(signatureInput);
         return signer.sign(prodPrivateKey, 'base64');
@@ -26,6 +25,7 @@ describe('verifyWebhookSignature', () => {
 
     describe('Production webhooks (test mode false)', () => {
         const basePayload = { content: 'Hello world' };
+        const rawPayload = JSON.stringify(basePayload);
         const messageId = 'msg_12345';
         const timestamp = '2025-12-05T12:00:00Z';
 
@@ -33,6 +33,7 @@ describe('verifyWebhookSignature', () => {
             expect(() => {
                 verifyWebhookSignature({
                     payload: basePayload,
+                    rawPayload,
                     headers: {
                         'kick-event-message-id': messageId,
                         'kick-event-message-timestamp': timestamp
@@ -45,6 +46,7 @@ describe('verifyWebhookSignature', () => {
             expect(() => {
                 verifyWebhookSignature({
                     payload: basePayload,
+                    rawPayload,
                     headers: {
                         'kick-event-message-id': messageId,
                         'kick-event-message-timestamp': timestamp
@@ -60,6 +62,7 @@ describe('verifyWebhookSignature', () => {
             expect(() => {
                 verifyWebhookSignature({
                     payload: basePayload,
+                    rawPayload,
                     headers: {
                         'kick-event-signature': 'invalid-signature',
                         'kick-event-message-id': messageId,
@@ -73,6 +76,7 @@ describe('verifyWebhookSignature', () => {
             expect(() => {
                 verifyWebhookSignature({
                     payload: basePayload,
+                    rawPayload,
                     headers: {
                         'kick-event-signature': 'invalid-signature',
                         'kick-event-message-id': messageId,
@@ -86,11 +90,12 @@ describe('verifyWebhookSignature', () => {
         });
 
         it('accepts webhook with valid Kick signature', () => {
-            const validSignature = signProductionWebhook(basePayload, messageId, timestamp);
+            const validSignature = signProductionWebhook(rawPayload, messageId, timestamp);
 
             expect(() => {
                 verifyWebhookSignature({
                     payload: basePayload,
+                    rawPayload,
                     headers: {
                         'kick-event-signature': validSignature,
                         'kick-event-message-id': messageId,
@@ -104,11 +109,12 @@ describe('verifyWebhookSignature', () => {
         });
 
         it('rejects webhook with missing message ID or timestamp', () => {
-            const validSignature = signProductionWebhook(basePayload, messageId, timestamp);
+            const validSignature = signProductionWebhook(rawPayload, messageId, timestamp);
 
             expect(() => {
                 verifyWebhookSignature({
                     payload: basePayload,
+                    rawPayload,
                     headers: {
                         'kick-event-signature': validSignature,
                         'kick-event-message-timestamp': timestamp
@@ -123,11 +129,13 @@ describe('verifyWebhookSignature', () => {
 
     describe('Test webhooks (test mode true)', () => {
         const testPayload = { content: 'Test event', is_test_event: true };
+        const rawTestPayload = JSON.stringify(testPayload);
 
         it('rejects test webhook with no signature', () => {
             expect(() => {
                 verifyWebhookSignature({
                     payload: testPayload,
+                    rawPayload: rawTestPayload,
                     headers: {},
                     allowTestWebhooks: true,
                     testWebhookPublicKey: testPublicKey,
@@ -140,6 +148,7 @@ describe('verifyWebhookSignature', () => {
             expect(() => {
                 verifyWebhookSignature({
                     payload: testPayload,
+                    rawPayload: rawTestPayload,
                     headers: {
                         'kick-event-signature': 'deadbeef'
                     },
@@ -151,11 +160,12 @@ describe('verifyWebhookSignature', () => {
         });
 
         it('accepts test webhook with valid signature', () => {
-            const validSignature = signTestWebhook(testPayload);
+            const validSignature = signTestWebhook(rawTestPayload);
 
             expect(() => {
                 verifyWebhookSignature({
                     payload: testPayload,
+                    rawPayload: rawTestPayload,
                     headers: {
                         'kick-event-signature': validSignature
                     },
@@ -167,11 +177,12 @@ describe('verifyWebhookSignature', () => {
         });
 
         it('rejects test webhook when test mode is disabled', () => {
-            const validSignature = signTestWebhook(testPayload);
+            const validSignature = signTestWebhook(rawTestPayload);
 
             expect(() => {
                 verifyWebhookSignature({
                     payload: testPayload,
+                    rawPayload: rawTestPayload,
                     headers: {
                         'kick-event-signature': validSignature
                     },
@@ -186,14 +197,16 @@ describe('verifyWebhookSignature', () => {
     describe('Edge cases', () => {
         it('rejects production webhook signed with wrong key', () => {
             const payload = { content: 'Test' };
+            const rawPayload = JSON.stringify(payload);
             const messageId = 'msg_123';
             const timestamp = '2025-12-05T12:00:00Z';
 
-            const wrongSignature = signTestWebhook(payload);
+            const wrongSignature = signTestWebhook(rawPayload);
 
             expect(() => {
                 verifyWebhookSignature({
                     payload,
+                    rawPayload,
                     headers: {
                         'kick-event-signature': wrongSignature,
                         'kick-event-message-id': messageId,
@@ -208,15 +221,18 @@ describe('verifyWebhookSignature', () => {
 
         it('rejects webhook when payload is tampered', () => {
             const originalPayload = { content: 'Original' };
+            const originalRawPayload = JSON.stringify(originalPayload);
             const tamperedPayload = { content: 'Tampered' };
+            const tamperedRawPayload = JSON.stringify(tamperedPayload);
             const messageId = 'msg_123';
             const timestamp = '2025-12-05T12:00:00Z';
 
-            const signature = signProductionWebhook(originalPayload, messageId, timestamp);
+            const signature = signProductionWebhook(originalRawPayload, messageId, timestamp);
 
             expect(() => {
                 verifyWebhookSignature({
                     payload: tamperedPayload,
+                    rawPayload: tamperedRawPayload,
                     headers: {
                         'kick-event-signature': signature,
                         'kick-event-message-id': messageId,
@@ -227,6 +243,179 @@ describe('verifyWebhookSignature', () => {
                     productionWebhookPublicKey: prodPublicKey
                 });
             }).toThrow('Invalid production webhook signature');
+        });
+    });
+
+    describe('Unicode escape sequences', () => {
+        describe('Production webhooks with \\u0026 vs &', () => {
+            const messageId = 'msg_unicode_test';
+            const timestamp = '2025-12-05T12:00:00Z';
+
+            it('accepts webhook when rawPayload has \\u0026 and signature matches \\u0026', () => {
+                const payload = { content: 'Hello & World' };
+                const rawPayloadWithUnicode = '{"content":"Hello \\u0026 World"}';
+                const signature = signProductionWebhook(rawPayloadWithUnicode, messageId, timestamp);
+
+                expect(() => {
+                    verifyWebhookSignature({
+                        payload,
+                        rawPayload: rawPayloadWithUnicode,
+                        headers: {
+                            'kick-event-signature': signature,
+                            'kick-event-message-id': messageId,
+                            'kick-event-message-timestamp': timestamp
+                        },
+                        allowTestWebhooks: false,
+                        testWebhookPublicKey: testPublicKey,
+                        productionWebhookPublicKey: prodPublicKey
+                    });
+                }).not.toThrow();
+            });
+
+            it('rejects webhook when rawPayload has & but signature was created with \\u0026', () => {
+                const payload = { content: 'Hello & World' };
+                const rawPayloadWithUnicode = '{"content":"Hello \\u0026 World"}';
+                const rawPayloadWithAmpersand = '{"content":"Hello & World"}';
+                const signature = signProductionWebhook(rawPayloadWithUnicode, messageId, timestamp);
+
+                expect(() => {
+                    verifyWebhookSignature({
+                        payload,
+                        rawPayload: rawPayloadWithAmpersand,
+                        headers: {
+                            'kick-event-signature': signature,
+                            'kick-event-message-id': messageId,
+                            'kick-event-message-timestamp': timestamp
+                        },
+                        allowTestWebhooks: false,
+                        testWebhookPublicKey: testPublicKey,
+                        productionWebhookPublicKey: prodPublicKey
+                    });
+                }).toThrow('Invalid production webhook signature');
+            });
+
+            it('accepts webhook when rawPayload has & and signature matches &', () => {
+                const payload = { content: 'Hello & World' };
+                const rawPayloadWithAmpersand = '{"content":"Hello & World"}';
+                const signature = signProductionWebhook(rawPayloadWithAmpersand, messageId, timestamp);
+
+                expect(() => {
+                    verifyWebhookSignature({
+                        payload,
+                        rawPayload: rawPayloadWithAmpersand,
+                        headers: {
+                            'kick-event-signature': signature,
+                            'kick-event-message-id': messageId,
+                            'kick-event-message-timestamp': timestamp
+                        },
+                        allowTestWebhooks: false,
+                        testWebhookPublicKey: testPublicKey,
+                        productionWebhookPublicKey: prodPublicKey
+                    });
+                }).not.toThrow();
+            });
+
+            it('rejects webhook when rawPayload has \\u0026 but signature was created with &', () => {
+                const payload = { content: 'Hello & World' };
+                const rawPayloadWithAmpersand = '{"content":"Hello & World"}';
+                const rawPayloadWithUnicode = '{"content":"Hello \\u0026 World"}';
+                const signature = signProductionWebhook(rawPayloadWithAmpersand, messageId, timestamp);
+
+                expect(() => {
+                    verifyWebhookSignature({
+                        payload,
+                        rawPayload: rawPayloadWithUnicode,
+                        headers: {
+                            'kick-event-signature': signature,
+                            'kick-event-message-id': messageId,
+                            'kick-event-message-timestamp': timestamp
+                        },
+                        allowTestWebhooks: false,
+                        testWebhookPublicKey: testPublicKey,
+                        productionWebhookPublicKey: prodPublicKey
+                    });
+                }).toThrow('Invalid production webhook signature');
+            });
+        });
+
+        describe('Test webhooks with \\u0026 vs &', () => {
+            it('accepts test webhook when rawPayload has \\u0026 and signature matches \\u0026', () => {
+                const payload = { content: 'Hello & World', is_test_event: true };
+                const rawPayloadWithUnicode = '{"content":"Hello \\u0026 World","is_test_event":true}';
+                const signature = signTestWebhook(rawPayloadWithUnicode);
+
+                expect(() => {
+                    verifyWebhookSignature({
+                        payload,
+                        rawPayload: rawPayloadWithUnicode,
+                        headers: {
+                            'kick-event-signature': signature
+                        },
+                        allowTestWebhooks: true,
+                        testWebhookPublicKey: testPublicKey,
+                        productionWebhookPublicKey: prodPublicKey
+                    });
+                }).not.toThrow();
+            });
+
+            it('rejects test webhook when rawPayload has & but signature was created with \\u0026', () => {
+                const payload = { content: 'Hello & World', is_test_event: true };
+                const rawPayloadWithUnicode = '{"content":"Hello \\u0026 World","is_test_event":true}';
+                const rawPayloadWithAmpersand = '{"content":"Hello & World","is_test_event":true}';
+                const signature = signTestWebhook(rawPayloadWithUnicode);
+
+                expect(() => {
+                    verifyWebhookSignature({
+                        payload,
+                        rawPayload: rawPayloadWithAmpersand,
+                        headers: {
+                            'kick-event-signature': signature
+                        },
+                        allowTestWebhooks: true,
+                        testWebhookPublicKey: testPublicKey,
+                        productionWebhookPublicKey: prodPublicKey
+                    });
+                }).toThrow('Invalid test webhook signature');
+            });
+
+            it('accepts test webhook when rawPayload has & and signature matches &', () => {
+                const payload = { content: 'Hello & World', is_test_event: true };
+                const rawPayloadWithAmpersand = '{"content":"Hello & World","is_test_event":true}';
+                const signature = signTestWebhook(rawPayloadWithAmpersand);
+
+                expect(() => {
+                    verifyWebhookSignature({
+                        payload,
+                        rawPayload: rawPayloadWithAmpersand,
+                        headers: {
+                            'kick-event-signature': signature
+                        },
+                        allowTestWebhooks: true,
+                        testWebhookPublicKey: testPublicKey,
+                        productionWebhookPublicKey: prodPublicKey
+                    });
+                }).not.toThrow();
+            });
+
+            it('rejects test webhook when rawPayload has \\u0026 but signature was created with &', () => {
+                const payload = { content: 'Hello & World', is_test_event: true };
+                const rawPayloadWithAmpersand = '{"content":"Hello & World","is_test_event":true}';
+                const rawPayloadWithUnicode = '{"content":"Hello \\u0026 World","is_test_event":true}';
+                const signature = signTestWebhook(rawPayloadWithAmpersand);
+
+                expect(() => {
+                    verifyWebhookSignature({
+                        payload,
+                        rawPayload: rawPayloadWithUnicode,
+                        headers: {
+                            'kick-event-signature': signature
+                        },
+                        allowTestWebhooks: true,
+                        testWebhookPublicKey: testPublicKey,
+                        productionWebhookPublicKey: prodPublicKey
+                    });
+                }).toThrow('Invalid test webhook signature');
+            });
         });
     });
 });

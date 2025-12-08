@@ -7,6 +7,7 @@ import { KickChannelManager } from "./channel-manager";
 import { ChatManager } from "./chat-manager";
 import { HttpCallRequest, httpCallWithTimeout } from "./http";
 import { IKick } from "./kick-interface";
+import { RewardsManager } from "./rewards-manager";
 import { RoleManager } from "./role-manager";
 import { KickUserApi } from "./user-api";
 import { KickUserManager } from "./user-manager";
@@ -21,6 +22,7 @@ export class Kick implements IKick {
     broadcaster: BasicKickUser | null = null;
     channelManager: KickChannelManager;
     chatManager: ChatManager;
+    rewardsManager: RewardsManager;
     roleManager: RoleManager;
     webhookSubscriptionManager: WebhookSubscriptionManager;
     userApi: KickUserApi;
@@ -29,6 +31,7 @@ export class Kick implements IKick {
     constructor() {
         this.channelManager = new KickChannelManager(this);
         this.chatManager = new ChatManager(this);
+        this.rewardsManager = new RewardsManager(this);
         this.roleManager = new RoleManager(this);
         this.userApi = new KickUserApi(this);
         this.userManager = new KickUserManager(this);

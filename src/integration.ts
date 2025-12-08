@@ -225,13 +225,6 @@ export const definition: IntegrationDefinition = {
                     type: "boolean",
                     default: false,
                     sortRank: 2
-                },
-                dangerousOperations: {
-                    title: "Allow Dangerous Operations -- THIS COULD BREAK FIREBOT!",
-                    tip: "Enable dangerous operations that can create and modify users in the Firebot database. THIS COULD BREAK FIREBOT! READ DOCUMENTATION CAREFULLY BEFORE ENABLING!",
-                    type: "boolean",
-                    default: false,
-                    sortRank: 99
                 }
             }
         }

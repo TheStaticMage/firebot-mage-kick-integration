@@ -24,6 +24,10 @@ module.exports = {
                 test: /\.ts$/,
                 loader: 'ts-loader',
             },
+            {
+                test: /\.(html|css)$/,
+                type: 'asset/source',
+            },
         ],
     },
     optimization: {
