@@ -13,11 +13,9 @@
 
 - A **major release** changes the first number (e.g. `0.1.5` -> `1.0.0`). I do not intend to release version 1.0.
 
-## Breaking Change Alerts
-
-:boom: **Version 0.9.0 no longer supports webhook proxy**: Upon upgrading to version 0.9.0 or higher, all users will be required to create a Kick App in their own account and configure a webhook URL. Instructions are provided here: [Configuration](/doc/configuration.md).
-
 ## Upgrade Procedure
+
+:boom: **Version 0.9.0 has major architectural changes**: Users will need to reconfigure their Kick connectivity and channel rewards. See [Breaking Changes](/doc/breaking-changes.md) for details.
 
 1. Download the new version `firebot-mage-kick-integration-<version>.js` from the [Releases](https://github.com/TheStaticMage/firebot-mage-kick-integration/releases) page.
 
@@ -29,13 +27,9 @@
 
 ## Upgrade Notes
 
-### :boom: MAJOR CHANGE :boom: Version 0.9.0: Removal of webhook proxy
+### Version 0.9.0
 
-This version introduces a major architectural change. **The Webhook Proxy is no longer supported.** Instead, this integration now uses Firebot's built-in "Crowbar Tools" webhook proxy system to receive webhooks from Kick.
-
-If you were using someone else's webhook proxy before, you never created a Kick App. You will need to do so now.
-
-Follow the [Configuration](/doc/configuration.md) instructions.
+See [Breaking Changes](/doc/breaking-changes.md) for details on major changes, including webhook proxy retirement and channel reward updates in 0.8.0.
 
 ### Version 0.8.0
 

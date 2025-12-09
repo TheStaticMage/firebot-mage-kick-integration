@@ -156,29 +156,6 @@ export const eventSource: EventSource = {
             }
         },
         {
-            id: "channel-reward-redemption",
-            name: "Channel Reward Redemption (Kick)",
-            description: "When someone redeems a channel reward on Kick",
-            cached: false,
-            manualMetadata: {
-                username: "firebot",
-                userDisplayName: "Firebot",
-                userId: "k1234567",
-                rewardName: "Test Reward",
-                messageText: "Test message"
-            },
-            activityFeed: {
-                icon: "fad fa-circle",
-                getMessage: (eventData) => {
-                    const username = typeof eventData.username === "string" ? unkickifyUsername(eventData.username) : "Unknown User";
-                    const userDisplayName = typeof eventData.userDisplayName === "string" ? eventData.userDisplayName : username;
-                    return `**${userDisplayName}** redeemed **${eventData.rewardName}** on Kick${
-                        typeof eventData.messageText === "string" && eventData.messageText.length > 0 ? `: *${eventData.messageText}*` : ""
-                    }`;
-                }
-            }
-        },
-        {
             id: "channel-data-updated",
             name: "Channel Data Updated (Kick)",
             description: "When the channel data is updated on Kick (this happens periodically)",

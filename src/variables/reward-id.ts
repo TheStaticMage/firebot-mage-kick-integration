@@ -1,31 +1,22 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
 import { TriggersObject } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
-import * as crypto from 'crypto';
-import { IntegrationConstants } from '../constants';
 
-const triggers: TriggersObject = {};
-triggers["event"] = [`${IntegrationConstants.INTEGRATION_ID}:channel-reward-redemption`];
-triggers["manual"] = true;
-triggers["preset"] = true;
+const triggers: TriggersObject = {
+    // eslint-disable-next-line camelcase -- Firebot trigger id is snake_case
+    channel_reward: true,
+    manual: true,
+    preset: true
+};
 
-export const kickRewardIdVariable : ReplaceVariable = {
+export const kickRewardIdVariable: ReplaceVariable = {
     definition: {
         handle: "kickRewardId",
-        description: "The ID of the reward. Since Kick does not provide reward IDs, this is a hashed value of the reward title.",
+        description: "The ID of the reward.",
         categories: ["common"],
-        possibleDataOutput: ["text"]
+        possibleDataOutput: ["text"],
+        triggers
     },
     evaluator: async (trigger) => {
-        if (trigger.metadata.eventData?.rewardId) {
-            return trigger.metadata.eventData.rewardId;
-        }
-
-        // If no reward ID is provided, we generate a hash based on the reward title.
-        if (typeof trigger.metadata.eventData?.rewardTitle === 'string' && trigger.metadata.eventData.rewardTitle.length > 0) {
-            return crypto.createHash('sha256').update(trigger.metadata.eventData.rewardTitle, 'utf8').digest('hex');
-        }
-
-        // If no reward title is available, return an empty string.
-        return "";
+        return trigger.metadata.rewardId ?? "";
     }
 };

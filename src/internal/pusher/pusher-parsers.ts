@@ -1,6 +1,4 @@
-import { integration } from "../../integration";
-import { logger } from "../../main";
-import { ChannelGiftSubscription, ChatMessage, KicksGiftedEvent, KickUser, LivestreamStatusUpdated, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, RewardRedeemedEvent, StreamHostedEvent } from "../../shared/types";
+import { ChatMessage, KickUser, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, StreamHostedEvent } from "../../shared/types";
 import { parseDate } from "../util";
 
 export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMessage {
@@ -38,18 +36,6 @@ export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMes
                 channelSlug: '' // Not provided in event, maybe should calculate from username?
             }
         } : undefined
-    };
-}
-
-export function parseRewardRedeemedEvent(data: any): RewardRedeemedEvent {
-    const d = data as RewardRedeemedEventData;
-    return {
-        rewardTitle: d.reward_title,
-        userId: d.user_id,
-        channelId: d.channel_id,
-        username: d.username,
-        userInput: d.user_input,
-        rewardBackgroundColor: d.reward_background_color
     };
 }
 
@@ -136,43 +122,6 @@ export function parseViewerBannedOrTimedOutEvent(data: any): ModerationBannedEve
     };
 }
 
-export function parseStreamerIsLiveEvent(data: any): LivestreamStatusUpdated {
-    const d = data as StreamerIsLiveEvent;
-    const b = integration.kick.broadcaster;
-    return {
-        isLive: true,
-        broadcaster: {
-            userId: b?.userId ? String(b.userId) : "",
-            username: b?.name || "",
-            displayName: b?.name || '',
-            profilePicture: b?.profilePicture || '',
-            isVerified: false, // Not set in event
-            channelSlug: '' // Not set in event
-        },
-        title: d.livestream.session_title,
-        startedAt: parseDate(d.livestream.created_at) || undefined,
-        endedAt: undefined
-    };
-}
-
-export function parseStopStreamBroadcast(): LivestreamStatusUpdated {
-    const b = integration.kick.broadcaster;
-    return {
-        isLive: false,
-        broadcaster: {
-            userId: b?.userId ? String(b.userId) : "",
-            username: b?.name || "",
-            displayName: b?.name || "",
-            profilePicture: b?.profilePicture || "",
-            isVerified: false, // Not set in event
-            channelSlug: "" // Not set in event
-        },
-        title: '',
-        startedAt: undefined, // Not set in event
-        endedAt: new Date()
-    };
-}
-
 export function parseMessageDeletedEvent(data: any): MessageDeletedEvent {
     const raw = typeof data === "string" ? JSON.parse(data) : data;
     const messageId = raw?.message?.id;
@@ -185,101 +134,5 @@ export function parseMessageDeletedEvent(data: any): MessageDeletedEvent {
         message: { id: messageId },
         aiModerated: Boolean(raw?.aiModerated),
         violatedRules: Array.isArray(raw?.violatedRules) ? raw.violatedRules : []
-    };
-}
-
-export async function parseGiftSubEvent(data: any): Promise<ChannelGiftSubscription> {
-    const d = data as PusherGiftSubEvent;
-    // This event only sends the usernames, not the user IDs, of the recipient.
-    // If we have not previously seen the user, we won't be able to look them up
-    // here.
-    const b = integration.kick.broadcaster;
-
-    const gifter = await integration.kick.userManager.getViewerByUsername(d.gifter_username);
-    let gifterUser: KickUser | undefined = undefined;
-    if (gifter) {
-        gifterUser = {
-            userId: gifter._id,
-            username: gifter.username,
-            displayName: gifter.displayName || gifter.username,
-            profilePicture: gifter.profilePicUrl || '',
-            isVerified: false, // Not set in event
-            channelSlug: '' // Not set in event
-        };
-    } else {
-        logger.error(`Pusher gift sub event: could not find gifter username ${d.gifter_username} in viewer database.`);
-        gifterUser = {
-            userId: '',
-            username: 'anonymous',
-            displayName: 'Anonymous',
-            profilePicture: '',
-            isVerified: false,
-            channelSlug: ''
-        };
-    }
-
-    const giftees: KickUser[] = [];
-    for (const username of d.usernames) {
-        const giftee = await integration.kick.userManager.getViewerByUsername(username);
-        if (giftee) {
-            giftees.push({
-                userId: giftee._id,
-                username: giftee.username,
-                displayName: giftee.displayName || giftee.username,
-                profilePicture: giftee.profilePicUrl || '',
-                isVerified: false, // Not set in event
-                channelSlug: '' // Not set in event
-            });
-        } else {
-            logger.error(`Pusher gift sub event: could not find giftee username ${username} in viewer database.`);
-            giftees.push({
-                userId: '',
-                username: username,
-                displayName: username,
-                profilePicture: '',
-                isVerified: false,
-                channelSlug: ''
-            });
-        }
-    }
-
-    return {
-        broadcaster: {
-            userId: String(b?.userId) || '',
-            username: b?.name || '',
-            displayName: b?.name || '',
-            profilePicture: b?.profilePicture || '',
-            isVerified: false, // Not set in event
-            channelSlug: '' // Not set in event
-        },
-        gifter: gifterUser,
-        giftees: giftees,
-        createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // Assume 30 days from now
-    };
-}
-
-export function parseKicksGiftedEvent(data: any): KicksGiftedEvent {
-    const d = data as KickGiftedEventData;
-
-    const gifter: KickUser = {
-        userId: d.sender.id.toString(),
-        username: d.sender.username,
-        displayName: d.sender.username,
-        profilePicture: '', // Not provided in event
-        isVerified: false, // Not provided in event
-        channelSlug: '' // Not provided in event
-    };
-
-    return {
-        gifter: gifter,
-        kicks: d.gift.amount,
-        giftId: d.gift.gift_id,
-        giftName: d.gift.name,
-        giftType: d.gift.type,
-        giftTier: d.gift.tier,
-        characterLimit: d.gift.character_limit,
-        pinnedTime: d.gift.pinned_time,
-        message: d.message || ""
     };
 }

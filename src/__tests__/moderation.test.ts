@@ -34,6 +34,7 @@ jest.mock('../main', () => ({
 
 import { IntegrationConstants } from '../constants';
 import { KickPusher } from '../internal/pusher/pusher';
+import { InboundWebhook } from '../internal/webhook-handler/webhook';
 import { webhookHandler } from '../internal/webhook-handler/webhook-handler';
 
 describe('e2e moderation unbanned', () => {

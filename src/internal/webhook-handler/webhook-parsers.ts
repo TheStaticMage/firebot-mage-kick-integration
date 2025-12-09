@@ -13,7 +13,8 @@ import {
     NewSubscriptionEvent,
     SubscriptionGiftEvent,
     SubscriptionRenewalEvent,
-    User
+    User,
+    ChannelRewardRedemptionEvent
 } from "kick-api-types/v1";
 
 import {
@@ -275,4 +276,8 @@ export function parseKicksGiftedEvent(rawData: string): KicksGiftedEvent {
         pinnedTime: 0, // Not provided in webhook payload, keeping 0 for compatibility
         message: data.gift.message
     };
+}
+
+export function parseRewardRedemptionWebhook(rawData: string): ChannelRewardRedemptionEvent {
+    return parseRawData(rawData);
 }

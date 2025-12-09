@@ -1,0 +1,190 @@
+.kick-tabs .firebot-tabset.page-tabs {
+    margin: -15px -15px 0;
+    width: calc(100% + 30px);
+}
+
+firebot-tab[name="rewards"] firebot-item-table .btn-primary:has(.fa-plus-circle) {
+    display: none;
+}
+
+/* Ensure sticky headers don't appear above modals */
+firebot-tab[name="rewards"] .sticky-top {
+    z-index: 100 !important;
+}
+
+.kick-rewards-tab {
+    position: relative;
+    padding-bottom: 80px;
+}
+
+/* Hide context menu on outside Firebot rewards */
+firebot-tab[name="rewards"] firebot-item-table tr:has(.label-warning) button[aria-label="Open Context Menu"],
+firebot-tab[name="rewards"] firebot-item-table .item-table-row:has(.label-warning) button[aria-label="Open Context Menu"],
+firebot-tab[name="rewards"] firebot-item-table .firebot-item-row:has(.label-warning) button[aria-label="Open Context Menu"] {
+    display: none !important;
+}
+
+.kick-rewards-footer-fixed {
+    position: sticky;
+    bottom: 0;
+    width: calc(100% - 10px);
+    margin-right: 10px;
+    background: #1f2126;
+    z-index: 120;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.35);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.kick-connections-container {
+    padding: 20px;
+}
+
+.kick-connections-container .connection-section {
+    background-color: #43454a;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+.kick-connections-container .connection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.kick-connections-container .connection-title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.kick-connections-container .status-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.kick-connections-container .status-ready {
+    background: #53fc18;
+    color: #000;
+}
+
+.kick-connections-container .status-not-ready {
+    background: #dc3545;
+    color: #fff;
+}
+
+.kick-connections-container .status-awaiting {
+    background: #ffc107;
+    color: #000;
+}
+
+.kick-connections-container .status-disconnected {
+    background: #808080;
+    color: #fff;
+}
+
+.kick-connections-container .status-message {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.kick-connections-container .webhook-tip-message {
+    margin: 10px 0;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.kick-connections-container .missing-scope-block {
+    margin: 10px 0 0;
+    padding: 12px 14px;
+    background: #fff6e6;
+    border: 1px solid #e0a800;
+    border-radius: 6px;
+    color: #5b3b00;
+}
+
+.kick-connections-container .missing-title {
+    font-weight: 700;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.kick-connections-container .missing-copy {
+    margin: 0 0 6px;
+    font-size: 13px;
+}
+
+.kick-connections-container .missing-scope-block ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.kick-connections-container .button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.kick-connections-container .btn-authorize {
+    background: #53fc18;
+    color: #000;
+}
+
+.kick-connections-container .btn-authorize:disabled {
+    background: #7acb5b;
+    color: #1f1f1f;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.kick-connections-container .btn-deauthorize {
+    background: #dc3545;
+    color: #fff;
+}
+
+.kick-connections-container .btn-deauthorize:disabled {
+    background: #8a6f74;
+    color: #f1f1f1;
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.kick-connections-container .webhook-url-container {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    align-items: center;
+}
+
+.kick-connections-container .webhook-url {
+    flex: 1;
+    padding: 12px;
+    border-radius: 6px;
+    border: 1px solid #47494e;
+    background: #24262a;
+    color: #e6f1ff;
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 12px;
+    max-height: 100px;
+    overflow-y: auto;
+}
+
+.kick-connections-container .btn-copy {
+    border-radius: 6px;
+    padding: 10px 14px;
+    min-width: 100px;
+}
+
+firebot-tab[name="rewards"] .fit-header {
+    display: none;
+}
