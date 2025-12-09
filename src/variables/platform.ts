@@ -1,8 +1,6 @@
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
 import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
-import { IntegrationConstants } from '../constants';
-import { logger } from "../main";
-import { getPropertyFromChatMessage } from '../util/util';
+import { getPlatformFromTrigger } from '../internal/platform-detection';
 
 export const platformVariable: ReplaceVariable = {
     definition: {
@@ -12,108 +10,5 @@ export const platformVariable: ReplaceVariable = {
         categories: ["common"],
         possibleDataOutput: ["text"]
     },
-    evaluator: (trigger) => {
-        // Manual trigger prefers the event source regardless of metadata
-        if (trigger.type === "manual") {
-            switch (trigger.metadata.eventSource?.id) {
-                case IntegrationConstants.INTEGRATION_ID:
-                    return debugPlatform("kick", "metadata.eventSource.id (manual)", trigger);
-                case "twitch":
-                    return debugPlatform("twitch", "metadata.eventSource.id (manual)", trigger);
-            }
-        }
-
-        // See if the platform is explicitly set in the metadata
-        if (typeof trigger.metadata.eventData?.platform === "string") {
-            return debugPlatform(trigger.metadata.eventData.platform, "metadata.eventData.platform", trigger);
-        }
-
-        if (typeof trigger.metadata.platform === "string") {
-            return debugPlatform(trigger.metadata.platform, "metadata.platform", trigger);
-        }
-
-        // If the event source is the Kick integration
-        if (trigger.metadata.eventSource?.id === IntegrationConstants.INTEGRATION_ID) {
-            return debugPlatform("kick", "metadata.eventSource.id", trigger);
-        }
-
-        // If there's a chat message, guess the platform from the user ID or username
-        if (trigger.metadata.chatMessage) {
-            const userId = getPropertyFromChatMessage(trigger, 'userId');
-            if (userId && userId.startsWith("k")) {
-                return debugPlatform("kick", "metadata.chatMessage.userId", trigger);
-            }
-
-            const username = getPropertyFromChatMessage(trigger, 'username');
-            if (username && username.endsWith("@kick")) {
-                return debugPlatform("kick", "metadata.chatMessage.username", trigger);
-            }
-
-            if (userId || username) {
-                return debugPlatform("twitch", "metadata.chatMessage.userId/username", trigger);
-            }
-        }
-
-        // If there's user information in the event, guess the platform from the user ID or username
-        if (trigger.metadata.eventData) {
-            const eventData = trigger.metadata.eventData;
-
-            if (typeof eventData.userId === "string" && eventData.userId.startsWith("k")) {
-                return debugPlatform("kick", "metadata.eventData.userId", trigger);
-            }
-
-            if (typeof eventData.username === "string" && eventData.username.endsWith("@kick")) {
-                return debugPlatform("kick", "metadata.eventData.username", trigger);
-            }
-
-            if (eventData.userId || eventData.username) {
-                return debugPlatform("twitch", "metadata.eventData.userId/username", trigger);
-            }
-        }
-
-        // Username in top level metadata
-        if (typeof trigger.metadata.username === 'string') {
-            if (trigger.metadata.username.endsWith('@kick')) {
-                return debugPlatform("kick", "metadata.username", trigger);
-            }
-            if (trigger.metadata.username !== '') {
-                return debugPlatform("twitch", "metadata.username", trigger);
-            }
-        }
-
-        // If the event source is reported, we'll return it.
-        if (typeof trigger.metadata.eventSource?.id === "string") {
-            return debugPlatform(trigger.metadata.eventSource.id, "metadata.eventSource.id", trigger);
-        }
-
-        // At this point we don't know
-        return "unknown";
-    }
+    evaluator: (trigger: Trigger) => getPlatformFromTrigger(trigger)
 };
-
-function debugPlatform(result: string, reference: string, trigger: Trigger): string {
-    // Skip this in tests
-    if (process.env.NODE_ENV === "test") {
-        return result;
-    }
-
-    const interestingPartsOfTrigger = {
-        type: trigger.type,
-        metadata: {
-            platform: trigger.metadata.platform,
-            username: trigger.metadata.username,
-            eventSource: trigger.metadata.eventSource,
-            eventData: {
-                platform: trigger.metadata.eventData?.platform,
-                userId: trigger.metadata.eventData?.userId,
-                username: trigger.metadata.eventData?.username
-            },
-            chatMessage: {
-                userId: getPropertyFromChatMessage(trigger, 'userId'),
-                username: getPropertyFromChatMessage(trigger, 'username')
-            }
-        }
-    };
-    logger.debug(`platformVariable evaluated to "${result}" from "${reference}": trigger=${JSON.stringify(interestingPartsOfTrigger)}`);
-    return result;
-}

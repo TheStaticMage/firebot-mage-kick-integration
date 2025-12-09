@@ -2,7 +2,7 @@ import type { FirebotChatMessage } from "@crowbartools/firebot-custom-scripts-ty
 import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { integration } from "../integration";
 import { firebot, logger } from "../main";
-import { platformVariable } from "../variables/platform";
+import { getPlatformFromTrigger } from "./platform-detection";
 import { Kick } from "./kick";
 
 interface inboundSendChatMessage {
@@ -209,7 +209,7 @@ export class ChatManager {
 
     static getPlatformFromTrigger(trigger: Trigger): string {
         try {
-            return platformVariable.evaluator(trigger) || "unknown";
+            return getPlatformFromTrigger(trigger) || "unknown";
         } catch (error) {
             logger.error(`Error determining platform from trigger: ${error}`);
             return "unknown";

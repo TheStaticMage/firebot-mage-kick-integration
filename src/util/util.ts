@@ -1,4 +1,5 @@
 import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { getEffectiveMetadata } from './rate-limiter-compat';
 
 export function getNumberFromUnknown(input: unknown, defaultValue: string): string {
     if (typeof input === "number" && !isNaN(input)) {
@@ -14,11 +15,13 @@ export function getNumberFromUnknown(input: unknown, defaultValue: string): stri
 }
 
 export function getPropertyFromChatMessage(trigger: Trigger, property: string): string {
-    if (trigger.metadata.chatMessage && typeof trigger.metadata.chatMessage === "object" && property in trigger.metadata.chatMessage) {
-        return (trigger.metadata.chatMessage as Record<string, any>)[property];
+    const effectiveMetadata = getEffectiveMetadata(trigger);
+
+    if (effectiveMetadata.chatMessage && typeof effectiveMetadata.chatMessage === "object" && property in effectiveMetadata.chatMessage) {
+        return effectiveMetadata.chatMessage[property];
     }
-    if (trigger.metadata.eventData && typeof trigger.metadata.eventData === "object" && "chatMessage" in trigger.metadata.eventData && trigger.metadata.eventData.chatMessage && typeof trigger.metadata.eventData.chatMessage === "object" && property in trigger.metadata.eventData.chatMessage) {
-        return (trigger.metadata.eventData.chatMessage as Record<string, any>)[property];
+    if (effectiveMetadata.eventData && typeof effectiveMetadata.eventData === "object" && "chatMessage" in effectiveMetadata.eventData && effectiveMetadata.eventData.chatMessage && typeof effectiveMetadata.eventData.chatMessage === "object" && property in effectiveMetadata.eventData.chatMessage) {
+        return effectiveMetadata.eventData.chatMessage[property];
     }
     return "";
 }
