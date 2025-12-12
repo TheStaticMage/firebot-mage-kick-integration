@@ -1,3 +1,4 @@
+import { IntegrationConstants } from "../../constants";
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleMessageDeletedEvent } from "../../events/message-deleted";
 import { handleModerationUnbannedEvent } from "../../events/moderation-unbanned";
@@ -160,7 +161,7 @@ export class KickPusher {
             userId: broadcaster.userId.toString(),
             username: broadcaster.name,
             displayName: broadcaster.name,
-            profilePicture: broadcaster.profilePicture || '',
+            profilePicture: broadcaster.profilePicture || IntegrationConstants.DEFAULT_PROFILE_IMAGE,
             isVerified: false, // Worth checking?
             channelSlug: broadcaster.name
         };
@@ -189,7 +190,7 @@ export class KickPusher {
             username: user.username || "",
             displayName: user.username || "",
             isVerified: user.is_verified || false,
-            profilePicture: user.profile_picture || "",
+            profilePicture: user.profile_picture || IntegrationConstants.DEFAULT_PROFILE_IMAGE,
             channelSlug: user.channel_slug || ""
         };
     }

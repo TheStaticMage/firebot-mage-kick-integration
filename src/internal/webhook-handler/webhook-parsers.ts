@@ -1,3 +1,4 @@
+import { IntegrationConstants } from "../../constants";
 import {
     ChannelFollowEvent,
     ChatMessageEvent,
@@ -57,7 +58,7 @@ export function parseKickUser(user: EventUser): KickUser {
         username: user.username || "",
         displayName: user.username || "",
         isVerified: user.is_verified || false,
-        profilePicture: user.profile_picture || "",
+        profilePicture: user.profile_picture || IntegrationConstants.DEFAULT_PROFILE_IMAGE,
         channelSlug: user.channel_slug || ""
     };
 }
@@ -70,7 +71,7 @@ export function parseKicksGiftedUser(user: KicksGiftedEventUser): KickUser {
         username: user.username || "",
         displayName: user.username || "",
         isVerified: user.is_verified || false,
-        profilePicture: user.profile_picture || "",
+        profilePicture: user.profile_picture || IntegrationConstants.DEFAULT_PROFILE_IMAGE,
         channelSlug: user.channel_slug || ""
     };
 }
@@ -93,7 +94,7 @@ export function parseKickUserWithIdentity(user: EventUserWithIdentity): KickUser
 export function parseBasicKickUser(user: User): BasicKickUser {
     const result: BasicKickUser = {
         name: user.name || "",
-        profilePicture: user.profile_picture || "",
+        profilePicture: user.profile_picture || IntegrationConstants.DEFAULT_PROFILE_IMAGE,
         userId: user.user_id || 0,
         email: user.email || ""
     };
