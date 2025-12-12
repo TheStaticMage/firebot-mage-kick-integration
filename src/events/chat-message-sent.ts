@@ -11,21 +11,65 @@ interface chatBadge {
     url: string;
 }
 
-export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<void> {
-    // Basic message parsing
-    const helpers = new FirebotChatHelpers();
-    const firebotChatMessage = await helpers.buildFirebotChatMessage(payload, payload.content);
+interface PendingChatMessage {
+    messageId: string;
+    timeoutHandle: NodeJS.Timeout;
+}
 
-    // Are there more badges we need to support?
+// Queue of messages from Pusher waiting to see if webhook arrives
+const pendingPusherMessages = new Map<string, PendingChatMessage>();
+
+// Mark a message as originating from webhook (not Pusher)
+const webhookMessages = new Set<string>();
+
+export async function handleChatMessageSentEvent(payload: ChatMessage, isFromWebhook = false): Promise<void> {
+    const messageId = payload.messageId;
+
+    // If this is from webhook, cancel any pending Pusher version
+    if (isFromWebhook) {
+        webhookMessages.add(messageId);
+        const pending = pendingPusherMessages.get(messageId);
+        if (pending) {
+            clearTimeout(pending.timeoutHandle);
+            pendingPusherMessages.delete(messageId);
+            logger.debug(`Webhook arrived for message ${messageId}, cancelled pending Pusher message`);
+        }
+    } else {
+        // If from Pusher, check if webhook version already processed this
+        if (webhookMessages.has(messageId)) {
+            logger.debug(`Duplicate Pusher message ignored (webhook already processed): id=${messageId}`);
+            return;
+        }
+
+        // Schedule delivery after 5 seconds, allowing webhook to arrive and cancel it
+        const timeoutHandle = setTimeout(async () => {
+            pendingPusherMessages.delete(messageId);
+            await processAndSendChatMessage(payload);
+        }, 5000);
+
+        pendingPusherMessages.set(messageId, { messageId, timeoutHandle });
+        logger.debug(`Pusher chat message scheduled for delivery in 5s: id=${messageId}`);
+        return;
+    }
+
+    // Webhook messages are processed immediately
+    await processAndSendChatMessage(payload);
+}
+
+async function processAndSendChatMessage(payload: ChatMessage): Promise<void> {
+    const helpers = new FirebotChatHelpers();
     const twitchBadgeRoles: string[] = helpers.getTwitchRoles(payload.sender.identity);
 
-    // Create user if they do not exist, and increment their chat messages
+    // Create user if they do not exist
     const viewer = await integration.kick.userManager.getOrCreateViewer(payload.sender, [], true);
     if (viewer) {
         await integration.kick.userManager.setViewerRoles(viewer._id, twitchBadgeRoles);
     }
 
-    // Skip duplicate messages here
+    // Build Firebot chat message with profile picture from payload
+    const firebotChatMessage = await helpers.buildFirebotChatMessage(payload, payload.content);
+
+    // Skip duplicate messages
     const isRegistered = await integration.kick.chatManager.registerMessage(payload.messageId, 'kick', firebotChatMessage);
     if (!isRegistered) {
         logger.debug(`Duplicate chat message ignored: id=${payload.messageId}`);
@@ -35,7 +79,7 @@ export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<
     // Update chat message count
     await integration.kick.userManager.incrementDbField(payload.sender.userId, "chatMessages");
 
-    // Command checking.
+    // Command checking
     await commandHandler.handleChatMessage(firebotChatMessage);
 
     // Trigger the chat message event
@@ -55,6 +99,7 @@ export async function handleChatMessageSentEvent(payload: ChatMessage): Promise<
     // Send to the chat client
     if (integration.isChatFeedEnabled()) {
         const { frontendCommunicator } = firebot.modules;
+        logger.debug(`Sending Kick chat message to Firebot: userId=${firebotChatMessage.userId}, profilePicUrl=${firebotChatMessage.profilePicUrl || "(empty)"}`);
         frontendCommunicator.send("twitch:chat:message", firebotChatMessage);
     }
 }
@@ -132,8 +177,7 @@ export class FirebotChatHelpers {
             username: kickifyUsername(msg.sender.username),
             userId: kickifyUserId(msg.sender.userId.toString()),
             userDisplayName: unkickifyUsername(msg.sender.username),
-            //profilePicUrl: msg.sender.profilePicture, // Currently broken, see https://github.com/KickEngineering/KickDevDocs/issues/166
-            profilePicUrl: "https://kick.com/favicon.ico",
+            profilePicUrl: msg.sender.profilePicture || "",
             customRewardId: undefined,
             isHighlighted: false,
             isAnnouncement: false,

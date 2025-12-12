@@ -92,7 +92,7 @@ export class WebhookHandler {
         switch (webhook.kickEventType) {
             case "chat.message.sent": {
                 const event = parseChatMessageEvent(webhook.rawData);
-                handleChatMessageSentEvent(event);
+                handleChatMessageSentEvent(event, true);
                 break;
             }
             case "channel.followed": {
