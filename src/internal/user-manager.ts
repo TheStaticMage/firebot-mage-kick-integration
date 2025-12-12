@@ -1,5 +1,6 @@
 import { FirebotViewer } from "@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database";
 import Datastore from "@seald-io/nedb";
+import { IntegrationConstants } from "../constants";
 import { logger } from "../main";
 import { BasicKickUser, KickGifter, KickSubscription, KickUser } from "../shared/types";
 import { getDataFilePath } from "../util/datafile";
@@ -88,7 +89,7 @@ export class KickUserManager {
             _id: unkickifyUserId(kickUser.userId.toString()),
             username: unkickifyUsername(kickUser.username),
             displayName: kickUser.displayName || unkickifyUsername(kickUser.username),
-            profilePicUrl: kickUser.profilePicture || "",
+            profilePicUrl: kickUser.profilePicture || IntegrationConstants.DEFAULT_PROFILE_IMAGE,
             twitch: false,
             twitchRoles: roles, // Preserving this naming for now for consistency
             online: isOnline,

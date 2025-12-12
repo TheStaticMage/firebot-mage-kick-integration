@@ -177,7 +177,7 @@ export class FirebotChatHelpers {
             username: kickifyUsername(msg.sender.username),
             userId: kickifyUserId(msg.sender.userId.toString()),
             userDisplayName: unkickifyUsername(msg.sender.username),
-            profilePicUrl: msg.sender.profilePicture || "",
+            profilePicUrl: msg.sender.profilePicture || IntegrationConstants.DEFAULT_PROFILE_IMAGE,
             customRewardId: undefined,
             isHighlighted: false,
             isAnnouncement: false,

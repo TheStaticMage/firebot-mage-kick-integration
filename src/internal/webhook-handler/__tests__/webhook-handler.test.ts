@@ -1,3 +1,4 @@
+import { IntegrationConstants } from "../../../constants";
 import { parseChatMessageEvent } from "../webhook-parsers";
 
 jest.mock('../../../integration', () => {
@@ -39,7 +40,7 @@ describe('parseChatMessageEvent', () => {
                     username: "thestaticmagetest",
                     displayName: "thestaticmagetest",
                     isVerified: false,
-                    profilePicture: "",
+                    profilePicture: IntegrationConstants.DEFAULT_PROFILE_IMAGE,
                     channelSlug: "thestaticmagetest"
                 }
             },

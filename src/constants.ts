@@ -7,6 +7,7 @@ export const IntegrationConstants = {
     KICK_API_SERVER: "https://api.kick.com",
     KICK_AUTH_SERVER: "https://id.kick.com",
     PUSHER_APP_KEY: "32cbd69e4b950bf97679",
+    DEFAULT_PROFILE_IMAGE: "https://kick.com/favicon.ico",
     WEBHOOK_PUBLIC_KEY: `-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq/+l1WnlRrGSolDMA+A8
 6rAhMbQGmQ2SapVcGM3zq8ANXjnhDWocMqfWcTd95btDydITa10kDvHzw9WQOqp2

@@ -1,5 +1,6 @@
 import { FirebotChatHelpers, handleChatMessageSentEvent } from "../chat-message-sent";
 import { KickIdentity, ChatMessage } from "../../shared/types";
+import { IntegrationConstants } from "../../constants";
 
 // Mock logger before importing modules that use it
 jest.mock("../../main", () => ({
@@ -303,10 +304,10 @@ describe('FirebotChatHelpers', () => {
             };
 
             const result = await helpers.buildFirebotChatMessage(msg, "Hello world");
-            expect(result.profilePicUrl).toBe("");
+            expect(result.profilePicUrl).toBe(IntegrationConstants.DEFAULT_PROFILE_IMAGE);
         });
 
-        it('uses empty string when profile picture is undefined', async () => {
+        it('uses default profile image when profile picture is undefined', async () => {
             const msg: ChatMessage = {
                 messageId: "msg-123",
                 content: "Hello world",
@@ -335,7 +336,7 @@ describe('FirebotChatHelpers', () => {
             };
 
             const result = await helpers.buildFirebotChatMessage(msg, "Hello world");
-            expect(result.profilePicUrl).toBe("");
+            expect(result.profilePicUrl).toBe(IntegrationConstants.DEFAULT_PROFILE_IMAGE);
         });
     });
 });
@@ -363,7 +364,7 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
             username: "broadcaster",
             displayName: "Broadcaster",
             isVerified: false,
-            profilePicture: "",
+            profilePicture: IntegrationConstants.DEFAULT_PROFILE_IMAGE,
             channelSlug: "broadcaster"
         },
         sender: {
@@ -371,7 +372,7 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
             username: "testuser",
             displayName: "Test User",
             isVerified: false,
-            profilePicture: "", // Pusher doesn't include profile picture
+            profilePicture: IntegrationConstants.DEFAULT_PROFILE_IMAGE, // Pusher doesn't include profile picture
             channelSlug: "testuser",
             identity: {
                 usernameColor: "#000000",
@@ -415,7 +416,7 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
         await handleChatMessageSentEvent(msg, false);
 
         expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 5000);
-        expect(msg.sender.profilePicture).toBe(""); // Verify Pusher message has no profile pic
+        expect(msg.sender.profilePicture).toBe(IntegrationConstants.DEFAULT_PROFILE_IMAGE); // Verify Pusher message has no profile pic
         setTimeoutSpy.mockRestore();
     });
 
@@ -445,7 +446,7 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
         // Pusher message arrives - schedules delay
         await handleChatMessageSentEvent(pusherMsg, false);
         expect(setTimeoutSpy).toHaveBeenCalledTimes(1);
-        expect(pusherMsg.sender.profilePicture).toBe(""); // Pusher has no profile pic
+        expect(pusherMsg.sender.profilePicture).toBe(IntegrationConstants.DEFAULT_PROFILE_IMAGE); // Pusher has no profile pic
 
         // Webhook arrives - should cancel the timer
         try {
@@ -482,7 +483,7 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
 
         // setTimeout should not have been called again
         expect(setTimeoutSpy).toHaveBeenCalledTimes(initialCallCount);
-        expect(pusherMsg.sender.profilePicture).toBe(""); // Pusher has no profile pic
+        expect(pusherMsg.sender.profilePicture).toBe(IntegrationConstants.DEFAULT_PROFILE_IMAGE); // Pusher has no profile pic
 
         setTimeoutSpy.mockRestore();
     });
@@ -512,7 +513,7 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
         // Verify Pusher message was registered and resulted in actual message processing
         expect(registerMessageMock).toHaveBeenCalledTimes(1);
         expect(registerMessageMock).toHaveBeenNthCalledWith(1, "msg-late-webhook-test", "kick", expect.objectContaining({
-            profilePicUrl: "" // Pusher message has no profile pic
+            profilePicUrl: IntegrationConstants.DEFAULT_PROFILE_IMAGE // Pusher message has no profile pic
         }));
         const initialEventCallCount = eventManagerMock.mock.calls.length;
 
@@ -530,7 +531,7 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
         expect(frontendSendMock).toHaveBeenCalledTimes(0); // Chat feed disabled in mocks
 
         // Both messages have their expected profile picture states
-        expect(pusherMsg.sender.profilePicture).toBe("");
+        expect(pusherMsg.sender.profilePicture).toBe(IntegrationConstants.DEFAULT_PROFILE_IMAGE);
         expect(webhookMsg.sender.profilePicture).toBe("https://example.com/avatar.jpg");
     });
 });
