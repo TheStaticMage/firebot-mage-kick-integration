@@ -26,7 +26,7 @@ Before you can use this integration, you need to perform the following setup:
 
     - **Application Name**: `Firebot` (or `YourNameFirebot`)
     - **App Description**: `Firebot integration`
-    - **Redirect URL**: `http://localhost:7472/integrations/firebot-mage-kick-integration/auth/callback`
+    - **Redirect URL**: `http://localhost:7472/integrations/firebot-mage-kick-integration/callback`
     - **Enable webhooks**: Unchecked
     - **Webhook URL**: Leave blank (You will obtain the Webhook URL from Firebot in a later step.)
     - **Scopes Requested**: Check **ALL** scopes **EXCEPT** "Read stream key". (It is very important to select all the other scopes, otherwise the integration will not work correctly.)
