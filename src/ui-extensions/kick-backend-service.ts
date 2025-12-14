@@ -13,6 +13,14 @@ export const kickBackendService: AngularJsFactory = {
                 return backendCommunicator.fireEventSync("kick:get-webhook-data", {});
             },
 
+            registerWebhook: () => {
+                return backendCommunicator.fireEventAsync("kick:register-webhook", {});
+            },
+
+            resetWebhookSubscriptions: () => {
+                return backendCommunicator.fireEventAsync("kick:reset-webhook-subscriptions", {});
+            },
+
             authorizeStreamer: () => {
                 return backendCommunicator.fireEventSync("kick:authorize-streamer", {});
             },

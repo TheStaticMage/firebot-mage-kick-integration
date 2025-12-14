@@ -315,6 +315,10 @@ export class KickIntegration extends EventEmitter {
         this.registerUIExtensionEvents();
         this.registerKickRewardsIpcHandlers();
 
+        // Register webhook early, before authentication
+        this.registerWebhook();
+        this.registerWebhookEventHandler();
+
         // Add events to effects, filters, and variables (new Firebot 5.65+ feature)
 
         effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "chat-message");
@@ -343,6 +347,42 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.addEventToVariable("timeoutDuration", IntegrationConstants.INTEGRATION_ID, "timeout");
     }
 
+    private registerWebhook(): boolean {
+        const { webhookManager } = firebot.modules;
+        try {
+            let webhook = webhookManager.getWebhook(IntegrationConstants.WEBHOOK_NAME);
+            if (webhook) {
+                logger.debug("Crowbar webhook already exists. Not creating a new one.");
+            } else {
+                logger.info("Kick webhook not found. Creating new webhook.");
+                webhook = webhookManager.saveWebhook(IntegrationConstants.WEBHOOK_NAME);
+                if (webhook) {
+                    logger.info("Crowbar webhook registered successfully.");
+                } else {
+                    logger.error("Failed to register Crowbar webhook. Webhook events will not be received.");
+                    return false;
+                }
+            }
+            return true;
+        } catch (error) {
+            logger.error(`Failed to initialize Crowbar webhooks: ${error}`);
+            return false;
+        }
+    }
+
+    private registerWebhookEventHandler(): void {
+        try {
+            const { webhookManager } = firebot.modules;
+            webhookManager.on("webhook-received", async ({ config, payload, rawPayload, headers }: any) => {
+                if (config.name === IntegrationConstants.WEBHOOK_NAME) {
+                    await this.handleCrowbarWebhook(payload, rawPayload, headers);
+                }
+            });
+        } catch (error) {
+            logger.error(`Failed to register webhook event handler: ${error}`);
+        }
+    }
+
     async connect() {
         // Load current refresh token and proxy poll key from data file
         this.dataFilePath = getDataFilePath("integration-data.json");
@@ -362,33 +402,6 @@ export class KickIntegration extends EventEmitter {
         }
 
         this.emit("connecting", IntegrationConstants.INTEGRATION_ID);
-
-        // Initialize Crowbar webhook
-        const { webhookManager } = firebot.modules;
-        try {
-            // Verify existing webhook or create new one
-            let webhook = webhookManager.getWebhook(IntegrationConstants.WEBHOOK_NAME);
-            if (webhook) {
-                logger.debug("Crowbar webhook already exists. Not creating a new one.");
-            } else {
-                logger.info("Kick webhook not found. Creating new webhook.");
-                webhook = webhookManager.saveWebhook(IntegrationConstants.WEBHOOK_NAME);
-                if (webhook) {
-                    logger.info("Crowbar webhook registered successfully.");
-                } else {
-                    logger.error("Failed to register Crowbar webhook. Webhook events will not be received.");
-                }
-            }
-
-            // Register webhook event handler
-            webhookManager.on("webhook-received", async ({ config, payload, rawPayload, headers }: any) => {
-                if (config.name === IntegrationConstants.WEBHOOK_NAME) {
-                    await this.handleCrowbarWebhook(payload, rawPayload, headers);
-                }
-            });
-        } catch (error) {
-            logger.error(`Failed to initialize Crowbar webhooks: ${error}`);
-        }
 
         // Refresh the auth token (we always do this upon connecting)
         try {
@@ -666,6 +679,42 @@ export class KickIntegration extends EventEmitter {
             } catch (error) {
                 logger.error(`Failed to retrieve webhook data: ${error}`);
                 return { url: "" };
+            }
+        });
+
+        // Register webhook registration handler
+        frontendCommunicator.onAsync("kick:register-webhook", async () => {
+            try {
+                const success = this.registerWebhook();
+                if (success) {
+                    const { webhookManager } = firebot.modules;
+                    const url = webhookManager.getWebhookUrl(IntegrationConstants.WEBHOOK_NAME);
+                    logger.debug(`Webhook registration successful. URL: ${url}`);
+                    return { success: true, url: url || "" };
+                }
+                return { success: false, url: "", error: "Failed to register webhook" };
+            } catch (error) {
+                logger.error(`Error in kick:register-webhook handler: ${error}`);
+                return { success: false, url: "", error: String(error) };
+            }
+        });
+
+        // Register reset webhook subscriptions handler
+        frontendCommunicator.onAsync("kick:reset-webhook-subscriptions", async () => {
+            try {
+                logger.info("Webhook subscription reset requested by user.");
+                await this.kick.webhookSubscriptionManager.resetWebhookSubscriptions();
+                logger.info("Webhook subscriptions reset successfully. Disconnecting and reconnecting integration...");
+
+                // Disconnect and reconnect the integration to ensure a clean state
+                await this.disconnect();
+                await this.connect();
+
+                logger.info("Integration reconnected after webhook subscription reset.");
+                return { success: true };
+            } catch (error) {
+                logger.error(`Error resetting webhook subscriptions: ${error}`);
+                return { success: false, error: String(error) };
             }
         });
     }

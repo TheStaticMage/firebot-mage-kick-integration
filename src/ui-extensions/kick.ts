@@ -241,6 +241,49 @@ const kickIntegrationPage: AngularJsPage = {
             copyButtonTimeout = result.timeout;
         };
 
+        $scope.registerWebhook = () => {
+            kickBackendService.registerWebhook().then((result: any) => {
+                $timeout(() => {
+                    if (result.success) {
+                        $scope.webhookUrl = result.url;
+                    } else {
+                        showErrorModal("Webhook Registration Failed", result.error || "Failed to register webhook");
+                    }
+                });
+            }).catch((error: any) => {
+                logger.error("Failed to register webhook:", error);
+                $timeout(() => {
+                    showErrorModal("Webhook Registration Failed", error?.message || "An error occurred while registering the webhook");
+                });
+            });
+        };
+
+        $scope.resetWebhookSubscriptions = () => {
+            showConfirmModal(
+                "Reset Webhook Subscriptions",
+                "This will reset all webhook subscriptions and reconnect the integration. This may cause brief instability. Are you sure?"
+            ).then((confirmed) => {
+                if (!confirmed) {
+                    return;
+                }
+
+                kickBackendService.resetWebhookSubscriptions().then((result: any) => {
+                    $timeout(() => {
+                        if (result.success) {
+                            showInfoModal("Webhook Reset Complete", "Webhook subscriptions have been reset and the integration has been reconnected. If webhooks do not work correctly, please check the Firebot logs for any error messages.");
+                        } else {
+                            showErrorModal("Webhook Reset Failed", result.error || "Failed to reset webhook subscriptions");
+                        }
+                    });
+                }).catch((error: any) => {
+                    logger.error("Failed to reset webhook subscriptions:", error);
+                    $timeout(() => {
+                        showErrorModal("Webhook Reset Failed", error?.message || "An error occurred while resetting webhook subscriptions");
+                    });
+                });
+            });
+        };
+
         // Rewards Tab Logic
         $scope.rewardsTab = {
             loading: false,
