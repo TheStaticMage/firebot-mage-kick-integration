@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <!-- Webhook Section -->
+            <!-- Webhook Section - URL exists -->
             <div class="connection-section" ng-if="webhookUrl">
                 <div class="connection-header">
                     <div class="connection-title">Webhook Configuration</div>
@@ -76,6 +76,34 @@
                 <div class="webhook-url-container">
                     <div class="webhook-url">{{ webhookUrl }}</div>
                     <button id="btn-copy-webhook-url" class="btn btn-primary btn-copy" ng-click="copyWebhookUrl()">Copy URL</button>
+                </div>
+            </div>
+
+            <!-- Webhook Section - URL not registered -->
+            <div class="connection-section" ng-if="!webhookUrl">
+                <div class="connection-header">
+                    <div class="connection-title">Webhook Configuration</div>
+                </div>
+
+                <div class="webhook-tip-message alert alert-warning">
+                    Webhook not registered yet. Click the button below to register.
+                </div>
+
+                <button class="btn btn-primary" ng-click="registerWebhook()">
+                    Register Webhook
+                </button>
+            </div>
+
+            <!-- Maintenance Section -->
+            <div class="connection-section" ng-if="connections.streamer.ready && connections.connected">
+                <div class="connection-header">
+                    <div class="connection-title">Maintenance</div>
+                </div>
+
+                <div class="maintenance-button-container">
+                    <button class="btn btn-warning" ng-click="resetWebhookSubscriptions()" title="Use this button only if the webhook URL was changed or webhooks are not working correctly. This may cause instability.">
+                        Reset Webhook Subscriptions
+                    </button>
                 </div>
             </div>
         </div>
