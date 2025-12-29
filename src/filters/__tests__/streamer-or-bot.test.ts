@@ -27,14 +27,6 @@ jest.mock('../../main', () => ({
     }
 }));
 
-jest.mock('../../variables/platform', () => ({
-    platformVariable: {
-        evaluator: jest.fn()
-    }
-}));
-
-const { platformVariable } = require('../../variables/platform');
-
 describe('streamerOrBotFilter.predicate', () => {
     const baseEventData = {
         eventSourceId: IntegrationConstants.INTEGRATION_ID,
@@ -44,10 +36,9 @@ describe('streamerOrBotFilter.predicate', () => {
 
 
     it('returns false for Kick bot when bot name is empty string (is)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
         const integration = require('../../integration').integration;
         integration.kick.bot.name = '';
-        const eventData = { ...baseEventData, eventMeta: { username: 'somebody' } };
+        const eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'somebody' } };
         // Should be false for bot
         let result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'bot' }, eventData);
         expect(result).toBe(false);
@@ -59,10 +50,9 @@ describe('streamerOrBotFilter.predicate', () => {
     });
 
     it('returns true for Kick bot when bot name is empty string (is not)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
         const integration = require('../../integration').integration;
         integration.kick.bot.name = '';
-        const eventData = { ...baseEventData, eventMeta: { username: 'somebody' } };
+        const eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'somebody' } };
         // Should be false for bot
         let result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'bot' }, eventData);
         expect(result).toBe(true);
@@ -74,10 +64,9 @@ describe('streamerOrBotFilter.predicate', () => {
     });
 
     it('returns false for Twitch bot when bot username is empty string (is)', async () => {
-        platformVariable.evaluator.mockReturnValue('twitch');
         const firebot = require('../../main').firebot;
         firebot.firebot.accounts.bot.username = '';
-        const eventData = { ...baseEventData, eventMeta: { username: 'somebody' } };
+        const eventData = { ...baseEventData, eventSourceId: 'twitch', eventMeta: { username: 'somebody' } };
         // Should be false for bot
         let result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'bot' }, eventData);
         expect(result).toBe(false);
@@ -89,10 +78,9 @@ describe('streamerOrBotFilter.predicate', () => {
     });
 
     it('returns true for Twitch bot when bot username is empty string (is not)', async () => {
-        platformVariable.evaluator.mockReturnValue('twitch');
         const firebot = require('../../main').firebot;
         firebot.firebot.accounts.bot.username = '';
-        const eventData = { ...baseEventData, eventMeta: { username: 'somebody' } };
+        const eventData = { ...baseEventData, eventSourceId: 'twitch', eventMeta: { username: 'somebody' } };
         // Should be false for bot
         let result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'bot' }, eventData);
         expect(result).toBe(true);
@@ -104,125 +92,109 @@ describe('streamerOrBotFilter.predicate', () => {
     });
 
     it('returns true for Kick streamer (is)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        const eventData = { ...baseEventData, eventMeta: { username: 'StreamerKick' } };
+        const eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'StreamerKick' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'streamer' }, eventData);
         expect(result).toBe(true);
     });
 
     it('returns true for Kick bot (is)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        const eventData = { ...baseEventData, eventMeta: { username: 'BotKick' } };
+        const eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'BotKick' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'bot' }, eventData);
         expect(result).toBe(true);
     });
 
     it('returns true for Kick either (is)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        let eventData = { ...baseEventData, eventMeta: { username: 'StreamerKick' } };
+        let eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'StreamerKick' } };
         let result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'either' }, eventData);
         expect(result).toBe(true);
-        eventData = { ...baseEventData, eventMeta: { username: 'BotKick' } };
+        eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'BotKick' } };
         result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'either' }, eventData);
         expect(result).toBe(true);
     });
 
     it('returns false for Kick either (is not)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        let eventData = { ...baseEventData, eventMeta: { username: 'StreamerKick' } };
+        let eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'StreamerKick' } };
         let result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'either' }, eventData);
         expect(result).toBe(false);
-        eventData = { ...baseEventData, eventMeta: { username: 'BotKick' } };
+        eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'BotKick' } };
         result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'either' }, eventData);
         expect(result).toBe(false);
     });
 
     it('returns false for Kick not streamer (is)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        const eventData = { ...baseEventData, eventMeta: { username: 'NotAStreamer' } };
+        const eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'NotAStreamer' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'streamer' }, eventData);
         expect(result).toBe(false);
     });
 
     it('returns true for Twitch streamer', async () => {
-        platformVariable.evaluator.mockReturnValue('twitch');
-        const eventData = { ...baseEventData, eventMeta: { username: 'StreamerTwitch' } };
+        const eventData = { ...baseEventData, eventSourceId: 'twitch', eventMeta: { username: 'StreamerTwitch' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'streamer' }, eventData);
         expect(result).toBe(true);
     });
 
     it('returns true for Twitch bot', async () => {
-        platformVariable.evaluator.mockReturnValue('twitch');
-        const eventData = { ...baseEventData, eventMeta: { username: 'BotTwitch' } };
+        const eventData = { ...baseEventData, eventSourceId: 'twitch', eventMeta: { username: 'BotTwitch' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'bot' }, eventData);
         expect(result).toBe(true);
     });
 
     it('returns true for Twitch either (is)', async () => {
-        platformVariable.evaluator.mockReturnValue('twitch');
-        let eventData = { ...baseEventData, eventMeta: { username: 'StreamerTwitch' } };
+        let eventData = { ...baseEventData, eventSourceId: 'twitch', eventMeta: { username: 'StreamerTwitch' } };
         let result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'either' }, eventData);
         expect(result).toBe(true);
-        eventData = { ...baseEventData, eventMeta: { username: 'BotTwitch' } };
+        eventData = { ...baseEventData, eventSourceId: 'twitch', eventMeta: { username: 'BotTwitch' } };
         result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'either' }, eventData);
         expect(result).toBe(true);
     });
 
     it('returns true for Twitch either (is not)', async () => {
-        platformVariable.evaluator.mockReturnValue('twitch');
-        let eventData = { ...baseEventData, eventMeta: { username: 'StreamerTwitch' } };
+        let eventData = { ...baseEventData, eventSourceId: 'twitch', eventMeta: { username: 'StreamerTwitch' } };
         let result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'either' }, eventData);
         expect(result).toBe(false);
-        eventData = { ...baseEventData, eventMeta: { username: 'BotTwitch' } };
+        eventData = { ...baseEventData, eventSourceId: 'twitch', eventMeta: { username: 'BotTwitch' } };
         result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'either' }, eventData);
         expect(result).toBe(false);
     });
 
     it('returns false for Twitch not streamer', async () => {
-        platformVariable.evaluator.mockReturnValue('twitch');
-        const eventData = { ...baseEventData, eventMeta: { username: 'NotAStreamer' } };
+        const eventData = { ...baseEventData, eventSourceId: 'twitch', eventMeta: { username: 'NotAStreamer' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'streamer' }, eventData);
         expect(result).toBe(false);
     });
 
     it('returns false for unknown platform (is)', async () => {
-        platformVariable.evaluator.mockReturnValue('unknown');
-        const eventData = { ...baseEventData, eventMeta: { username: 'StreamerKick' } };
+        const eventData = { ...baseEventData, eventSourceId: 'unknown', eventMeta: { username: 'StreamerKick' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'streamer' }, eventData);
         expect(result).toBe(false);
     });
 
     it('returns true for unknown platform (is not)', async () => {
-        platformVariable.evaluator.mockReturnValue('unknown');
-        const eventData = { ...baseEventData, eventMeta: { username: 'StreamerKick' } };
+        const eventData = { ...baseEventData, eventSourceId: 'unknown', eventMeta: { username: 'StreamerKick' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'streamer' }, eventData);
         expect(result).toBe(true);
     });
 
     it('returns false for empty username (is)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        const eventData = { ...baseEventData, eventMeta: { username: '' } };
+        const eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: '' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'streamer' }, eventData);
         expect(result).toBe(false);
     });
 
     it('returns true for empty username (is not)', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        const eventData = { ...baseEventData, eventMeta: { username: '' } };
+        const eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: '' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'streamer' }, eventData);
         expect(result).toBe(true);
     });
 
     it('returns true for "is not" when username does not match', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        const eventData = { ...baseEventData, eventMeta: { username: 'NotAStreamer' } };
+        const eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'NotAStreamer' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'streamer' }, eventData);
         expect(result).toBe(true);
     });
 
     it('returns false for "is not" when username matches', async () => {
-        platformVariable.evaluator.mockReturnValue('kick');
-        const eventData = { ...baseEventData, eventMeta: { username: 'StreamerKick' } };
+        const eventData = { ...baseEventData, eventSourceId: IntegrationConstants.INTEGRATION_ID, eventMeta: { username: 'StreamerKick' } };
         const result = await streamerOrBotFilter.predicate({ comparisonType: 'is not', value: 'streamer' }, eventData);
         expect(result).toBe(false);
     });

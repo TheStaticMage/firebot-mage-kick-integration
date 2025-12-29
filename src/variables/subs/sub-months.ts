@@ -4,7 +4,7 @@ import { IntegrationConstants } from '../../constants';
 export const kickSubMonthsVariable: ReplaceVariable = {
     definition: {
         handle: "kickSubMonths",
-        description: "The total number of months the user has been subscribed since the beginning of time. (Compatible with Kick and Twitch sub events.)",
+        description: "[DEPRECATED] The total number of months the user has been subscribed since the beginning of time. (Compatible with Kick and Twitch sub events.)",
         triggers: {
             event: ["twitch:sub", `${IntegrationConstants.INTEGRATION_ID}:sub`],
             manual: true

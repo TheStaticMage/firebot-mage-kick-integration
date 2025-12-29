@@ -3,11 +3,12 @@ import { Logger } from '@crowbartools/firebot-custom-scripts-types/types/modules
 import { satisfies } from 'semver';
 import { IntegrationConstants } from './constants';
 import { definition, integration } from './integration';
+import { checkPlatformLibCompatibility } from '@thestaticmage/mage-platform-lib-client';
 
 export let firebot: RunRequest<any>;
 export let logger: LogWrapper;
 
-export const scriptVersion = '0.9.3';
+export const scriptVersion = '0.10.0';
 
 const script: Firebot.CustomScript = {
     getScriptManifest: () => {
@@ -23,15 +24,26 @@ const script: Firebot.CustomScript = {
     getDefaultParameters: () => {
         return {};
     },
-    run: (runRequest: RunRequest<any>) => {
+    run: async (runRequest: RunRequest<any>) => {
         firebot = runRequest;
         logger = new LogWrapper(runRequest.modules.logger);
 
         // Check Firebot version compatibility
         const fbVersion = firebot.firebot.version;
         logger.debug(`Detected Firebot version: ${fbVersion}`);
-        if (!satisfies(fbVersion, ">= 5.65.0-0", { includePrerelease: true })) {
-            logger.error(`${IntegrationConstants.INTEGRATION_ID} requires Firebot version 5.65.0 or higher (including prereleases). Detected version: ${fbVersion}. Please update Firebot to use this plugin.`);
+        if (!satisfies(fbVersion, ">= 5.65.3-0", { includePrerelease: true })) {
+            logger.error(`${IntegrationConstants.INTEGRATION_ID} requires Firebot version 5.65.3 or higher (including prereleases). Detected version: ${fbVersion}. Please update Firebot to use this plugin.`);
+            return;
+        }
+
+        // Check platform-lib compatibility
+        const platformLibCheck = await checkPlatformLibCompatibility(runRequest, IntegrationConstants.INTEGRATION_NAME, IntegrationConstants.PLATFORM_LIB_VERSION_CONSTRAINT, logger);
+        if (!platformLibCheck.success) {
+            logger.error(`Platform Library compatibility check failed: ${platformLibCheck.errorMessage}`);
+
+            const { frontendCommunicator } = firebot.modules;
+            frontendCommunicator.send("error", `Kick Integration failed to load. ${platformLibCheck.errorMessage}`);
+
             return;
         }
 
@@ -44,7 +56,7 @@ const script: Firebot.CustomScript = {
 
 export default script;
 
-class LogWrapper {
+export class LogWrapper {
     private _logger: Logger;
 
     constructor(inLogger: Logger) {

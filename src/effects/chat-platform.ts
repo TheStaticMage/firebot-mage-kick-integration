@@ -25,8 +25,8 @@ type chatPlatformEffectParams = {
 export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = {
     definition: {
         id: "mage-kick-integration:chat-platform",
-        name: "Chat (Platform Aware)",
-        description: "Send a chat message to the platform from which the trigger originated.",
+        name: "Chat (Platform Aware) [DEPRECATED]",
+        description: "Send a chat message to the platform from which the trigger originated. (This effect is deprecated, use 'Chat (Multi-Platform)' instead)",
         icon: "fad fa-comment-lines",
         categories: ["common", "chat based"],
         dependencies: ["chat"]

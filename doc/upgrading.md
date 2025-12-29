@@ -2,8 +2,8 @@
 
 ## Version Requirements
 
-- **Version 0.7.0 and higher** require Firebot 5.65
-- **Version 0.6.2 and lower** require Firebot 5.64
+- **Versions 0.10.0 and higher** require Firebot 5.65 and [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/) 0.0.1 or higher
+- **Versions 0.7.0 and higher** require Firebot 5.65
 
 ## Versioning Philosophy
 
@@ -14,6 +14,8 @@
 - A **major release** changes the first number (e.g. `0.1.5` -> `1.0.0`). I do not intend to release version 1.0.
 
 ## Upgrade Procedure
+
+:warning: **Versions 0.10.0 and higher require a compatible version of firebot-mage-platform-lib**: See version compatibility above. Download from [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/).
 
 :boom: **Version 0.9.0 has major architectural changes**: Users will need to reconfigure their Kick connectivity and channel rewards. See [Breaking Changes](/doc/breaking-changes.md) for details.
 
@@ -27,6 +29,10 @@
 
 ## Upgrade Notes
 
+### Version 0.10.0
+
+Install version 0.0.1 or higher of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/).
+
 ### Version 0.9.0
 
 See [Breaking Changes](/doc/breaking-changes.md) for details on major changes, including webhook proxy retirement and channel reward updates in 0.8.0.
@@ -34,3 +40,7 @@ See [Breaking Changes](/doc/breaking-changes.md) for details on major changes, i
 ### Version 0.8.0
 
 :boom: Adds the `moderation:chat_message:manage` scope. You must re-authorize the streamer account to use the Delete Message effect.
+
+### Version 0.7.0
+
+Version 0.7.0 (and higher) require Firebot 5.65. Firebot <= 5.64 are no longer supported.

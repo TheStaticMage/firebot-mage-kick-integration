@@ -1,6 +1,6 @@
 import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 import { IntegrationConstants } from "../constants";
-import { platformVariable } from "../variables/platform";
 
 export const platformRestriction = {
     definition: {
@@ -72,7 +72,7 @@ export const platformRestriction = {
     },
     predicate: (triggerData: Trigger, { comparison, platform }: { comparison: string, platform: string }): Promise<boolean> => {
         return new Promise((resolve, reject) => {
-            const currentPlatform = platformVariable.evaluator(triggerData);
+            const currentPlatform = detectPlatform(triggerData);
             if (comparison === "is" && currentPlatform === platform) {
                 resolve(true);
             }

@@ -52,8 +52,6 @@ import { kicksGiftTierVariable } from "./variables/kicks/kicks-gift-tier";
 import { kicksGiftTypeVariable } from "./variables/kicks/kicks-gift-type";
 import { kickModReason } from "./variables/mod-reason";
 import { kickModeratorVariable } from "./variables/moderator";
-import { platformVariable } from "./variables/platform";
-import { platformAwareUserDisplayNameVariable } from "./variables/platform-aware-user-display-name";
 import { kickRewardIdVariable } from "./variables/reward-id";
 import { kickRewardMessageVariable } from "./variables/reward-message";
 import { kickRewardNameVariable } from "./variables/reward-name";
@@ -73,6 +71,7 @@ import { kickUnbanTypeVariable } from "./variables/unban-type";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
 import { webhookReceivedEventTypeVariable, webhookReceivedEventVersionVariable, webhookReceivedLatencyVariable } from "./variables/webhook-received";
+import { registerRoutes, unregisterRoutes } from "./server/server";
 
 type IntegrationParameters = {
     connectivity: {
@@ -262,7 +261,6 @@ export class KickIntegration extends EventEmitter {
 
         // User variables
         replaceVariableManager.registerReplaceVariable(kickUserDisplayNameVariable);
-        replaceVariableManager.registerReplaceVariable(platformAwareUserDisplayNameVariable.replaceVariable);
 
         // Ban and timeout variables
         replaceVariableManager.registerReplaceVariable(kickModReason);
@@ -296,9 +294,6 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.registerReplaceVariable(kicksGiftTierVariable);
         replaceVariableManager.registerReplaceVariable(kicksGiftTypeVariable);
 
-        // Miscellaneous variables
-        replaceVariableManager.registerReplaceVariable(platformVariable);
-
         // Restrictions
         const { restrictionManager } = firebot.modules;
         restrictionManager.registerRestriction(platformRestriction);
@@ -319,8 +314,7 @@ export class KickIntegration extends EventEmitter {
         this.registerWebhook();
         this.registerWebhookEventHandler();
 
-        // Add events to effects, filters, and variables (new Firebot 5.65+ feature)
-
+        // Add events to effects, filters, and variables
         effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "chat-message");
         effectManager.addEventToEffect("firebot:chat-feed-custom-highlight", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
         effectManager.addEventToEffect("firebot:chat-feed-message-hide", IntegrationConstants.INTEGRATION_ID, "chat-message");
@@ -334,6 +328,12 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.addEventToVariable("chatMessage", IntegrationConstants.INTEGRATION_ID, "viewer-arrived");
         replaceVariableManager.addEventToVariable("cheerBitsAmount", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
         replaceVariableManager.addEventToVariable("cheerMessage", IntegrationConstants.INTEGRATION_ID, "kicks-gifted");
+        replaceVariableManager.addEventToVariable("giftCount", IntegrationConstants.INTEGRATION_ID, "community-subs-gifted");
+        replaceVariableManager.addEventToVariable("giftGiverUsername", IntegrationConstants.INTEGRATION_ID, "community-subs-gifted");
+        replaceVariableManager.addEventToVariable("giftGiverUsername", IntegrationConstants.INTEGRATION_ID, "subs-gifted");
+        replaceVariableManager.addEventToVariable("giftReceiverUsername", IntegrationConstants.INTEGRATION_ID, "subs-gifted");
+        replaceVariableManager.addEventToVariable("isAnonymous", IntegrationConstants.INTEGRATION_ID, "community-subs-gifted");
+        replaceVariableManager.addEventToVariable("isAnonymous", IntegrationConstants.INTEGRATION_ID, "subs-gifted");
         replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "banned");
         replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "timeout");
         replaceVariableManager.addEventToVariable("moderator", IntegrationConstants.INTEGRATION_ID, "unbanned");
@@ -344,6 +344,9 @@ export class KickIntegration extends EventEmitter {
         replaceVariableManager.addEventToVariable("raidTargetUsername", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
         replaceVariableManager.addEventToVariable("raidViewerCount", IntegrationConstants.INTEGRATION_ID, "raid-sent-off");
         replaceVariableManager.addEventToVariable("raidViewerCount", IntegrationConstants.INTEGRATION_ID, "raid");
+        replaceVariableManager.addEventToVariable("subMonths", IntegrationConstants.INTEGRATION_ID, "sub");
+        replaceVariableManager.addEventToVariable("subStreak", IntegrationConstants.INTEGRATION_ID, "sub");
+        replaceVariableManager.addEventToVariable("subType", IntegrationConstants.INTEGRATION_ID, "sub");
         replaceVariableManager.addEventToVariable("timeoutDuration", IntegrationConstants.INTEGRATION_ID, "timeout");
     }
 
@@ -437,6 +440,15 @@ export class KickIntegration extends EventEmitter {
             return;
         }
 
+        // Register platform-lib REST API operation handlers
+        try {
+            registerRoutes(this);
+        } catch (error) {
+            logger.error(`Failed to register platform-lib REST API operation handlers: ${error}`);
+            await this.disconnect();
+            return;
+        }
+
         // Mark the integration as connected
         this.connected = true;
         this.emit("connected", IntegrationConstants.INTEGRATION_ID);
@@ -446,6 +458,7 @@ export class KickIntegration extends EventEmitter {
     async disconnect() {
         logger.debug("Kick integration disconnecting...");
         this.emit("disconnecting", IntegrationConstants.INTEGRATION_ID);
+        unregisterRoutes();
         this.connected = false;
         this.authManager.disconnect();
         await this.kick.disconnect();

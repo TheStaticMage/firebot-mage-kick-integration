@@ -1,10 +1,10 @@
 import { EventData, EventFilter, FilterEvent, FilterSettings, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
 import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { platformVariable } from "../variables/platform";
 import { ComparisonType } from "./common";
 
 const events: string[] = [
@@ -30,7 +30,7 @@ const applicableEvents: FilterEvent[] = [
 
 export const streamerOrBotFilter: EventFilter = {
     id: `${IntegrationConstants.INTEGRATION_ID}:streamer-or-bot`,
-    name: "User",
+    name: "[Deprecated] Trigger User",
     description: "Checks if the user triggering the event is the streamer and/or stream bot. (Works on both Twitch and Kick events.)",
     events: applicableEvents,
     comparisonTypes: [
@@ -70,7 +70,7 @@ export const streamerOrBotFilter: EventFilter = {
             }
         };
 
-        const platform = platformVariable.evaluator(trigger);
+        const platform = detectPlatform(trigger);
         let username = "";
         const checkName: string[] = [];
 

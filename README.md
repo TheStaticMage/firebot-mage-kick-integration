@@ -24,10 +24,8 @@ This [Firebot](https://firebot.app) integration provides chat feed integration, 
 
 ## Version Requirements
 
+- **Versions 0.10.0 and higher** require Firebot 5.65 and a compatible version of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
 - **Version 0.7.0 and higher** require Firebot 5.65
-- **Version 0.6.2 and lower** require Firebot 5.64
-
-If you have Firebot 5.64, use version 0.6.2 of this integration. If you have Firebot 5.65 or higher, use version 0.7.0 or higher.
 
 ### Effects
 
@@ -37,7 +35,7 @@ _Effects are calls to the Kick API made by Firebot as a result of event handlers
 | ------ | --------- | ----- | ----- |
 | Ban/Unban viewer | :white_check_mark: | | |
 | Channel reward: Enable / disable | :white_check_mark: | 0.9.0 | |
-| Channel reward: Manage / unmanage | :white_check_mark: | 0.9.0 |Also cost, queue, enabled/disabled |
+| Channel reward: Manage / unmanage | :white_check_mark: | 0.9.0 | Also cost, queue, enabled/disabled |
 | Chat (send message) | :white_check_mark: | | Can chat as streamer or second "bot" account |
 | Delete message | :white_check_mark: | 0.8.0 | |
 | Stream category change | :white_check_mark: | | |
