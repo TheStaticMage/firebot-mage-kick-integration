@@ -18,17 +18,11 @@ node_modules/
 # OS
 .DS_Store
 
-# Go stuff
-/server/app
-/server/mage-kick-webhook-proxy
-
 # Coverage
 /coverage/
 
 # For local testing
 /test-payloads/
-/server/redis.db
-/server/test-data/
 
 # AI tooling
 /plans/
