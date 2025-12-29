@@ -33,7 +33,6 @@ Tech: TypeScript, Jest
 Learnings:
 
 - Kick's public API is limited and incomplete; some events require undocumented Pusher WebSocket service
-- Webhook proxy server required for some events not available via Pusher
 - OAuth tokens require automatic refresh to maintain authentication
 - Kick has a "private API" which we do not use as it requires bypassing CloudFlare protections by pretending to be a browser
 - Webhook delivery can be delayed by seconds or minutes on Kick's side
@@ -102,5 +101,4 @@ Things to check:
 Notes:
 
 - Reference similar implementation for YouTube in `../firebot-mage-youtube-integration`
-- Webhook proxy server implementation in `server/` directory
 - Kick API types defined in `kick-api-types` submodule
