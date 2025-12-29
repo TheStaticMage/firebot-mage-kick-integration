@@ -13,13 +13,6 @@ jest.mock('../../integration-singleton', () => ({
     }
 }));
 
-// Mock the platform variable
-jest.mock('../../variables/platform', () => ({
-    platformVariable: {
-        evaluator: jest.fn()
-    }
-}));
-
 // Mock the logger
 jest.mock('../../main', () => ({
     logger: {
@@ -32,18 +25,19 @@ jest.mock('../../main', () => ({
 
 // Import the mocked modules after setting up the mocks
 import { integration } from '../../integration-singleton';
-import { platformVariable } from '../../variables/platform';
 import { logger } from '../../main';
 
 describe('viewerRolesCondition.predicate', () => {
     const mockUserHasRole = jest.mocked(integration.kick.roleManager.userHasRole);
-    const mockPlatformEvaluator = jest.mocked(platformVariable.evaluator);
     const mockLogger = jest.mocked(logger);
 
     // Helper function to create trigger metadata
-    const createTrigger = (metadata: any = {}) => ({
+    const createTrigger = (metadata: any = {}, platform: string = IntegrationConstants.INTEGRATION_ID) => ({
         type: 'channel' as any,
-        metadata: metadata
+        metadata: {
+            eventSource: { id: platform, name: platform },
+            ...metadata
+        }
     });
 
     // Helper function to create condition settings
@@ -60,11 +54,10 @@ describe('viewerRolesCondition.predicate', () => {
 
     describe('username/userId resolution', () => {
         it('uses leftSideValue when provided', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('has role', 'specificuser', 'mod');
-            const trigger = createTrigger({ username: 'triggeruser' });
+            const trigger = createTrigger({ username: 'triggeruser' }, IntegrationConstants.INTEGRATION_ID);
 
             const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
 
@@ -73,11 +66,10 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('falls back to trigger.metadata.username when leftSideValue is empty string', async () => {
-            mockPlatformEvaluator.mockReturnValue('twitch');
             mockUserHasRole.mockResolvedValue(false);
 
             const conditionSettings = createConditionSettings('has role', '', 'mod');
-            const trigger = createTrigger({ username: 'triggeruser' });
+            const trigger = createTrigger({ username: 'triggeruser' }, 'twitch');
 
             const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
 
@@ -86,11 +78,10 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('falls back to trigger.metadata.username when leftSideValue is null', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('doesn\'t have role', null, 'vip');
-            const trigger = createTrigger({ username: 'fallbackuser' });
+            const trigger = createTrigger({ username: 'fallbackuser' }, IntegrationConstants.INTEGRATION_ID);
 
             const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
 
@@ -99,11 +90,10 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('falls back to trigger.metadata.username when leftSideValue is undefined', async () => {
-            mockPlatformEvaluator.mockReturnValue('twitch');
             mockUserHasRole.mockResolvedValue(false);
 
             const conditionSettings = createConditionSettings('has role', undefined, 'broadcaster');
-            const trigger = createTrigger({ username: 'undefineduser' });
+            const trigger = createTrigger({ username: 'undefineduser' }, 'twitch');
 
             const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
 
@@ -113,12 +103,11 @@ describe('viewerRolesCondition.predicate', () => {
     });
 
     describe('platform detection', () => {
-        it('uses platform from platformVariable when available', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
+        it('uses platform from trigger metadata when available', async () => {
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'mod');
-            const trigger = createTrigger({ username: 'triggeruser' });
+            const trigger = createTrigger({ username: 'triggeruser' }, IntegrationConstants.INTEGRATION_ID);
 
             const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
 
@@ -127,41 +116,36 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('handles empty platform string', async () => {
-            mockPlatformEvaluator.mockReturnValue('');
             mockUserHasRole.mockResolvedValue(false);
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'sub');
-            const trigger = createTrigger();
+            const trigger = createTrigger({}, '');
 
             const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
 
             expect(result).toBe(false);
-            expect(mockUserHasRole).toHaveBeenCalledWith('', 'testuser', 'sub');
+            expect(mockUserHasRole).toHaveBeenCalledWith('unknown', 'testuser', 'sub');
         });
 
-        it('handles platform evaluation errors gracefully', async () => {
-            mockPlatformEvaluator.mockImplementation(() => {
-                throw new Error('Platform evaluation failed');
-            });
+        it('handles missing eventSource gracefully', async () => {
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'mod');
-            const trigger = createTrigger();
+            const trigger = {
+                type: 'channel' as any,
+                metadata: { username: 'testuser' }
+            };
 
             const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
 
             expect(result).toBe(true);
-            expect(mockUserHasRole).toHaveBeenCalledWith('', 'testuser', 'mod');
-            expect(mockLogger.error).toHaveBeenCalledWith(
-                expect.stringContaining('viewerroles condition: Error evaluating platform variable:')
-            );
+            expect(mockUserHasRole).toHaveBeenCalledWith('twitch', 'testuser', 'mod');
         });
     });
 
     describe('comparison types', () => {
         describe('positive comparisons (has role)', () => {
             it('returns true when user has role and comparison is "has role"', async () => {
-                mockPlatformEvaluator.mockReturnValue('kick');
                 mockUserHasRole.mockResolvedValue(true);
 
                 const conditionSettings = createConditionSettings('has role', 'testuser', 'mod');
@@ -172,18 +156,16 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             it('returns false when user does not have role and comparison is "has role"', async () => {
-                mockPlatformEvaluator.mockReturnValue('twitch');
                 mockUserHasRole.mockResolvedValue(false);
 
                 const conditionSettings = createConditionSettings('has role', 'testuser', 'vip');
-                const trigger = createTrigger();
+                const trigger = createTrigger({}, 'twitch');
 
                 const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
                 expect(result).toBe(false);
             });
 
             it('handles "include" comparison type', async () => {
-                mockPlatformEvaluator.mockReturnValue('kick');
                 mockUserHasRole.mockResolvedValue(true);
 
                 const conditionSettings = createConditionSettings('include', 'testuser', 'broadcaster');
@@ -194,11 +176,10 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             it('handles "is in role" comparison type', async () => {
-                mockPlatformEvaluator.mockReturnValue('twitch');
                 mockUserHasRole.mockResolvedValue(false);
 
                 const conditionSettings = createConditionSettings('is in role', 'testuser', 'sub');
-                const trigger = createTrigger();
+                const trigger = createTrigger({}, 'twitch');
 
                 const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
                 expect(result).toBe(false);
@@ -207,7 +188,6 @@ describe('viewerRolesCondition.predicate', () => {
 
         describe('negative comparisons (doesn\'t have role)', () => {
             it('returns false when user has role and comparison is "doesn\'t have role"', async () => {
-                mockPlatformEvaluator.mockReturnValue('kick');
                 mockUserHasRole.mockResolvedValue(true);
 
                 const conditionSettings = createConditionSettings('doesn\'t have role', 'testuser', 'mod');
@@ -218,18 +198,16 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             it('returns true when user does not have role and comparison is "doesn\'t have role"', async () => {
-                mockPlatformEvaluator.mockReturnValue('twitch');
                 mockUserHasRole.mockResolvedValue(false);
 
                 const conditionSettings = createConditionSettings('doesn\'t have role', 'testuser', 'vip');
-                const trigger = createTrigger();
+                const trigger = createTrigger({}, 'twitch');
 
                 const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
                 expect(result).toBe(true);
             });
 
             it('handles "doesn\'t include" comparison type', async () => {
-                mockPlatformEvaluator.mockReturnValue('kick');
                 mockUserHasRole.mockResolvedValue(false);
 
                 const conditionSettings = createConditionSettings('doesn\'t include', 'testuser', 'broadcaster');
@@ -240,11 +218,10 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             it('handles "isn\'t in role" comparison type', async () => {
-                mockPlatformEvaluator.mockReturnValue('twitch');
                 mockUserHasRole.mockResolvedValue(true);
 
                 const conditionSettings = createConditionSettings('isn\'t in role', 'testuser', 'sub');
-                const trigger = createTrigger();
+                const trigger = createTrigger({}, 'twitch');
 
                 const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
                 expect(result).toBe(false);
@@ -253,7 +230,6 @@ describe('viewerRolesCondition.predicate', () => {
 
         describe('unknown comparison types', () => {
             it('returns false and logs warning for unknown comparison type', async () => {
-                mockPlatformEvaluator.mockReturnValue('kick');
                 mockUserHasRole.mockResolvedValue(true);
 
                 const conditionSettings = createConditionSettings('unknown_comparison', 'testuser', 'mod');
@@ -271,8 +247,6 @@ describe('viewerRolesCondition.predicate', () => {
 
     describe('role types', () => {
         it('works with built-in roles', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
-
             const builtInRoles = ['broadcaster', 'mod', 'vip', 'sub', 'bot'];
 
             for (const role of builtInRoles) {
@@ -289,12 +263,11 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('works with custom roles (UUID format)', async () => {
-            mockPlatformEvaluator.mockReturnValue('twitch');
             mockUserHasRole.mockResolvedValue(true);
 
             const customRoleId = '550e8400-e29b-41d4-a716-446655440000';
             const conditionSettings = createConditionSettings('has role', 'testuser', customRoleId);
-            const trigger = createTrigger();
+            const trigger = createTrigger({}, 'twitch');
 
             const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
 
@@ -303,7 +276,6 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('converts rightSideValue to string', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(false);
 
             // Test with number as rightSideValue
@@ -319,7 +291,6 @@ describe('viewerRolesCondition.predicate', () => {
 
     describe('logging', () => {
         it('logs debug message when user has role', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'mod');
@@ -333,11 +304,10 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('logs debug message when user does not have role', async () => {
-            mockPlatformEvaluator.mockReturnValue('twitch');
             mockUserHasRole.mockResolvedValue(false);
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'vip');
-            const trigger = createTrigger();
+            const trigger = createTrigger({}, 'twitch');
 
             await viewerRolesCondition.predicate(conditionSettings, trigger);
 
@@ -349,7 +319,6 @@ describe('viewerRolesCondition.predicate', () => {
 
     describe('integration with RoleManager', () => {
         it('passes correct parameters to RoleManager.userHasRole', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
             mockUserHasRole.mockResolvedValue(true);
 
             const conditionSettings = createConditionSettings('has role', 'specificuser', 'customrole');
@@ -362,8 +331,6 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('handles RoleManager async responses correctly', async () => {
-            mockPlatformEvaluator.mockReturnValue('twitch');
-
             // Test async resolution
             mockUserHasRole.mockImplementation(async () => {
                 return new Promise((resolve) => {
@@ -374,7 +341,7 @@ describe('viewerRolesCondition.predicate', () => {
             });
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'mod');
-            const trigger = createTrigger();
+            const trigger = createTrigger({}, 'twitch');
 
             const result = await viewerRolesCondition.predicate(conditionSettings, trigger);
 
@@ -382,7 +349,6 @@ describe('viewerRolesCondition.predicate', () => {
         });
 
         it('handles RoleManager errors gracefully', async () => {
-            mockPlatformEvaluator.mockReturnValue('kick');
             mockUserHasRole.mockRejectedValue(new Error('Role check failed'));
 
             const conditionSettings = createConditionSettings('has role', 'testuser', 'mod');

@@ -1,12 +1,12 @@
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 import { IntegrationConstants } from '../../constants';
 import { logger } from '../../main';
-import { platformVariable } from '../platform';
 
 export const kickSubTypeVariable: ReplaceVariable = {
     definition: {
         handle: "kickSubType",
-        description: "The type of subscription (for Twitch: Tier 1, Tier 2, Tier 3, Prime; for Kick, hard-coded since Kick does not report sub types.)",
+        description: "[DEPRECATED] The type of subscription (for Twitch: Tier 1, Tier 2, Tier 3, Prime; for Kick, hard-coded since Kick does not report sub types.)",
         triggers: {
             event: ["twitch:sub", "twitch:prime-sub-upgraded", `${IntegrationConstants.INTEGRATION_ID}:sub`]
         },
@@ -14,7 +14,7 @@ export const kickSubTypeVariable: ReplaceVariable = {
         possibleDataOutput: ["text"]
     },
     evaluator: (trigger) => {
-        const platform = platformVariable.evaluator(trigger);
+        const platform = detectPlatform(trigger);
         switch (platform) {
             case "kick":
                 return trigger.metadata.eventData?.subPlan || "kickDefault";

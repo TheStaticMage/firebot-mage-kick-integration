@@ -1,8 +1,8 @@
 import { ConditionType } from "@crowbartools/firebot-custom-scripts-types/types/modules/condition-manager";
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration-singleton";
 import { logger } from "../main";
-import { platformVariable } from "../variables/platform";
 
 export const viewerRolesCondition: ConditionType<any, any, any> = {
     id: `${IntegrationConstants.INTEGRATION_ID}:viewerroles`,
@@ -59,14 +59,8 @@ export const viewerRolesCondition: ConditionType<any, any, any> = {
             userNameOrId = trigger.metadata.username;
         }
 
-        // Determine platform from trigger metadata if possible
-        let platform = "";
-        try {
-            platform = platformVariable.evaluator(trigger);
-        } catch (error) {
-            logger.error(`viewerroles condition: Error evaluating platform variable: ${error}`);
-            platform = "";
-        }
+        // Determine platform from trigger metadata
+        const platform = detectPlatform(trigger);
 
         // Call the role manager to check if the user has the role
         const hasRole = await integration.kick.roleManager.userHasRole(platform, userNameOrId, String(rightSideValue));

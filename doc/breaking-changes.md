@@ -1,5 +1,9 @@
 # Breaking Changes
 
+## 0.10.0
+
+You must install version 0.0.1 (or higher) of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/) for the Kick integration to function correctly. Going forward, you will need to update the Kick integration and firebot-mage-platform-lib at the same time.
+
 ## 0.9.0
 
 :warning: **These are significant changes that will take most users at least 30 minutes of work to configure fully. Be sure you allocate sufficient time for setup and testing before installing this version of the plugin!**
@@ -27,7 +31,7 @@ Action required:
 1. Remove the "Channel Reward Redemption (Kick)" event if you previously added it. (This will show up as an unknown event type after loading the new version of the plugin.)
 2. Log in to Kick and go to [your profile picture > **Creator Dashboard** > **Channel** > **Community** > **Channel Points**](https://dashboard.kick.com/channel/community/channel-points). Delete any redemptions you intend to manage via Firebot.
    **Important**: Firebot will create *new* rewards on Kick when you enable management. If you do not delete the existing rewards on Kick, you will end up with duplicates (one from your old setup, one from Firebot).
-3. In Firebot, go to **Kick** > **Custom Rewards** and choose any rewards that you want Firebot to manage. Use the **...** to select _Start Managing in Kick_.
+3. In Firebot, go to **Kick** > **Custom Rewards** and choose any rewards that you want Firebot to manage. Use the **...** to select *Start Managing in Kick*.
 4. For each mapped reward, review the effect list. Certain Firebot variables that are specific to Twitch (like `$userDisplayName`) will not work correctly for Kick redemptions. You may need to use variables from this integration (like `$platformAwareUserDisplayName`) to support both platforms.
    Note: The `$username` variable will return the Firebot-standard `User@kick` format. If you have logic relying on the raw username (e.g. strict string equality checks), you may need to update it or use `$platformAwareUserDisplayName` instead.
 

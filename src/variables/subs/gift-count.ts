@@ -4,7 +4,7 @@ import { IntegrationConstants } from '../../constants';
 export const kickGiftCountVariable: ReplaceVariable = {
     definition: {
         handle: "kickGiftCount",
-        description: "The number of subs gifted. (Compatible with Kick and Twitch community subs gifted events.)",
+        description: "[DEPRECATED] The number of subs gifted. (Compatible with Kick and Twitch community subs gifted events.)",
         triggers: {
             "event": ["twitch:community-subs-gifted", `${IntegrationConstants.INTEGRATION_ID}:community-subs-gifted`],
             "manual": true

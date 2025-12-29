@@ -1,13 +1,13 @@
 import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 import { IntegrationConstants } from '../../constants';
 import { kickifyUsername, unkickifyUsername } from '../../internal/util';
 import { logger } from '../../main';
-import { platformVariable } from '../platform';
 
 export const kickGiftReceiverUsernameVariable: ReplaceVariable = {
     definition: {
         handle: "kickGiftReceiverUsername",
-        description: "The name of the user who received a gifted sub. (Compatible with Kick and Twitch subs gifted events.)",
+        description: "[DEPRECATED] The name of the user who received a gifted sub. (Compatible with Kick and Twitch subs gifted events.)",
         triggers: {
             "event": ["twitch:subs-gifted", `${IntegrationConstants.INTEGRATION_ID}:subs-gifted`],
             "manual": true
@@ -22,7 +22,7 @@ export const kickGiftReceiverUsernameVariable: ReplaceVariable = {
             gifteeUsername = "UnknownUser";
         }
 
-        const platform = platformVariable.evaluator(trigger);
+        const platform = detectPlatform(trigger);
         switch (platform) {
             case "kick":
                 return kickifyUsername(gifteeUsername);
