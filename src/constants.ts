@@ -3,7 +3,7 @@ export const IntegrationConstants = {
     INTEGRATION_NAME: "MageKickIntegration",
     INTEGRATION_DESCRIPTION: "A preliminary, experimental, and generally not-recommended Kick integration for Firebot.",
     INTEGRATION_URI: "firebot-mage-kick-integration",
-    PLATFORM_LIB_VERSION_CONSTRAINT: ">=0.0.1",
+    PLATFORM_LIB_VERSION_CONSTRAINT: ">=0.0.2",
     WEBHOOK_NAME: "kick-events",
     KICK_API_SERVER: "https://api.kick.com",
     KICK_AUTH_SERVER: "https://id.kick.com",

@@ -6,7 +6,8 @@
     "main": "",
     "scripts": {
         "build": "npm run build:version && npm run build:webpack",
-        "build:dev": "npm run build:version && npm run build:webpack && npm run copy",
+        "build:dev": "node ./scripts/build-dev-local-client.js",
+        "build:dev:base": "npm run build:version && npm run build:webpack && npm run copy",
         "build:version": "node ./scripts/update-version.js",
         "build:webpack": "webpack",
         "copy": "node ./scripts/copy-build.js",
@@ -33,7 +34,7 @@
     },
     "dependencies": {
         "@seald-io/nedb": "^4.1.2",
-        "@thestaticmage/mage-platform-lib-client": "^0.0.1",
+        "@thestaticmage/mage-platform-lib-client": "^0.0.2-sha.2d9f97e",
         "@twurple/api": "^7.4.0",
         "@types/semver": "^7.7.1",
         "axios": "^1.7.7",
