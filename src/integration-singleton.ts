@@ -1,4 +1,5 @@
 import { IntegrationData, ScriptModules } from "@crowbartools/firebot-custom-scripts-types";
+import { checkPlatformLibPing } from "@thestaticmage/mage-platform-lib-client";
 import { EventEmitter } from "events";
 import { platformCondition } from "./conditions/platform";
 import { viewerRolesCondition } from "./conditions/viewer-roles";
@@ -27,11 +28,12 @@ import { kickRewardsBackend } from "./internal/kick-rewards-backend";
 import { KickRewardsState } from "./internal/kick-rewards-state";
 import { KickPusher } from "./internal/pusher/pusher";
 import { reflectorExtension } from "./internal/reflector";
+import { InboundWebhook } from './internal/webhook-handler/webhook';
 import { webhookHandler } from './internal/webhook-handler/webhook-handler';
 import { verifyWebhookSignature, WebhookSignatureVerificationError } from "./internal/webhook-handler/webhook-signature-verifier";
-import { InboundWebhook } from './internal/webhook-handler/webhook';
 import { firebot, logger } from "./main";
 import { platformRestriction } from "./restrictions/platform";
+import { registerRoutes, unregisterRoutes } from "./server/server";
 import { ConnectionStateUpdate, ConnectionUpdateData, KickConnection } from "./shared/types";
 import { kickExtension } from "./ui-extensions/kick";
 import { getDataFilePath } from "./util/datafile";
@@ -71,7 +73,6 @@ import { kickUnbanTypeVariable } from "./variables/unban-type";
 import { kickUptimeVariable } from "./variables/uptime";
 import { kickUserDisplayNameVariable } from "./variables/user-display-name";
 import { webhookReceivedEventTypeVariable, webhookReceivedEventVersionVariable, webhookReceivedLatencyVariable } from "./variables/webhook-received";
-import { registerRoutes, unregisterRoutes } from "./server/server";
 
 type IntegrationParameters = {
     connectivity: {
@@ -406,6 +407,14 @@ export class KickIntegration extends EventEmitter {
 
         this.emit("connecting", IntegrationConstants.INTEGRATION_ID);
 
+        const pingResult = await checkPlatformLibPing(this.getPlatformLibPingPort());
+        if (!pingResult.success) {
+            logger.error(`Platform library ping failed: ${pingResult.errorMessage || "Unknown error"}`);
+            await this.disconnect();
+            this.sendCriticalErrorNotification(`Platform library ping failed. ${pingResult.errorMessage || "Please verify that the platform library is loaded."}`);
+            return;
+        }
+
         // Refresh the auth token (we always do this upon connecting)
         try {
             await this.authManager.connect();
@@ -535,6 +544,11 @@ export class KickIntegration extends EventEmitter {
             icon: "fas fa-exclamation-triangle"
         });
         logger.info(`Chat feed notification sent: ${JSON.stringify(message)}`);
+    }
+
+    private getPlatformLibPingPort(): number {
+        const { settings } = firebot.firebot;
+        return settings.getSetting("WebServerPort") as number || 7472;
     }
 
     private async handleCrowbarWebhook(payload: any, rawPayload: string | undefined, headers: any): Promise<void> {
