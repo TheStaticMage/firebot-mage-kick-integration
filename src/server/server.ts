@@ -1,3 +1,4 @@
+import { SendChatMessageRequest } from "@thestaticmage/mage-platform-lib-client";
 import { IntegrationConstants } from "../constants";
 import { KickIntegration } from "../integration-singleton";
 import { firebot, logger } from "../main";
@@ -11,7 +12,7 @@ export function registerRoutes(kickIntegration: KickIntegration) {
         "POST",
         async (req, res) => {
             try {
-                const { message, chatter } = req.body;
+                const { message, chatter, offlineSendMode } = req.body as SendChatMessageRequest;
                 if (!message) {
                     res.status(400).json({ success: false, error: "Missing message" });
                     return;
@@ -26,6 +27,36 @@ export function registerRoutes(kickIntegration: KickIntegration) {
                     logger.error("send-chat-message: Broadcaster not connected");
                     res.status(503).json({ success: false, error: "Broadcaster not connected" });
                     return;
+                }
+
+                const resolvedOfflineSendMode = offlineSendMode || "send-anyway";
+                if (resolvedOfflineSendMode !== "send-anyway") {
+                    let isLive = true;
+                    try {
+                        const channel = await kickIntegration.kick.channelManager.getChannel();
+                        isLive = channel?.stream?.isLive ?? true;
+                    } catch (error) {
+                        logger.warn(`send-chat-message: Failed to check stream status: ${error}`);
+                    }
+
+                    if (!isLive) {
+                        if (resolvedOfflineSendMode === "chat-feed-only") {
+                            const { frontendCommunicator } = firebot.modules;
+                            const reason = "Stream offline";
+                            frontendCommunicator.send("chatUpdate", {
+                                fbEvent: "ChatAlert",
+                                message: `[Not sent (Kick): ${reason}] ${message}`
+                            });
+                            res.json({ success: true });
+                            return;
+                        }
+
+                        if (resolvedOfflineSendMode === "do-not-send") {
+                            logger.debug("send-chat-message: Stream is offline and offlineSendMode is do-not-send. Skipping.");
+                            res.json({ success: true });
+                            return;
+                        }
+                    }
                 }
 
                 await kickIntegration.kick.chatManager.sendKickChatMessage(message, chatter, undefined);
