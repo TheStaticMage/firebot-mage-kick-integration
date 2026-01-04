@@ -8,7 +8,8 @@
 
 ## Version Requirements
 
-- **Versions 0.10.0 and higher** require Firebot 5.65 and [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/) 0.0.1 or higher
+- **Versions 0.10.1 and higher** require [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/) 0.0.2 or higher
+- **Versions 0.10.0 and higher** require Firebot 5.65 and a compatible version of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
 - **Version 0.7.0 and higher** require Firebot 5.65
 
 ## Installation
