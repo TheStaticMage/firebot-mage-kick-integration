@@ -139,6 +139,17 @@ describe('streamerOrBotFilter.predicate', () => {
         expect(result).toBe(true);
     });
 
+    it('returns true for Kick streamer on republished chat-message-deleted (is)', async () => {
+        const eventData = {
+            ...baseEventData,
+            eventSourceId: 'twitch',
+            eventId: 'chat-message-deleted',
+            eventMeta: { username: 'StreamerKick@kick', platform: 'kick' }
+        };
+        const result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'streamer' }, eventData);
+        expect(result).toBe(true);
+    });
+
     it('returns true for Twitch either (is)', async () => {
         let eventData = { ...baseEventData, eventSourceId: 'twitch', eventMeta: { username: 'StreamerTwitch' } };
         let result = await streamerOrBotFilter.predicate({ comparisonType: 'is', value: 'either' }, eventData);
