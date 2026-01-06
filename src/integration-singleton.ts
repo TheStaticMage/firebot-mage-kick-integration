@@ -122,6 +122,7 @@ export class KickIntegration extends EventEmitter {
     // connected. The Firebot integration manager checks this variable directly
     // rather than using a method.
     connected = false;
+    private hasNotifiedWebhookWhileDisconnected = false;
 
     // kick is an instance of the Kick class, which handles HTTP calls to the Kick API.
     kick = new Kick();
@@ -460,6 +461,7 @@ export class KickIntegration extends EventEmitter {
 
         // Mark the integration as connected
         this.connected = true;
+        this.hasNotifiedWebhookWhileDisconnected = false;
         this.emit("connected", IntegrationConstants.INTEGRATION_ID);
         this.notifyConnectionStateChange();
     }
@@ -553,6 +555,14 @@ export class KickIntegration extends EventEmitter {
 
     private async handleCrowbarWebhook(payload: any, rawPayload: string | undefined, headers: any): Promise<void> {
         try {
+            if (!this.connected) {
+                if (!this.hasNotifiedWebhookWhileDisconnected) {
+                    this.sendChatFeedErrorNotification("Webhook received while the integration is disconnected. Please reconnect to process events.");
+                    this.hasNotifiedWebhookWhileDisconnected = true;
+                }
+                return;
+            }
+
             // Verify webhook signature
             try {
                 verifyWebhookSignature({
