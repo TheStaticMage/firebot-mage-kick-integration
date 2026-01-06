@@ -4,6 +4,7 @@ import { integration } from "../integration";
 import { firebot, logger } from "../main";
 import { getPlatformFromTrigger } from "./platform-detection";
 import { Kick } from "./kick";
+import { MessageQueue } from "./message-queue";
 
 interface inboundSendChatMessage {
     message: string,
@@ -20,9 +21,11 @@ export class ChatManager {
     private messageCacheOrder: string[] = [];
     private readonly maxCachedMessages = 100;
     private viewerArrivedCache = new Set<string>();
+    private messageQueue: MessageQueue;
 
     constructor(kick: Kick) {
         this.kick = kick;
+        this.messageQueue = new MessageQueue(this.sendKickChatMessage.bind(this));
     }
 
     async start(): Promise<void> {
@@ -35,12 +38,14 @@ export class ChatManager {
             this.isListeningForChatMessages = true;
         }
 
+        this.messageQueue.start();
         this.isRunning = true;
         return;
     }
 
     async stop(): Promise<void> {
         logger.debug("Stopping ChatManager...");
+        this.messageQueue.stop();
         this.isRunning = false;
         // Currently not possible to un-listen to frontendCommunicator events
         return;
@@ -120,6 +125,10 @@ export class ChatManager {
         // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete this.messageCache[messageId];
         this.messageCacheOrder = this.messageCacheOrder.filter(id => id !== messageId);
+    }
+
+    enqueueMessage(message: string, chatter: "Streamer" | "Bot", replyToMessageId?: string): string {
+        return this.messageQueue.enqueue(message, chatter, replyToMessageId);
     }
 
     async sendKickChatMessage(msg: string, chatter: "Streamer" | "Bot", replyToMessageId: string | undefined = undefined): Promise<boolean> {

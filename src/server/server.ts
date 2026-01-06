@@ -59,7 +59,7 @@ export function registerRoutes(kickIntegration: KickIntegration) {
                     }
                 }
 
-                await kickIntegration.kick.chatManager.sendKickChatMessage(message, chatter, undefined);
+                kickIntegration.kick.chatManager.enqueueMessage(message, chatter, undefined);
                 res.json({ success: true });
             } catch (error) {
                 logger.error(`send-chat-message operation failed: ${error}`);
