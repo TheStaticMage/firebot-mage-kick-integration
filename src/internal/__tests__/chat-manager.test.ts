@@ -59,6 +59,10 @@ describe('ChatManager', () => {
         chatManager.start();
     });
 
+    afterEach(async () => {
+        await chatManager.stop();
+    });
+
     it('registers and checks message platform', async () => {
         expect(await chatManager.registerMessage('msg1', 'kick')).toBe(true);
         expect(await chatManager.registerMessage('msg1', 'kick')).toBe(false);
