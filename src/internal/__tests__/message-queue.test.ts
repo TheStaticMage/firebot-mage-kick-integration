@@ -155,6 +155,17 @@ describe("MessageQueue", () => {
         });
     });
 
+    describe("clear", () => {
+        it("should remove all queued messages", () => {
+            messageQueue.enqueue("First", "Streamer");
+            messageQueue.enqueue("Second", "Bot");
+
+            messageQueue.clear();
+
+            expect(messageQueue.getQueueSize()).toBe(0);
+        });
+    });
+
     describe("getQueueSize", () => {
         it("should return 0 for empty queue", () => {
             expect(messageQueue.getQueueSize()).toBe(0);
