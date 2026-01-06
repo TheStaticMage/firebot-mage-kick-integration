@@ -64,7 +64,8 @@ describe('handleMessageDeletedEvent', () => {
                 userId: 'k1',
                 userDisplayName: 'KickUser',
                 messageText: 'hello',
-                messageId: 'kick-msg-1'
+                messageId: 'kick-msg-1',
+                platform: 'kick'
             })
         );
         expect(firebot.modules.frontendCommunicator.send).toHaveBeenCalledWith(
@@ -103,7 +104,8 @@ describe('handleMessageDeletedEvent', () => {
                 userId: 'k1',
                 userDisplayName: 'KickUser',
                 messageText: 'hello',
-                messageId: 'kick-msg-2'
+                messageId: 'kick-msg-2',
+                platform: 'kick'
             }
         );
         expect(firebot.modules.eventManager.triggerEvent).toHaveBeenNthCalledWith(
@@ -115,7 +117,8 @@ describe('handleMessageDeletedEvent', () => {
                 userId: 'k1',
                 userDisplayName: 'KickUser',
                 messageText: 'hello',
-                messageId: 'kick-msg-2'
+                messageId: 'kick-msg-2',
+                platform: 'kick'
             }
         );
     });

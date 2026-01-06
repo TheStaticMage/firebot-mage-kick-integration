@@ -25,7 +25,8 @@ export async function handleMessageDeletedEvent(payload: MessageDeletedPayload):
         userId: chatMessage?.userId ?? "",
         userDisplayName: chatMessage?.userDisplayName ?? chatMessage?.username ?? "",
         messageText: chatMessage?.rawText ?? "",
-        messageId
+        messageId,
+        platform: "kick"
     };
 
     const { frontendCommunicator, eventManager } = firebot.modules;
