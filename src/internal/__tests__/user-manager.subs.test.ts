@@ -13,10 +13,6 @@ jest.mock('../../main', () => ({
 
 
 class KickUserManagerTest extends KickUserManager {
-    get db(): Datastore | null {
-        return this._db;
-    }
-
     get giftDb(): Datastore | null {
         return this._giftDb;
     }

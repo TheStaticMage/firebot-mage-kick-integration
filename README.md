@@ -97,7 +97,7 @@ Note: The integration currently has effects for all of the operations available 
 | Chat feed: User profile | :x: | | Firebot assumes all users are Twitch users &#x1F525; |
 | Chat feed: All other context menu items | :x: | | Various limitations &#x1F1F0; &#x1F525; |
 | Commands | :white_check_mark: | | Cooldowns do not work &#x1F525; |
-| Currency | :x: | | Firebot assumes all users are Twitch users &#x1F525; |
+| Currency | Partial | 0.11.0 | Supports currency effects and variables of mage-platform-lib |
 | Currency: Watch time | :x: | | No viewer list API endpoint on Kick &#x1F1F0; |
 | Moderation: Banned words / URLs | ? | | Maybe possible now that Kick API supports deleting messages? |
 | Ranks | :x: | | Pointless without proper currency support |
@@ -124,9 +124,8 @@ Note: The integration currently has effects for all of the operations available 
 
 - Firebot's viewer database uses Twitch user IDs as primary keys and assumes every user is from Twitch. This rigid design prevents many features that depend on storing information about users (e.g. currency, metadata).
 - Rate limiting (cooldowns) for commands and redeems doesn't work natively. Consider using the [Firebot Rate Limiter](https://github.com/TheStaticMage/firebot-rate-limiter) if needed.
-- Firebot 5.64 and earlier do not allow standard variables like `$moderator` and `$chatMessage` to work with Kick events. Use Kick-specific aliases instead (e.g. `$kickModerator`, `$kickChatMessage`). Firebot 5.65 and higher with version 0.7.0 or higher of the integration provides full variable support for Kick events.
 - Slash commands in the Firebot chat (e.g. `/clear`) only apply to Twitch. (There aren't Kick API endpoints for most of these anyway.)
-- You won't be able to add a Kick user to a custom role via the Firebot GUI, because Firebot does a Twitch lookup on whatever you type. It is, however, possible to have events add Kick users to custom roles. You can remove Kick users from custom roles through the GUI.
+- You won't be able to add a Kick user to a custom role via the Firebot GUI, because Firebot does a Twitch lookup on whatever you type.
 
 ## Installation
 

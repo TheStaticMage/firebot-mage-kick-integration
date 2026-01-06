@@ -29,7 +29,8 @@ jest.mock("../../integration", () => ({
             userManager: {
                 getOrCreateViewer: jest.fn().mockResolvedValue(undefined),
                 setViewerRoles: jest.fn(),
-                incrementDbField: jest.fn()
+                incrementChatMessages: jest.fn(),
+                updateLastSeen: jest.fn()
             },
             chatManager: {
                 registerMessage: jest.fn().mockResolvedValue(false),

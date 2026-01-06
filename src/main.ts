@@ -8,7 +8,7 @@ import { checkPlatformLibCompatibility } from '@thestaticmage/mage-platform-lib-
 export let firebot: RunRequest<any>;
 export let logger: LogWrapper;
 
-export const scriptVersion = '0.10.1';
+export const scriptVersion = '0.11.0';
 
 const script: Firebot.CustomScript = {
     getScriptManifest: () => {

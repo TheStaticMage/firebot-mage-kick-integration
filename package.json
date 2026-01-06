@@ -1,7 +1,7 @@
 {
     "name": "firebot-mage-kick-integration",
     "scriptOutputName": "firebot-mage-kick-integration",
-    "version": "0.10.1",
+    "version": "0.11.0",
     "description": "A Kick integration for Firebot",
     "main": "",
     "scripts": {
@@ -34,7 +34,7 @@
     },
     "dependencies": {
         "@seald-io/nedb": "^4.1.2",
-        "@thestaticmage/mage-platform-lib-client": "^0.0.3-sha.8463b59",
+        "@thestaticmage/mage-platform-lib-client": "^0.0.4-sha.cc79ff8",
         "@twurple/api": "^7.4.0",
         "@types/semver": "^7.7.1",
         "axios": "^1.7.7",

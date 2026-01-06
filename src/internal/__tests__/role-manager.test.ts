@@ -45,7 +45,7 @@ jest.mock('../../main', () => ({
 
 import { RoleManager } from '../role-manager';
 import { IKick } from '../kick-interface';
-import { FirebotViewer } from '@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database';
+import { PlatformUser } from '@thestaticmage/mage-platform-lib-client';
 import { firebot } from '../../main';
 
 // Mock the kick interface
@@ -86,27 +86,26 @@ const mockSubscriptionClient = {
 describe('RoleManager', () => {
     let roleManager: RoleManager;
 
-    const createMockViewer = (overrides: Partial<FirebotViewer> = {}): FirebotViewer => ({
-        _id: '123456789',
-        username: 'testuser',
-        displayName: 'TestUser',
-        profilePicUrl: '',
-        twitch: true,
-        twitchRoles: ['mod'],
-        online: false,
-        onlineAt: 0,
-        lastSeen: 0,
-        joinDate: 0,
-        minutesInChannel: 0,
-        chatMessages: 0,
-        disableAutoStatAccrual: false,
-        disableActiveUserList: false,
-        disableViewerList: false,
-        metadata: {},
-        currency: {},
-        ranks: {},
-        ...overrides
-    });
+    const createMockViewer = (overrides: Partial<PlatformUser> = {}): PlatformUser => {
+        const baseViewer: PlatformUser = {
+            _id: 'k123456789',
+            username: 'testuser',
+            displayName: 'TestUser',
+            profilePicUrl: '',
+            lastSeen: 0,
+            metadata: {},
+            twitchRoles: ['mod'],
+            currency: {},
+            chatMessages: 0,
+            minutesInChannel: 0
+        };
+
+        return {
+            ...baseViewer,
+            ...overrides,
+            metadata: overrides.metadata ?? baseViewer.metadata
+        };
+    };
 
     beforeEach(() => {
         roleManager = new RoleManager(mockKick);

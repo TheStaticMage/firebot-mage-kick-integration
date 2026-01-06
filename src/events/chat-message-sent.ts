@@ -77,7 +77,8 @@ async function processAndSendChatMessage(payload: ChatMessage): Promise<void> {
     }
 
     // Update chat message count
-    await integration.kick.userManager.incrementDbField(payload.sender.userId, "chatMessages");
+    await integration.kick.userManager.updateLastSeen(payload.sender.userId);
+    await integration.kick.userManager.incrementChatMessages(payload.sender.userId);
 
     // Command checking
     await commandHandler.handleChatMessage(firebotChatMessage);

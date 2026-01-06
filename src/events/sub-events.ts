@@ -13,6 +13,7 @@ export async function handleChannelSubscriptionEvent(payload: ChannelSubscriptio
     const username = kickifyUsername(payload.subscriber.username);
 
     await integration.kick.userManager.getOrCreateViewer(payload.subscriber, [], true);
+    await integration.kick.userManager.updateLastSeen(payload.subscriber.userId);
     await integration.kick.userManager.recordSubscription(
         userId,
         payload.createdAt,
@@ -74,11 +75,13 @@ export async function handleChannelSubscriptionGiftsEvent(payload: ChannelGiftSu
         logger.debug("Skipping anonymous gifter for Kick gift subscription event.");
     } else {
         await integration.kick.userManager.getOrCreateViewer(processedPayload.gifter, [], true);
+        await integration.kick.userManager.updateLastSeen(processedPayload.gifter.userId);
     }
 
     for (const giftee of processedPayload.giftees) {
         if (giftee.userId !== '') {
             await integration.kick.userManager.getOrCreateViewer(giftee, [], true);
+            await integration.kick.userManager.updateLastSeen(giftee.userId);
             await integration.kick.userManager.recordSubscription(
                 giftee.userId,
                 processedPayload.createdAt,

@@ -1,4 +1,4 @@
-import { FirebotViewer } from '@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database';
+import { PlatformUser } from '@thestaticmage/mage-platform-lib-client';
 import NodeCache from 'node-cache';
 import { firebot, logger } from "../main";
 import { IKick } from './kick-interface';
@@ -78,7 +78,7 @@ export class RoleManager {
             return false;
         }
 
-        let viewer: FirebotViewer | undefined = undefined;
+        let viewer: PlatformUser | undefined = undefined;
         if (id) {
             logger.debug(`kickUserHasRole: Looking up Kick viewer by user ID: ${id}`);
             viewer = await this._kick.userManager.getViewerById(id);
@@ -126,8 +126,9 @@ export class RoleManager {
             return false;
         }
 
-        const result = viewer.twitchRoles.includes(String(roleId));
-        logger.debug(`kickUserHasRole: Checking Kick role ${roleId} for user ${userNameOrId} (${id}/${name}), result=${result} (roles: ${viewer.twitchRoles.join(", ")})`);
+        const viewerRoles = Array.isArray(viewer.twitchRoles) ? viewer.twitchRoles : [];
+        const result = viewerRoles.includes(String(roleId));
+        logger.debug(`kickUserHasRole: Checking Kick role ${roleId} for user ${userNameOrId} (${id}/${name}), result=${result} (roles: ${viewerRoles.join(", ")})`);
         return result;
     }
 

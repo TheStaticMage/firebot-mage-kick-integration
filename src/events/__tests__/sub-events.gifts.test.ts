@@ -8,6 +8,7 @@ const mockLoggerWarn = jest.fn();
 const mockGetOrCreateViewer = jest.fn().mockResolvedValue(undefined);
 const mockRecordSubscription = jest.fn();
 const mockRecordGift = jest.fn();
+const mockUpdateLastSeen = jest.fn();
 const mockGetSettings = jest.fn(() => ({ triggerTwitchEvents: { subGift: false } }));
 
 jest.mock('../../integration', () => ({
@@ -16,7 +17,8 @@ jest.mock('../../integration', () => ({
             userManager: {
                 getOrCreateViewer: (...args: any[]) => mockGetOrCreateViewer(...args),
                 recordSubscription: (...args: any[]) => mockRecordSubscription(...args),
-                recordGift: (...args: any[]) => mockRecordGift(...args)
+                recordGift: (...args: any[]) => mockRecordGift(...args),
+                updateLastSeen: (...args: any[]) => mockUpdateLastSeen(...args)
             }
         },
         getSettings: () => mockGetSettings()
