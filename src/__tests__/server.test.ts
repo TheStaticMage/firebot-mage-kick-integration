@@ -60,7 +60,8 @@ describe("server routes", () => {
             kick: {
                 broadcaster: { userId: 1 },
                 chatManager: {
-                    sendKickChatMessage: jest.fn().mockResolvedValue(true)
+                    sendKickChatMessage: jest.fn().mockResolvedValue(true),
+                    enqueueMessage: jest.fn().mockReturnValue("msg_123")
                 },
                 channelManager: {
                     getChannel: jest.fn().mockResolvedValue({ stream: { isLive: true } })
@@ -119,7 +120,7 @@ describe("server routes", () => {
 
             await handler(req, res);
 
-            expect(kickIntegration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("Hello", "Streamer", undefined);
+            expect(kickIntegration.kick.chatManager.enqueueMessage).toHaveBeenCalledWith("Hello", "Streamer", undefined);
             expect(res.json).toHaveBeenCalledWith({ success: true });
         });
 
@@ -137,7 +138,7 @@ describe("server routes", () => {
                 fbEvent: "ChatAlert",
                 message: "[Not sent (Kick): Stream offline] Hello"
             });
-            expect(kickIntegration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
+            expect(kickIntegration.kick.chatManager.enqueueMessage).not.toHaveBeenCalled();
             expect(res.json).toHaveBeenCalledWith({ success: true });
         });
 
@@ -150,7 +151,7 @@ describe("server routes", () => {
 
             await handler(req, res);
 
-            expect(kickIntegration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
+            expect(kickIntegration.kick.chatManager.enqueueMessage).not.toHaveBeenCalled();
             expect(res.json).toHaveBeenCalledWith({ success: true });
         });
 
@@ -163,7 +164,7 @@ describe("server routes", () => {
 
             await handler(req, res);
 
-            expect(kickIntegration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("Hello", "Streamer", undefined);
+            expect(kickIntegration.kick.chatManager.enqueueMessage).toHaveBeenCalledWith("Hello", "Streamer", undefined);
             expect(res.json).toHaveBeenCalledWith({ success: true });
         });
     });
