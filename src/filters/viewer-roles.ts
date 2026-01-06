@@ -47,13 +47,16 @@ export const viewerRolesFilter: EventFilter = {
             return false;
         }
 
-        const viewer = await integration.kick.userManager.getViewerById(userId);
+        const viewer = userId
+            ? await integration.kick.userManager.getViewerById(userId)
+            : await integration.kick.userManager.getViewerByUsername(username);
 
         if (!viewer) {
             return false;
         }
 
-        const hasRole = viewer.twitchRoles.includes(value);
+        const viewerRoles = Array.isArray(viewer.twitchRoles) ? viewer.twitchRoles : [];
+        const hasRole = viewerRoles.includes(value);
 
         switch (comparisonType) {
             case "include":

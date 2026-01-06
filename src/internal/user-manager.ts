@@ -1,18 +1,22 @@
-import { FirebotViewer } from "@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database";
 import Datastore from "@seald-io/nedb";
-import { IntegrationConstants } from "../constants";
+import {
+    getOrCreateUser,
+    getUserById,
+    getUserByUsername,
+    incrementChatMessages,
+    PlatformUser,
+    setUserRoles,
+    updateLastSeen
+} from "@thestaticmage/mage-platform-lib-client";
 import { logger } from "../main";
 import { BasicKickUser, KickGifter, KickSubscription, KickUser } from "../shared/types";
 import { getDataFilePath } from "../util/datafile";
 import { IKick } from "./kick-interface";
-import { kickifyUserId, kickifyUsername, unkickifyUserId, unkickifyUsername, userIdToCleanString } from "./util";
+import { kickifyUserId, kickifyUsername, unkickifyUserId, userIdToCleanString } from "./util";
 import { parseBasicKickUser } from "./webhook-handler/webhook-parsers";
 
 export class KickUserManager {
     private kick: IKick;
-    protected _db: Datastore | null = null;
-    private _dbCompactionInterval = 30000;
-    private _dbPath = "";
     protected _giftDb: Datastore | null = null;
     private _giftDbCompactionInterval = 30000;
     private _giftDbPath = "";
@@ -25,9 +29,6 @@ export class KickUserManager {
     }
 
     async connectViewerDatabase(): Promise<void> {
-        this._dbPath = getDataFilePath("kick-users.db");
-        this._db = await this.connectDatabase(this._dbPath, this._dbCompactionInterval);
-
         this._giftDbPath = getDataFilePath("kick-gift-users.db");
         this._giftDb = await this.connectDatabase(this._giftDbPath, this._giftDbCompactionInterval);
 
@@ -56,108 +57,77 @@ export class KickUserManager {
     }
 
     disconnectViewerDatabase(): void {
-        this._db = null;
         this._giftDb = null;
         this._subDb = null;
     }
 
-    async getOrCreateViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<FirebotViewer | undefined> {
-        if (!this._db) {
-            throw new Error("Viewer database is not connected.");
-        }
-
+    async getOrCreateViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<PlatformUser | undefined> {
         if (unkickifyUserId(kickUser.userId.toString()) === '') {
             logger.warn(`getOrCreateViewer: Invalid userId for kickUser: ${JSON.stringify(kickUser)}`);
             return undefined;
         }
 
-        const existingViewer = await this.getViewerById(kickUser.userId);
-        if (existingViewer) {
-            return existingViewer;
-        }
+        const response = await getOrCreateUser({
+            platform: "kick",
+            userId: kickifyUserId(kickUser.userId.toString()),
+            username: kickifyUsername(kickUser.username),
+            displayName: kickUser.displayName,
+            profilePicUrl: kickUser.profilePicture
+        });
 
-        logger.debug(`getOrCreateViewer: Creating new viewer for kickUser: ${JSON.stringify(kickUser)}`);
-        return await this.createNewViewer(kickUser, roles, isOnline);
-    }
-
-    private async createNewViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<FirebotViewer | undefined> {
-        if (!this._db) {
-            throw new Error("Viewer database is not connected.");
-        }
-
-        const firebotViewer: FirebotViewer = {
-            _id: unkickifyUserId(kickUser.userId.toString()),
-            username: unkickifyUsername(kickUser.username),
-            displayName: kickUser.displayName || unkickifyUsername(kickUser.username),
-            profilePicUrl: kickUser.profilePicture || IntegrationConstants.DEFAULT_PROFILE_IMAGE,
-            twitch: false,
-            twitchRoles: roles, // Preserving this naming for now for consistency
-            online: isOnline,
-            onlineAt: isOnline ? Date.now() : 0,
-            lastSeen: Date.now(),
-            joinDate: Date.now(),
-            minutesInChannel: 0,
-            chatMessages: 0,
-            disableAutoStatAccrual: false,
-            disableActiveUserList: true, // Because this doesn't work
-            disableViewerList: true, // Because this doesn't work
-            metadata: {},
-            currency: {},
-            ranks: {}
-        };
-
-        try {
-            await this._db.insertAsync(firebotViewer);
-        } catch (error) {
-            logger.error(`ViewerDB: Error Creating Viewer: ${String(error)}`);
+        if (!response.success || !response.user) {
+            logger.error(`getOrCreateViewer: Failed to get or create user: ${response.error || "Unknown error"}`);
             return undefined;
         }
 
-        firebotViewer._id = kickifyUserId(firebotViewer._id);
-        firebotViewer.username = kickifyUsername(firebotViewer.username);
-        return firebotViewer;
-    }
-
-    async getViewerById(id: string): Promise<FirebotViewer | undefined> {
-        if (!this._db) {
-            throw new Error("Viewer database is not connected.");
+        if (roles.length > 0) {
+            await this.setViewerRoles(response.user._id, roles);
         }
 
-        if (unkickifyUserId(id) === '') {
+        if (isOnline) {
+            await this.updateLastSeen(response.user._id);
+        }
+
+        return response.user;
+    }
+
+    async getViewerById(id?: string): Promise<PlatformUser | null> {
+        if (!id || unkickifyUserId(id) === '') {
             logger.warn(`getViewerById: Invalid userId!`);
-            return undefined;
+            return null;
         }
 
-        try {
-            const viewer = await this._db.findOneAsync<FirebotViewer>({ _id: id });
-            if (viewer) {
-                viewer._id = kickifyUserId(viewer._id);
-                viewer.username = kickifyUsername(viewer.username);
-            }
-            return viewer;
-        } catch (error) {
-            logger.error(`ViewerDB: Error Finding Viewer by ID: id=${id}, error=${String(error)}`);
-            return undefined;
+        const response = await getUserById({
+            platform: "kick",
+            userId: kickifyUserId(id)
+        });
+
+        if (!response.success || !response.user) {
+            logger.error(`getViewerById: Failed to retrieve user: ${response.error || "Unknown error"}`);
+            return null;
         }
+
+        return response.user;
     }
 
-    async getViewerByUsername(username: string): Promise<FirebotViewer | undefined> {
-        if (!this._db) {
-            throw new Error("Viewer database is not connected.");
-        }
-
-        try {
-            const searchTerm = new RegExp(`^${unkickifyUsername(username)}$`, 'i');
-            const viewer = await this._db.findOneAsync<FirebotViewer>({ username: { $regex: searchTerm }, twitch: false });
-            if (viewer) {
-                viewer._id = kickifyUserId(viewer._id);
-                viewer.username = kickifyUsername(viewer.username);
-            }
-            return viewer;
-        } catch (error) {
-            logger.error(`ViewerDB: Error Finding Viewer by Username: username=${username}, error=${String(error)}`);
+    async getViewerByUsername(username?: string): Promise<PlatformUser | undefined> {
+        const normalizedUsername = kickifyUsername(username);
+        if (!normalizedUsername) {
+            logger.warn(`getViewerByUsername: Invalid username.`);
             return undefined;
         }
+
+        const response = await getUserByUsername({
+            platform: "kick",
+            username: normalizedUsername
+        });
+
+        if (!response.success || !response.user) {
+            logger.error(`getViewerByUsername: Failed to retrieve user: ${response.error || "Unknown error"}`);
+            return undefined;
+        }
+
+        return response.user;
     }
 
     async lookupUserById(userId: string | number = ""): Promise<BasicKickUser> {
@@ -186,37 +156,47 @@ export class KickUserManager {
     }
 
     async setViewerRoles(userId: string, roles: string[]): Promise<void> {
-        if (!this._db) {
-            throw new Error("Viewer database is not connected.");
-        }
+        const response = await setUserRoles({
+            platform: "kick",
+            userId: kickifyUserId(userId),
+            roles
+        });
 
-        try {
-            await this._db.updateAsync({ _id: unkickifyUserId(userId) }, { $set: { twitchRoles: roles } });
-            logger.debug(`Set Twitch viewer roles for user ${userId}: ${roles}`);
-        } catch (error) {
-            logger.error(`Error setting viewer roles for user ${userId}: ${String(error)}`);
+        if (!response.success) {
+            logger.error(`Error setting viewer roles for user ${userId}: ${response.error || "Unknown error"}`);
         }
     }
 
-    async incrementDbField(userId: string, fieldName: string): Promise<void> {
-        if (!this._db) {
-            throw new Error("Viewer database is not connected.");
+    async incrementChatMessages(userId: string): Promise<void> {
+        if (unkickifyUserId(userId) === '') {
+            logger.warn(`incrementChatMessages: Invalid userId.`);
+            return;
         }
 
-        try {
-            const updateDoc: Record<string, number> = {};
-            updateDoc[fieldName] = 1;
+        const response = await incrementChatMessages({
+            platform: "kick",
+            userId: kickifyUserId(userId),
+            amount: 1
+        });
 
-            const { affectedDocuments } = await this._db.updateAsync({ _id: unkickifyUserId(userId), disableAutoStatAccrual: { $ne: true } }, { $inc: updateDoc }, { returnUpdatedDocs: true });
+        if (!response.success) {
+            logger.error(`incrementChatMessages: Failed to increment chatMessages for user ${userId}: ${response.error || "Unknown error"}`);
+        }
+    }
 
-            if (affectedDocuments != null) {
-                logger.debug(`Incremented DB field '${fieldName}' for user ${userId}. New value: ${(affectedDocuments as any)[fieldName]}`);
-            } else {
-                logger.warn(`Failed to increment DB field '${fieldName}' for user ${userId}. No documents were affected.`);
-            }
-        } catch (error) {
-            logger.error(`Error incrementing DB field '${fieldName}' for user ${userId}: ${String(error)}`);
+    async updateLastSeen(userId: string): Promise<void> {
+        if (unkickifyUserId(userId) === '') {
+            logger.warn(`updateLastSeen: Invalid userId.`);
             return;
+        }
+
+        const response = await updateLastSeen({
+            platform: "kick",
+            userId: kickifyUserId(userId)
+        });
+
+        if (!response.success) {
+            logger.error(`updateLastSeen: Failed to update lastSeen for user ${userId}: ${response.error || "Unknown error"}`);
         }
     }
 

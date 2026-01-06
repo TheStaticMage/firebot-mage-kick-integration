@@ -1,13 +1,14 @@
 import { viewerRolesFilter } from '../viewer-roles';
 import { IntegrationConstants } from '../../constants';
-import { FirebotViewer } from "@crowbartools/firebot-custom-scripts-types/types/modules/viewer-database";
+import { PlatformUser } from "@thestaticmage/mage-platform-lib-client";
 
 // Mock the integration singleton
 jest.mock('../../integration-singleton', () => ({
     integration: {
         kick: {
             userManager: {
-                getViewerById: jest.fn()
+                getViewerById: jest.fn(),
+                getViewerByUsername: jest.fn()
             }
         }
     }
@@ -27,33 +28,27 @@ jest.mock('../../main', () => ({
 import { integration } from '../../integration-singleton';
 
 describe('viewerRolesFilter.predicate', () => {
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    const mockGetViewerById = jest.mocked(integration.kick.userManager.getViewerById);
+    let mockGetViewerById: jest.SpyInstance;
+    let mockGetViewerByUsername: jest.SpyInstance;
 
-    // Helper function to create a mock FirebotViewer
-    const createMockViewer = (twitchRoles: string[], username = 'testuser', id = '12345'): FirebotViewer => ({
+    // Helper function to create a mock PlatformUser
+    const createMockViewer = (twitchRoles: string[], username = 'testuser', id = 'k12345'): PlatformUser => ({
         _id: id,
         username: username,
         displayName: username,
         profilePicUrl: '',
-        twitch: false,
-        twitchRoles: twitchRoles,
-        online: false,
-        onlineAt: 0,
         lastSeen: Date.now(),
-        joinDate: Date.now(),
-        minutesInChannel: 0,
-        chatMessages: 0,
-        disableAutoStatAccrual: false,
-        disableActiveUserList: true,
-        disableViewerList: true,
+        twitchRoles,
         metadata: {},
         currency: {},
-        ranks: {}
+        chatMessages: 0,
+        minutesInChannel: 0
     });
 
     beforeEach(() => {
         jest.clearAllMocks();
+        mockGetViewerById = jest.spyOn(integration.kick.userManager, 'getViewerById');
+        mockGetViewerByUsername = jest.spyOn(integration.kick.userManager, 'getViewerByUsername');
     });
 
     describe('basic validation', () => {
@@ -68,6 +63,7 @@ describe('viewerRolesFilter.predicate', () => {
             const result = await viewerRolesFilter.predicate(filterSettings, eventData);
             expect(result).toBe(false);
             expect(mockGetViewerById).not.toHaveBeenCalled();
+            expect(mockGetViewerByUsername).not.toHaveBeenCalled();
         });
 
         it('returns false when username is empty string and userId is missing', async () => {
@@ -81,6 +77,7 @@ describe('viewerRolesFilter.predicate', () => {
             const result = await viewerRolesFilter.predicate(filterSettings, eventData);
             expect(result).toBe(false);
             expect(mockGetViewerById).not.toHaveBeenCalled();
+            expect(mockGetViewerByUsername).not.toHaveBeenCalled();
         });
 
         it('returns false when viewer is not found', async () => {
@@ -342,10 +339,8 @@ describe('viewerRolesFilter.predicate', () => {
             expect(mockGetViewerById).toHaveBeenCalledWith('k12345');
         });
 
-        it('handles viewer with username only (no userId) - calls getViewerById with undefined', async () => {
-            // Since the predicate only uses userId for lookup, when userId is undefined,
-            // getViewerById will be called with undefined and should return undefined
-            mockGetViewerById.mockResolvedValue(undefined);
+        it('handles viewer with username only (no userId)', async () => {
+            mockGetViewerByUsername.mockResolvedValue(undefined);
 
             const filterSettings = { comparisonType: 'include', value: 'mod' };
             const eventData = {
@@ -356,7 +351,7 @@ describe('viewerRolesFilter.predicate', () => {
 
             const result = await viewerRolesFilter.predicate(filterSettings, eventData);
             expect(result).toBe(false); // Should return false because viewer is not found
-            expect(mockGetViewerById).toHaveBeenCalledWith(undefined);
+            expect(mockGetViewerByUsername).toHaveBeenCalledWith('testuser');
         });
 
         it('uses userId when both username and userId are provided', async () => {

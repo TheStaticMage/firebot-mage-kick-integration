@@ -8,7 +8,8 @@ jest.mock('../../integration', () => ({
             userManager: {
                 getOrCreateViewer: jest.fn().mockResolvedValue(undefined),
                 recordSubscription: () => jest.fn(),
-                recordGift: () => jest.fn()
+                recordGift: () => jest.fn(),
+                updateLastSeen: jest.fn()
             }
         },
         getSettings: () => ({ triggerTwitchEvents: { sub: false } })

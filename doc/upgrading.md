@@ -29,6 +29,10 @@
 
 ## Upgrade Notes
 
+### Version 0.11.0
+
+Install version 0.0.4 or higher of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/).
+
 ### Version 0.10.1
 
 Install version 0.0.2 or higher of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/).

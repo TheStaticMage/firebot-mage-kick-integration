@@ -4,6 +4,7 @@ const mockRecordSubscription = jest.fn();
 const mockRecordGift = jest.fn();
 const mockGetViewerByUsername = jest.fn();
 const mockGetSettings = jest.fn();
+const mockUpdateLastSeen = jest.fn();
 
 jest.mock('../integration', () => ({
     integration: {
@@ -17,7 +18,8 @@ jest.mock('../integration', () => ({
                 getOrCreateViewer: (...args: any[]) => mockGetOrCreateViewer(...args),
                 recordSubscription: (...args: any[]) => mockRecordSubscription(...args),
                 recordGift: (...args: any[]) => mockRecordGift(...args),
-                getViewerByUsername: (...args: any[]) => mockGetViewerByUsername(...args)
+                getViewerByUsername: (...args: any[]) => mockGetViewerByUsername(...args),
+                updateLastSeen: (...args: any[]) => mockUpdateLastSeen(...args)
             }
         },
         getSettings: () => mockGetSettings()
