@@ -29,6 +29,7 @@ describe('WebhookSubscriptionManager.initialize', () => {
     });
 
     afterEach(() => {
+        manager.shutdown();
         jest.restoreAllMocks();
     });
 
@@ -83,6 +84,7 @@ describe('WebhookSubscriptionManager.resetWebhookSubscriptions', () => {
     });
 
     afterEach(() => {
+        manager.shutdown();
         jest.restoreAllMocks();
     });
 
