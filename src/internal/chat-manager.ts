@@ -46,6 +46,7 @@ export class ChatManager {
     async stop(): Promise<void> {
         logger.debug("Stopping ChatManager...");
         this.messageQueue.stop();
+        this.messageQueue.clear();
         this.isRunning = false;
         // Currently not possible to un-listen to frontendCommunicator events
         return;

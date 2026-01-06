@@ -39,6 +39,15 @@ export class MessageQueue {
         }
     }
 
+    clear(): void {
+        if (this.queue.length === 0) {
+            return;
+        }
+        const clearedCount = this.queue.length;
+        this.queue = [];
+        logger.debug(`MessageQueue cleared (${clearedCount} messages removed)`);
+    }
+
     enqueue(message: string, chatter: "Streamer" | "Bot", replyToMessageId?: string): string {
         const id = this.generateId();
         const queuedMessage: QueuedMessage = {
