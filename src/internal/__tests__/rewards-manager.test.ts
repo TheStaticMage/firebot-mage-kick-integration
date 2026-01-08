@@ -67,6 +67,52 @@ describe('RewardsManager', () => {
             expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('Retrieved 2 total rewards'));
         });
 
+        it('returns cached rewards within one second', async () => {
+            const mockRewards = [
+                { id: 'kick-1', title: 'Reward 1', cost: 100 }
+            ];
+
+            let now = 1000;
+            const dateNowSpy = jest.spyOn(Date, 'now').mockImplementation(() => now);
+
+            mockKick.httpCallWithTimeout.mockResolvedValue({
+                data: mockRewards
+            });
+
+            const firstResult = await rewardsManager.getAllRewards();
+            now = 1500;
+            const secondResult = await rewardsManager.getAllRewards();
+
+            expect(firstResult).toEqual(mockRewards);
+            expect(secondResult).toEqual(mockRewards);
+            expect(mockKick.httpCallWithTimeout).toHaveBeenCalledTimes(1);
+            dateNowSpy.mockRestore();
+        });
+
+        it('returns the pending result when a request is already in flight', async () => {
+            const mockRewards = [
+                { id: 'kick-1', title: 'Reward 1', cost: 100 }
+            ];
+
+            let resolveRequest: (value: { data: any[] }) => void = () => undefined;
+            const pendingRequest = new Promise<{ data: any[] }>((resolve) => {
+                resolveRequest = resolve;
+            });
+
+            mockKick.httpCallWithTimeout.mockReturnValue(pendingRequest);
+
+            const firstPromise = rewardsManager.getAllRewards();
+            const secondPromise = rewardsManager.getAllRewards();
+
+            resolveRequest({ data: mockRewards });
+
+            const [firstResult, secondResult] = await Promise.all([firstPromise, secondPromise]);
+
+            expect(firstResult).toEqual(mockRewards);
+            expect(secondResult).toEqual(mockRewards);
+            expect(mockKick.httpCallWithTimeout).toHaveBeenCalledTimes(1);
+        });
+
         it('returns empty array when response data is empty array', async () => {
             mockKick.httpCallWithTimeout.mockResolvedValue({
                 data: []
@@ -256,6 +302,7 @@ describe('RewardsManager', () => {
                 description: 'Test prompt',
                 background_color: '#9147FF',
                 is_enabled: true,
+                is_paused: false,
                 is_user_input_required: false,
                 should_redemptions_skip_request_queue: false
             });

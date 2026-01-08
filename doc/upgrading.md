@@ -31,7 +31,8 @@
 
 ### Version 0.11.0
 
-Install version 0.0.4 or higher of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/).
+- Install version 0.0.4 or higher of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/).
+- The "Kick Reward Enable/Disable" effect has been removed. The built-in Firebot "Update Channel Reward" effect now syncs enabled/disabled and paused/unpaused configuration from the built in Channel Rewards manager to Kick. (Having the removed effect configured somewhere won't hurt anything though, but we suggest removing them for cleanliness.)
 
 ### Version 0.10.1
 

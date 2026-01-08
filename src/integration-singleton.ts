@@ -10,7 +10,6 @@ import { deleteChatMessageEffect } from "./effects/delete-chat-message";
 import { maintenanceEffect } from "./effects/maintenance";
 import { moderatorBanEffect } from "./effects/moderator-ban";
 import { moderatorTimeoutEffect } from "./effects/moderator-timeout";
-import { rewardEnableDisableEffect } from "./effects/reward-enable-disable";
 import { rewardManageEffect } from "./effects/reward-manage";
 import { streamGameEffect } from "./effects/stream-game";
 import { streamTitleEffect } from "./effects/stream-title";
@@ -215,7 +214,6 @@ export class KickIntegration extends EventEmitter {
         effectManager.registerEffect(maintenanceEffect);
         effectManager.registerEffect(moderatorBanEffect);
         effectManager.registerEffect(moderatorTimeoutEffect);
-        effectManager.registerEffect(rewardEnableDisableEffect);
         effectManager.registerEffect(rewardManageEffect);
         effectManager.registerEffect(streamGameEffect);
         effectManager.registerEffect(streamTitleEffect);

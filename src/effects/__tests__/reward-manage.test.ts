@@ -9,7 +9,6 @@ type RewardManageParams = {
     rewardName?: string;
     rewardSettings: {
         cost: StringUpdatable;
-        enabled: BooleanUpdatable;
         skipQueue: BooleanUpdatable;
     };
 };
@@ -84,7 +83,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Test Reward',
                 rewardSettings: {
                     cost: { update: false, newValue: "1" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -110,7 +108,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 action: 'unmanage',
                 rewardSettings: {
                     cost: { update: false, newValue: "1" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -136,7 +133,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 action: 'unmanage',
                 rewardSettings: {
                     cost: { update: false, newValue: "1" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -185,7 +181,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Test Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "500" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -196,8 +191,7 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 mockFirebotReward,
                 {
                     cost: 500,
-                    skipQueue: false,
-                    enabled: true
+                    skipQueue: false
                 }
             );
             expect(mockState.setManagementData).toHaveBeenCalledWith(
@@ -208,8 +202,7 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                     firebotRewardTitle: 'Test Reward',
                     overrides: {
                         cost: 500,
-                        skipQueue: false,
-                        enabled: true
+                        skipQueue: false
                     }
                 })
             );
@@ -228,7 +221,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Test Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "500" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -257,7 +249,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Test Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "1000" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -268,8 +259,7 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 mockFirebotReward,
                 {
                     cost: 1000,
-                    skipQueue: false,
-                    enabled: true
+                    skipQueue: false
                 }
             );
             expect(result).toBe(true);
@@ -287,7 +277,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Test Reward',
                 rewardSettings: {
                     cost: { update: false, newValue: "500" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: true, newValue: true }
                 }
             };
@@ -298,38 +287,7 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 mockFirebotReward,
                 {
                     cost: 500,
-                    skipQueue: true,
-                    enabled: true
-                }
-            );
-            expect(result).toBe(true);
-        });
-
-        it('creates new reward with override enabled', async () => {
-            integration.kick.rewardsManager.createReward.mockResolvedValue({
-                id: 'kick-reward-123',
-                title: 'Test Reward'
-            });
-
-            const effect: RewardManageParams = {
-                rewardId: 'firebot-reward-1',
-                action: 'manage',
-                rewardName: 'Test Reward',
-                rewardSettings: {
-                    cost: { update: false, newValue: "500" },
-                    enabled: { update: true, newValue: false },
-                    skipQueue: { update: false, newValue: false }
-                }
-            };
-
-            const result = await rewardManageEffect.onTriggerEvent({ effect } as any);
-
-            expect(integration.kick.rewardsManager.createReward).toHaveBeenCalledWith(
-                mockFirebotReward,
-                {
-                    cost: 500,
-                    skipQueue: false,
-                    enabled: false
+                    skipQueue: true
                 }
             );
             expect(result).toBe(true);
@@ -347,7 +305,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Test Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "2000" },
-                    enabled: { update: true, newValue: false },
                     skipQueue: { update: true, newValue: true }
                 }
             };
@@ -358,8 +315,7 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 mockFirebotReward,
                 {
                     cost: 2000,
-                    skipQueue: true,
-                    enabled: false
+                    skipQueue: true
                 }
             );
             expect(result).toBe(true);
@@ -374,7 +330,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Test Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "500" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -397,7 +352,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Test Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "500" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -418,7 +372,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Test Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "500" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -449,7 +402,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Test Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "500" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -478,7 +430,7 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 managedOnKick: true,
                 kickRewardId: 'kick-reward-123',
                 firebotRewardTitle: 'Old Title',
-                overrides: { cost: 500, skipQueue: false, enabled: true }
+                overrides: { cost: 500, skipQueue: false }
             };
             mockState.getManagementData.mockReturnValue(mockManagementData);
             reflectEvent.mockResolvedValue([mockFirebotReward]);
@@ -494,7 +446,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Updated Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "750" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -506,8 +457,7 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 mockFirebotReward,
                 {
                     cost: 750,
-                    skipQueue: true,
-                    enabled: false
+                    skipQueue: true
                 }
             );
             expect(mockState.setManagementData).toHaveBeenCalledWith(
@@ -517,8 +467,7 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                     firebotRewardTitle: 'Updated Reward',
                     overrides: {
                         cost: 750,
-                        skipQueue: true,
-                        enabled: false
+                        skipQueue: true
                     }
                 })
             );
@@ -534,7 +483,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Updated Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "750" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -561,7 +509,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Updated Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "1500" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };
@@ -573,8 +520,7 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 mockFirebotReward,
                 {
                     cost: 1500,
-                    skipQueue: true,
-                    enabled: false
+                    skipQueue: true
                 }
             );
             expect(result).toBe(true);
@@ -589,7 +535,6 @@ describe('rewardManageEffect.onTriggerEvent', () => {
                 rewardName: 'Updated Reward',
                 rewardSettings: {
                     cost: { update: true, newValue: "750" },
-                    enabled: { update: false, newValue: true },
                     skipQueue: { update: false, newValue: false }
                 }
             };

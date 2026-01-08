@@ -277,6 +277,7 @@ export interface KickRewardManagementData {
         cost?: number;
         skipQueue?: boolean;
         enabled?: boolean;
+        paused?: boolean;
     };
 }
 
