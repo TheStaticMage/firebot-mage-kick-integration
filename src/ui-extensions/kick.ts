@@ -1,4 +1,5 @@
 import {
+    AngularJsFactory,
     AngularJsPage,
     UIExtension
 } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
@@ -9,7 +10,7 @@ import { kickUtilitiesService } from "./kick-utilities";
 const kickIntegrationPage: AngularJsPage = {
     id: "kick-integration",
     name: "Kick",
-    controller: ($scope: any, backendCommunicator: any, $timeout: any, channelRewardsService: any, logger: any, utilityService: any, kickBackendService: any, kickUtilitiesService: any) => {
+    controller: ($scope: any, $timeout: any, channelRewardsService: any, logger: any, utilityService: any, kickBackendService: any, kickUtilitiesService: any) => {
         // Connections Tab Logic
         $scope.connections = {
             connected: false,
@@ -31,6 +32,7 @@ const kickIntegrationPage: AngularJsPage = {
         $scope.webhookUrl = "";
         let copyButtonTimeout: any = null;
         let authModalCloser: (() => void) | null = null;
+        let wasConnected = false;
 
         // Initialize - request current status
         kickBackendService.getConnections();
@@ -61,6 +63,12 @@ const kickIntegrationPage: AngularJsPage = {
             maybeCloseAuthModal(data);
             // Refresh webhook status when connection state changes
             updateWebhookData();
+
+            if (data.connected && !wasConnected) {
+                $scope.loadRewards();
+            }
+
+            wasConnected = data.connected;
         });
 
         // Listen for streamer auth URL
@@ -381,8 +389,25 @@ const kickIntegrationPage: AngularJsPage = {
                 },
                 cellTemplate: `
                     <span ng-if="data.isExternal">&nbsp;</span>
-                    <i ng-if="!data.isExternal && data.syncState.managedOnKick && data.syncState.overrides.enabled !== false" class="fas fa-check" style="color: #53fc18;"></i>
-                    <i ng-if="!data.isExternal && data.syncState.managedOnKick && data.syncState.overrides.enabled === false" class="fas fa-times" style="color: #dc3545;"></i>
+                    <i ng-if="!data.isExternal && data.syncState.managedOnKick && data.kickIsEnabled === true" class="fas fa-check" style="color: #53fc18;"></i>
+                    <i ng-if="!data.isExternal && data.syncState.managedOnKick && data.kickIsEnabled === false" class="fas fa-times" style="color: #dc3545;"></i>
+                    <span ng-if="!data.isExternal && !data.syncState.managedOnKick">&nbsp;</span>
+                `
+            },
+            {
+                name: "PAUSED",
+                icon: "fa-pause",
+                headerStyles: {
+                    'width': '100px',
+                    'text-align': 'center'
+                },
+                cellStyles: {
+                    'text-align': 'center'
+                },
+                cellTemplate: `
+                    <span ng-if="data.isExternal">&nbsp;</span>
+                    <i ng-if="!data.isExternal && data.syncState.managedOnKick && data.kickIsPaused === true" class="fas fa-pause" style="color: #ffc107;"></i>
+                    <i ng-if="!data.isExternal && data.syncState.managedOnKick && data.kickIsPaused === false" class="fas fa-play" style="color: #53fc18;"></i>
                     <span ng-if="!data.isExternal && !data.syncState.managedOnKick">&nbsp;</span>
                 `
             }
@@ -475,7 +500,6 @@ const kickIntegrationPage: AngularJsPage = {
                     $scope.reward = reward;
                     $scope.cost = syncState.overrides.cost || reward.cost;
                     $scope.skipQueue = syncState.overrides.skipQueue || false;
-                    $scope.enabled = syncState.overrides.enabled !== undefined ? syncState.overrides.enabled : true;
 
                     $scope.dismiss = () => {
                         $uibModalInstance.dismiss();
@@ -489,14 +513,15 @@ const kickIntegrationPage: AngularJsPage = {
 
                         syncState.overrides.cost = $scope.cost;
                         syncState.overrides.skipQueue = $scope.skipQueue;
-                        syncState.overrides.enabled = $scope.enabled;
 
-                        kickBackendService.updateRewardOverrides(reward.id, syncState.overrides).then(() => {
-                            $uibModalInstance.close({ action: "save" });
-                        }).catch((error: any) => {
-                            logger.error("Failed to update overrides:", error);
-                            $uibModalInstance.dismiss();
-                        });
+                        kickBackendService.updateRewardOverrides(reward.id, syncState.overrides)
+                            .then(() => {
+                                $uibModalInstance.close({ action: "save" });
+                            })
+                            .catch((error: any) => {
+                                logger.error("Failed to update reward properties:", error);
+                                $uibModalInstance.dismiss();
+                            });
                     };
                 },
                 resolveObj: {
@@ -544,6 +569,7 @@ const kickIntegrationPage: AngularJsPage = {
 
                 // Fetch all Kick rewards to get external ones
                 kickBackendService.getAllKickRewards().then((kickRewards: any[]) => {
+                    const kickRewardsById = new Map(kickRewards.map((reward: any) => [reward.id, reward]));
                     const outsideFirebotRewards = kickRewards
                         .filter((r: any) => !r.isManaged)
                         .map((r: any) => ({
@@ -559,9 +585,19 @@ const kickIntegrationPage: AngularJsPage = {
                         $scope.rewardsTab.syncState = normalizedState;
                         $scope.rewardsTab.syncedCount = Object.values(normalizedState).filter((s: any) => s.managedOnKick).length;
                         $scope.rewardsTab.baseRewards = manageable;
+                        $scope.rewardsTab.kickRewards = kickRewards;
                         $scope.rewardsTab.totalKickRewardsCount = kickRewards.length;
                         $scope.rewardsTab.outsideFirebotRewards = outsideFirebotRewards;
-                        const firebotRewardsWithSync = applyManagementStateToRewards(manageable, normalizedState);
+                        const firebotRewardsWithSync = applyManagementStateToRewards(manageable, normalizedState)
+                            .map((reward: any) => {
+                                const kickRewardId = reward.syncState.kickRewardId;
+                                const kickReward = kickRewardId ? kickRewardsById.get(kickRewardId) : undefined;
+                                return {
+                                    ...reward,
+                                    kickIsEnabled: kickReward?.isEnabled,
+                                    kickIsPaused: kickReward?.isPaused
+                                };
+                            });
                         $scope.rewardsTab.firebotRewards = [...firebotRewardsWithSync, ...outsideFirebotRewards];
                         $scope.rewardsTab.loading = false;
                         logger.debug("Final sync state after load:", $scope.rewardsTab.syncState);
@@ -575,6 +611,7 @@ const kickIntegrationPage: AngularJsPage = {
                         $scope.rewardsTab.syncState = normalizedState;
                         $scope.rewardsTab.syncedCount = Object.values(normalizedState).filter((s: any) => s.managedOnKick).length;
                         $scope.rewardsTab.baseRewards = manageable;
+                        $scope.rewardsTab.kickRewards = [];
                         $scope.rewardsTab.firebotRewards = applyManagementStateToRewards(manageable, normalizedState);
                         $scope.rewardsTab.loading = false;
                     });
@@ -694,6 +731,7 @@ const kickIntegrationPage: AngularJsPage = {
                             message += `, Failed: ${result.failed}`;
                         }
                         showInfoModal("Sync Complete", message);
+                        $scope.loadRewards();
                     });
                 }).catch((error: any) => {
                     logger.error("Failed to sync all rewards:", error);
@@ -704,6 +742,35 @@ const kickIntegrationPage: AngularJsPage = {
                     });
                 });
             });
+        };
+
+        $scope.updateKickRewardOverrides = (rewardId: string, overridePatch: any) => {
+            const syncState = $scope.rewardsTab.syncState[rewardId];
+            if (!syncState || !syncState.managedOnKick) {
+                return;
+            }
+
+            const overrides = {
+                ...(syncState.overrides || {}),
+                ...overridePatch
+            };
+
+            $scope.rewardsTab.loading = true;
+            kickBackendService.updateRewardOverrides(rewardId, overrides)
+                .then(() => {
+                    $timeout(() => {
+                        $scope.rewardsTab.loading = false;
+                        $scope.loadRewards();
+                    });
+                })
+                .catch((error: any) => {
+                    logger.error("Failed to update reward overrides:", error);
+                    $timeout(() => {
+                        $scope.rewardsTab.loading = false;
+                        const statusMsg = error?.status ? ` (HTTP ${error.status})` : "";
+                        showErrorModal("Update Reward Failed", error?.message || "Failed to update reward", `${error?.message || ""}${statusMsg}`);
+                    });
+                });
         };
 
         $scope.rewardMenuOptions = (item: any) => {
@@ -757,10 +824,21 @@ const kickIntegrationPage: AngularJsPage = {
             $timeout(() => {
                 const normalizedState = kickUtilitiesService.normalizeManagementState(state);
                 $scope.rewardsTab.syncState = normalizedState;
+                const kickRewardsById = new Map<string, any>(
+                    ($scope.rewardsTab.kickRewards || []).map((reward: any) => [reward.id, reward])
+                );
                 const firebotRewardsWithSync = applyManagementStateToRewards(
                     $scope.rewardsTab.baseRewards || [],
                     normalizedState
-                );
+                ).map((reward: any) => {
+                    const kickRewardId = reward.syncState.kickRewardId;
+                    const kickReward = kickRewardId ? kickRewardsById.get(kickRewardId) : undefined;
+                    return {
+                        ...reward,
+                        kickIsEnabled: kickReward?.isEnabled,
+                        kickIsPaused: kickReward?.isPaused
+                    };
+                });
                 $scope.rewardsTab.firebotRewards = [...firebotRewardsWithSync, ...($scope.rewardsTab.outsideFirebotRewards || [])];
                 const syncedCount: number = Object.values(normalizedState).filter((s: any) => s.managedOnKick).length;
                 $scope.rewardsTab.syncedCount = syncedCount;
@@ -779,6 +857,12 @@ const kickIntegrationPage: AngularJsPage = {
         });
 
         kickBackendService.onChannelRewardsUpdated(() => {
+            if ($scope.activeTab === "rewards") {
+                $scope.loadRewards();
+            }
+        });
+
+        kickBackendService.onKickChannelRewardsRefresh(() => {
             if ($scope.activeTab === "rewards") {
                 $scope.loadRewards();
             }
@@ -811,10 +895,21 @@ const kickIntegrationPage: AngularJsPage = {
     template: loadTemplate()
 };
 
+const kickChannelReflectorService: AngularJsFactory = {
+    name: "kickChannelReflectorService",
+    function: (backendCommunicator: any) => {
+        backendCommunicator.onAsync(`channel-reward-updated`, async (data: any) => {
+            backendCommunicator.fireEventAsync('kick:channel-reward-updated', { ...data });
+        });
+
+        return {};
+    }
+};
+
 export const kickExtension: UIExtension = {
     id: "kick-extension",
     pages: [kickIntegrationPage],
     providers: {
-        factories: [kickBackendService, kickUtilitiesService]
+        factories: [kickBackendService, kickUtilitiesService, kickChannelReflectorService]
     }
 };

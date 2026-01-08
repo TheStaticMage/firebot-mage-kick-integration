@@ -82,6 +82,7 @@ describe('KickRewardsBackend', () => {
             prompt: 'Test prompt',
             backgroundColor: '#9147FF',
             isEnabled: true,
+            isPaused: false,
             isUserInputRequired: false,
             shouldRedemptionsSkipRequestQueue: false,
             ...overrides
@@ -100,6 +101,7 @@ describe('KickRewardsBackend', () => {
         cost: 100,
         background_color: '#9147FF',
         is_enabled: true,
+        is_paused: false,
         is_user_input_required: false,
         should_redemptions_skip_request_queue: false,
         ...overrides
@@ -163,17 +165,13 @@ describe('KickRewardsBackend', () => {
             const result = await handler();
 
             expect(result).toEqual([
-                { id: 'kick-1', title: 'Reward 1', cost: 100, isManaged: true },
-                { id: 'kick-2', title: 'Reward 2', cost: 200, isManaged: false },
-                { id: 'kick-3', title: 'Reward 3', cost: 300, isManaged: false }
+                { id: 'kick-1', title: 'Reward 1', cost: 100, isManaged: true, isEnabled: true, isPaused: false },
+                { id: 'kick-2', title: 'Reward 2', cost: 200, isManaged: false, isEnabled: true, isPaused: false },
+                { id: 'kick-3', title: 'Reward 3', cost: 300, isManaged: false, isEnabled: true, isPaused: false }
             ]);
         });
 
         it('returns cached data on API failure', async () => {
-            const cachedRewards = [
-                { id: 'kick-2', title: 'Cached Reward', cost: 200, isManaged: false }
-            ];
-
             mockRewardsManager.getAllRewards
                 .mockResolvedValueOnce([
                     createMockKickReward({ id: 'kick-1', title: 'Reward 1', cost: 100 }),
@@ -195,7 +193,9 @@ describe('KickRewardsBackend', () => {
             await handler();
             const result = await handler();
 
-            expect(result).toEqual(cachedRewards);
+            expect(result).toEqual([
+                { id: 'kick-2', title: 'Cached Reward', cost: 200, isManaged: false, isEnabled: true, isPaused: false }
+            ]);
         });
 
         it('returns empty array when no rewards and no cache', async () => {
@@ -450,13 +450,16 @@ describe('KickRewardsBackend', () => {
 
             expect(mockRewardsManager.updateReward).toHaveBeenCalledWith(
                 'kick-123',
-                firebotReward.twitchData,
-                expect.objectContaining({ cost: 200, skipQueue: true, enabled: false })
+                {
+                    ...firebotReward.twitchData,
+                    isPaused: false
+                },
+                expect.objectContaining({ cost: 200, skipQueue: true, enabled: false, paused: false })
             );
             expect(mockKickRewardsState.setManagementData).toHaveBeenCalledWith(
                 'fb-reward-1',
                 expect.objectContaining({
-                    overrides: { cost: 200, skipQueue: true, enabled: false }
+                    overrides: { cost: 200, skipQueue: true, enabled: false, paused: false }
                 })
             );
         });
@@ -633,20 +636,20 @@ describe('KickRewardsBackend', () => {
     describe('kick:sync-all-rewards', () => {
         it('successfully syncs all managed rewards', async () => {
             const firebotReward1 = createMockFirebotReward({ id: 'fb-reward-1', title: 'Reward 1' });
-            const firebotReward2 = createMockFirebotReward({ id: 'fb-reward-2', title: 'Reward 2' });
+            const firebotReward2 = createMockFirebotReward({ id: 'fb-reward-2', title: 'Reward 2', isEnabled: true });
 
             const managementState = {
                 'fb-reward-1': {
                     managedOnKick: true,
                     kickRewardId: 'kick-123',
                     firebotRewardTitle: 'Reward 1',
-                    overrides: { cost: 100, skipQueue: false, enabled: true }
+                    overrides: { cost: 100, skipQueue: false, enabled: true, paused: false }
                 },
                 'fb-reward-2': {
                     managedOnKick: true,
                     kickRewardId: 'kick-456',
                     firebotRewardTitle: 'Reward 2',
-                    overrides: { cost: 200, skipQueue: true, enabled: false }
+                    overrides: { cost: 200, skipQueue: true, enabled: false, paused: false }
                 }
             };
 
@@ -656,23 +659,21 @@ describe('KickRewardsBackend', () => {
             mockKickRewardsState.getAllManagementData.mockReturnValue(managementState);
             mockReflectEvent.mockResolvedValue([firebotReward1, firebotReward2]);
             mockRewardsManager.getAllRewards.mockResolvedValue([kickReward1, kickReward2]);
-            mockRewardsManager.deleteReward.mockResolvedValue(true);
-            mockRewardsManager.createReward
-                .mockResolvedValueOnce(createMockKickReward({ id: 'kick-new-1', title: 'Reward 1', cost: 100 }))
-                .mockResolvedValueOnce(createMockKickReward({ id: 'kick-new-2', title: 'Reward 2', cost: 200 }));
+            mockRewardsManager.updateReward.mockResolvedValue(true);
 
             const handler = registeredHandlers.get('kick:sync-all-rewards');
             const result = await handler();
 
-            expect(mockRewardsManager.deleteReward).toHaveBeenCalledTimes(2);
-            expect(mockRewardsManager.createReward).toHaveBeenCalledTimes(2);
-            expect(mockRewardsManager.createReward).toHaveBeenCalledWith(
+            expect(mockRewardsManager.updateReward).toHaveBeenCalledTimes(2);
+            expect(mockRewardsManager.updateReward).toHaveBeenCalledWith(
+                'kick-123',
                 firebotReward1.twitchData,
-                managementState['fb-reward-1'].overrides
+                { cost: 100, skipQueue: false, enabled: true, paused: false }
             );
-            expect(mockRewardsManager.createReward).toHaveBeenCalledWith(
+            expect(mockRewardsManager.updateReward).toHaveBeenCalledWith(
+                'kick-456',
                 firebotReward2.twitchData,
-                managementState['fb-reward-2'].overrides
+                { cost: 200, skipQueue: true, enabled: true, paused: false }
             );
             expect(result).toEqual({ unchanged: 0, updated: 2, failed: 0 });
         });
@@ -721,10 +722,9 @@ describe('KickRewardsBackend', () => {
             mockKickRewardsState.getAllManagementData.mockReturnValue(managementState);
             mockReflectEvent.mockResolvedValue([firebotReward1, firebotReward2]);
             mockRewardsManager.getAllRewards.mockResolvedValue([kickReward1, kickReward2]);
-            mockRewardsManager.deleteReward.mockResolvedValue(true);
-            mockRewardsManager.createReward
-                .mockResolvedValueOnce(createMockKickReward({ id: 'kick-new-1', title: 'Reward 1', cost: 100 }))
-                .mockResolvedValueOnce(null);
+            mockRewardsManager.updateReward
+                .mockResolvedValueOnce(true)
+                .mockResolvedValueOnce(false);
 
             const handler = registeredHandlers.get('kick:sync-all-rewards');
             const result = await handler();
@@ -789,6 +789,7 @@ describe('KickRewardsBackend', () => {
             mockKickRewardsState.getAllManagementData.mockReturnValue(managementState);
             mockReflectEvent.mockResolvedValue([firebotReward1]);
             mockRewardsManager.getAllRewards.mockResolvedValue([kickReward]);
+            mockRewardsManager.updateReward.mockResolvedValue(true);
 
             const handler = registeredHandlers.get('kick:sync-all-rewards');
             const result = await handler();
@@ -815,8 +816,7 @@ describe('KickRewardsBackend', () => {
             mockKickRewardsState.getAllManagementData.mockReturnValue(managementState);
             mockReflectEvent.mockResolvedValue([firebotReward1]);
             mockRewardsManager.getAllRewards.mockResolvedValue([kickReward]);
-            mockRewardsManager.deleteReward.mockResolvedValue(true);
-            mockRewardsManager.createReward.mockResolvedValue(createMockKickReward({ id: 'kick-new-1', title: 'New Title', cost: 100 }));
+            mockRewardsManager.updateReward.mockResolvedValue(true);
 
             const handler = registeredHandlers.get('kick:sync-all-rewards');
             await handler();
@@ -824,6 +824,39 @@ describe('KickRewardsBackend', () => {
             expect(mockKickRewardsState.setManagementData).toHaveBeenCalledWith(
                 'fb-reward-1',
                 expect.objectContaining({ firebotRewardTitle: 'New Title' })
+            );
+        });
+
+        it('uses Firebot paused state when syncing', async () => {
+            const firebotReward1 = createMockFirebotReward({
+                id: 'fb-reward-1',
+                title: 'Reward 1',
+                isPaused: true
+            });
+
+            const managementState = {
+                'fb-reward-1': {
+                    managedOnKick: true,
+                    kickRewardId: 'kick-123',
+                    firebotRewardTitle: 'Reward 1',
+                    overrides: { cost: 100, skipQueue: false, enabled: true, paused: false }
+                }
+            };
+
+            const kickReward = createMockKickReward({ id: 'kick-123', is_paused: false }); // eslint-disable-line camelcase
+
+            mockKickRewardsState.getAllManagementData.mockReturnValue(managementState);
+            mockReflectEvent.mockResolvedValue([firebotReward1]);
+            mockRewardsManager.getAllRewards.mockResolvedValue([kickReward]);
+            mockRewardsManager.updateReward.mockResolvedValue(true);
+
+            const handler = registeredHandlers.get('kick:sync-all-rewards');
+            await handler();
+
+            expect(mockRewardsManager.updateReward).toHaveBeenCalledWith(
+                'kick-123',
+                firebotReward1.twitchData,
+                { cost: 100, skipQueue: false, enabled: true, paused: true }
             );
         });
     });

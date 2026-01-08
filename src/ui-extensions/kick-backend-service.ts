@@ -96,6 +96,10 @@ export const kickBackendService: AngularJsFactory = {
 
             onChannelRewardsUpdated: (callback: () => void) => {
                 backendCommunicator.on("channel-rewards-updated", callback);
+            },
+
+            onKickChannelRewardsRefresh: (callback: (data: { firebotRewardId?: string }) => void) => {
+                backendCommunicator.on("kick:channel-rewards-refresh", callback);
             }
         };
     }

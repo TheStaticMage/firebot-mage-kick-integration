@@ -13,6 +13,11 @@ import type { Kick } from "./kick";
  */
 export class RewardsManager {
     private kick: Kick;
+    private isGetAllRewardsPending = false;
+    private lastGetAllRewardsRequestedAt: number | null = null;
+    private lastGetAllRewardsResult: ChannelReward[] | null = null;
+    private lastGetAllRewardsResultAt: number | null = null;
+    private pendingGetAllRewards: Promise<ChannelReward[] | null> | null = null;
 
     constructor(kick: Kick) {
         this.kick = kick;
@@ -24,22 +29,66 @@ export class RewardsManager {
      * and the caller should check management state to determine which are managed.
      */
     async getAllRewards(): Promise<ChannelReward[] | null> {
-        try {
-            const response = await this.kick.httpCallWithTimeout(
-                `/public/v1/channels/rewards`,
-                "GET"
-            );
+        const now = Date.now();
+        const hasRecentResult = this.lastGetAllRewardsResultAt !== null &&
+            now - this.lastGetAllRewardsResultAt < 1000;
 
-            if (!response || !response.data || !Array.isArray(response.data)) {
-                logger.debug(`Failed to retrieve rewards from Kick API. ${JSON.stringify(response)}`);
-                return null;
+        if (this.isGetAllRewardsPending) {
+            if (hasRecentResult) {
+                logger.debug("Get all rewards is pending, returning last known result.");
+                return this.lastGetAllRewardsResult;
+            }
+            if (this.pendingGetAllRewards) {
+                logger.debug("Get all rewards is pending, returning pending promise.");
+                return this.pendingGetAllRewards;
+            }
+        }
+
+        if (
+            this.lastGetAllRewardsRequestedAt !== null &&
+            now - this.lastGetAllRewardsRequestedAt < 1000 &&
+            hasRecentResult
+        ) {
+            logger.debug("Returning cached get all rewards result.");
+            return this.lastGetAllRewardsResult;
+        }
+
+        this.isGetAllRewardsPending = true;
+        this.lastGetAllRewardsRequestedAt = now;
+
+        const pendingRequest = (async () => {
+            let result: ChannelReward[] | null = null;
+            try {
+                const response = await this.kick.httpCallWithTimeout(
+                    `/public/v1/channels/rewards`,
+                    "GET"
+                );
+
+                if (!response || !response.data || !Array.isArray(response.data)) {
+                    logger.debug(`Failed to retrieve rewards from Kick API. ${JSON.stringify(response)}`);
+                    result = null;
+                } else {
+                    logger.debug(`Retrieved ${response.data.length} total rewards from Kick API`);
+                    result = response.data;
+                }
+            } catch (error) {
+                logger.error(`Error retrieving rewards: ${error}`);
+                result = null;
+            } finally {
+                this.lastGetAllRewardsResult = result;
+                this.lastGetAllRewardsResultAt = Date.now();
             }
 
-            logger.debug(`Retrieved ${response.data.length} total rewards from Kick API`);
-            return response.data;
-        } catch (error) {
-            logger.error(`Error retrieving rewards: ${error}`);
-            return null;
+            return result;
+        })();
+
+        this.pendingGetAllRewards = pendingRequest;
+
+        try {
+            return await pendingRequest;
+        } finally {
+            this.isGetAllRewardsPending = false;
+            this.pendingGetAllRewards = null;
         }
     }
 
@@ -83,6 +132,7 @@ export class RewardsManager {
         cost?: number;
         skipQueue?: boolean;
         enabled?: boolean;
+        paused?: boolean;
     }): Promise<boolean> {
         try {
             const updateRequest = this.mapCustomRewardToUpdateRequest(reward, overrides);
@@ -159,6 +209,7 @@ export class RewardsManager {
             cost?: number;
             skipQueue?: boolean;
             enabled?: boolean;
+            paused?: boolean;
         }
     ): ChannelRewardUpdateRequest {
         return {
@@ -172,7 +223,9 @@ export class RewardsManager {
             // eslint-disable-next-line camelcase
             is_user_input_required: reward.isUserInputRequired,
             // eslint-disable-next-line camelcase
-            should_redemptions_skip_request_queue: overrides?.skipQueue ?? reward.shouldRedemptionsSkipRequestQueue
+            should_redemptions_skip_request_queue: overrides?.skipQueue ?? reward.shouldRedemptionsSkipRequestQueue,
+            // eslint-disable-next-line camelcase
+            is_paused: overrides?.paused ?? reward.isPaused
         };
     }
 }

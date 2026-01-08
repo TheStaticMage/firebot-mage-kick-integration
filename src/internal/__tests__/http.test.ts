@@ -7,12 +7,13 @@ jest.mock('../../main', () => ({
     }
 }));
 
-import { httpCallWithTimeout } from '../http';
+import { httpCallWithTimeout, resetHttpRequestQueueForTests } from '../http';
 
 describe('httpCallWithTimeout', () => {
     beforeEach(() => {
         global.fetch = jest.fn();
         jest.useFakeTimers();
+        resetHttpRequestQueueForTests();
         jest.clearAllMocks();
     });
 
@@ -302,7 +303,10 @@ describe('httpCallWithTimeout', () => {
             });
         });
         const promise = httpCallWithTimeout({ url: 'http://test', method: 'GET', timeout: 10 });
-        jest.advanceTimersByTime(20);
+        await Promise.resolve();
+        jest.runOnlyPendingTimers();
+        await Promise.resolve();
+        jest.runOnlyPendingTimers();
         await expect(promise).rejects.toThrow(/abort/i);
     });
 

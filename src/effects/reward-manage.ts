@@ -1,7 +1,7 @@
 import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { integration } from "../integration";
-import { logger } from "../main";
 import { reflectEvent } from "../internal/reflector";
+import { logger } from "../main";
 
 type StringUpdatable = { update: boolean; newValue: string };
 type BooleanUpdatable = { update: boolean; newValue: boolean | string };
@@ -12,7 +12,6 @@ type rewardManagementParams = {
     rewardName?: string;
     rewardSettings: {
         cost: StringUpdatable;
-        enabled: BooleanUpdatable;
         skipQueue: BooleanUpdatable;
     };
 }
@@ -53,18 +52,6 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
         />
         <div ng-show="effect.rewardSettings.cost.update" style="margin-bottom: 15px;">
             <firebot-input model="effect.rewardSettings.cost.newValue" placeholder-text="Enter new cost" />
-        </div>
-
-        <firebot-checkbox
-            label="Update Enabled"
-            model="effect.rewardSettings.enabled.update"
-            aria-label="Update enabled"
-        />
-        <div ng-show="effect.rewardSettings.enabled.update" style="margin-bottom: 15px;">
-            <firebot-select
-                selected="effect.rewardSettings.enabled.newValue"
-                options="enabledOptions"
-            />
         </div>
 
         <firebot-checkbox
@@ -164,7 +151,6 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
         }
         if (effect.action === "manage" &&
             !effect.rewardSettings.cost.update &&
-            !effect.rewardSettings.enabled.update &&
             !effect.rewardSettings.skipQueue.update
         ) {
             errors.push("Please select at least one property to update.");
@@ -188,7 +174,6 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
         }
 
         if (!effect.rewardSettings?.cost.update &&
-            !effect.rewardSettings?.enabled.update &&
             !effect.rewardSettings?.skipQueue.update) {
             return "";
         }
@@ -196,9 +181,7 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
         const rewardName = effect.rewardName || effect.rewardId;
         let action = "";
 
-        if (effect.rewardSettings.enabled.update) {
-            action = effect.rewardSettings.enabled.newValue ? "Enable" : "Disable";
-        } else if (effect.rewardSettings.cost.update) {
+        if (effect.rewardSettings.cost.update) {
             action = `Set Cost to ${effect.rewardSettings.cost.newValue} for`;
         } else if (effect.rewardSettings.skipQueue.update) {
             action = effect.rewardSettings.skipQueue.newValue ? "Enable Skip Queue for" : "Disable Skip Queue for";
@@ -246,7 +229,6 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
         }
 
         if (!effect.rewardSettings.cost.update &&
-            !effect.rewardSettings.enabled.update &&
             !effect.rewardSettings.skipQueue.update) {
             logger.error("Manage Kick Reward: No updates selected. Skipping effect.");
             return false;
@@ -266,10 +248,7 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
                 firebotReward.cost,
             skipQueue: effect.rewardSettings.skipQueue.update ?
                 (effect.rewardSettings.skipQueue.newValue === true || effect.rewardSettings.skipQueue.newValue === "true") :
-                firebotReward.shouldRedemptionsSkipRequestQueue ?? false,
-            enabled: effect.rewardSettings.enabled.update ?
-                (effect.rewardSettings.enabled.newValue === true || effect.rewardSettings.enabled.newValue === "true") :
-                firebotReward.isEnabled ?? true
+                firebotReward.shouldRedemptionsSkipRequestQueue ?? false
         };
 
         // Check if already managed on Kick
