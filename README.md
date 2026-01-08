@@ -34,7 +34,6 @@ _Effects are calls to the Kick API made by Firebot as a result of event handlers
 | Effect | Supported | Min. Version | Notes |
 | ------ | --------- | ----- | ----- |
 | Ban/Unban viewer | :white_check_mark: | | |
-| Channel reward: Enable / disable | :white_check_mark: | 0.9.0 | |
 | Channel reward: Manage / unmanage | :white_check_mark: | 0.9.0 | Also cost, queue, enabled/disabled |
 | Chat (send message) | :white_check_mark: | | Can chat as streamer or second "bot" account |
 | Delete message | :white_check_mark: | 0.8.0 | |
