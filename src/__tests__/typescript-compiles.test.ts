@@ -4,7 +4,7 @@ describe("TypeScript compilation", () => {
     it("passes `npx tsc --noEmit`", () => {
         const result = spawnSync("npx", ["tsc", "--noEmit"], {
             cwd: process.cwd(),
-            encoding: "utf-8",
+            encoding: "utf-8"
         });
 
         if (result.status !== 0) {
