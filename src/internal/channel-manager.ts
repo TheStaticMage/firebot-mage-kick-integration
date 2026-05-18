@@ -10,7 +10,7 @@ import { parseChannel } from "./webhook-handler/webhook-parsers";
 export class KickChannelManager {
     private kick: Kick;
     private categoryCache = new Map<number, CategoryInfo>();
-    private channel: Channel | null = null;
+    public channel: Channel | null = null;
     private channelCache = new NodeCache({
         stdTTL: 60, // Cache for 1 minute
         checkperiod: 60 * 30 // Evict old entries every 30 minutes
@@ -112,7 +112,7 @@ export class KickChannelManager {
         return channel;
     }
 
-    private refreshChannel(): void {
+    public refreshChannel(): void {
         this.getChannelReal()
             .then((channelStatus: Channel) => {
                 if (this.updateCategory(channelStatus.category)) {

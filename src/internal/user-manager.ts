@@ -309,7 +309,7 @@ export class KickUserManager {
         await this._subDb.removeAsync({ expiresAt: { $lte: now } }, { multi: true });
     }
 
-    private async purgeExpiredGiftSubs(): Promise<void> {
+    public async purgeExpiredGiftSubs(): Promise<void> {
         if (!this._giftDb) {
             throw new Error("Gift database is not connected.");
         }

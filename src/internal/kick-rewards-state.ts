@@ -5,7 +5,7 @@ import type { KickRewardManagementData, KickRewardsManagementState } from "../sh
 import { getDataFilePath } from "../util/datafile";
 
 export class KickRewardsState {
-    private managementState: KickRewardsManagementState = {};
+    public managementState: KickRewardsManagementState = {};
     private readonly filename = "kick-rewards-management.json";
 
     loadManagementState(): void {

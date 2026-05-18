@@ -16,9 +16,9 @@ export class ChatManager {
     private isListeningForChatMessages = false;
     private isRunning = false;
     private kick: Kick;
-    private messagePlatform: Record<string, "twitch" | "kick" | "unknown"> = {};
+    public messagePlatform: Record<string, "twitch" | "kick" | "unknown"> = {};
     private messageCache: Record<string, FirebotChatMessage> = {};
-    private messageCacheOrder: string[] = [];
+    public messageCacheOrder: string[] = [];
     private readonly maxCachedMessages = 100;
     private viewerArrivedCache = new Set<string>();
     private messageQueue: MessageQueue;
@@ -52,7 +52,7 @@ export class ChatManager {
         return;
     }
 
-    private async handleChatMessageTypedInChatFeed(payload: inboundSendChatMessage): Promise<boolean> {
+    public async handleChatMessageTypedInChatFeed(payload: inboundSendChatMessage): Promise<boolean> {
         logger.debug(`Handling chat message from frontend: ${JSON.stringify(payload)}`);
 
         if (!this.isRunning) {
@@ -155,7 +155,7 @@ export class ChatManager {
         return true;
     }
 
-    private async sendChatMessage(message: string, chatter: "Streamer" | "Bot", replyToMessageId: string | undefined = undefined): Promise<void> {
+    public async sendChatMessage(message: string, chatter: "Streamer" | "Bot", replyToMessageId: string | undefined = undefined): Promise<void> {
         if (!this.kick.broadcaster) {
             logger.error("Cannot send chat message, broadcaster info not available.");
             return;
