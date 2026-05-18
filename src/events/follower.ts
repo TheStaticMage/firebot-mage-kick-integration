@@ -2,7 +2,7 @@ import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot } from "../main";
-import { KickFollower } from "../shared/types";
+import type { KickFollower } from "../shared/types";
 
 export async function handleFollowerEvent(payload: KickFollower): Promise<void> {
     // Create the user if they don't exist

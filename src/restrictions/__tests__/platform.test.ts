@@ -1,11 +1,11 @@
-import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
-import { platformRestriction } from '../platform';
+import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { platformRestriction } from "../platform";
 
-describe('platformRestriction.predicate', () => {
+describe("platformRestriction.predicate", () => {
     const baseTrigger: Trigger = {
-        type: 'event',
+        type: "event",
         metadata: {
-            username: '',
+            username: "",
             eventData: {},
             platform: undefined,
             chatMessage: undefined
@@ -16,38 +16,85 @@ describe('platformRestriction.predicate', () => {
         ...baseTrigger,
         metadata: {
             ...baseTrigger.metadata,
-            platform: 'kick'
+            platform: "kick"
         }
     };
 
     it('resolves true when comparison is "is" and platform matches', async () => {
-        await expect(platformRestriction.predicate(kickTrigger, { comparison: 'is', platform: 'kick' })).resolves.toBe(true);
+        await expect(
+            platformRestriction.predicate(kickTrigger, {
+                comparison: "is",
+                platform: "kick"
+            })
+        ).resolves.toBe(true);
     });
 
     it('resolves true when comparison is "is" and platform is "any" and currentPlatform is not unknown', async () => {
-        await expect(platformRestriction.predicate(kickTrigger, { comparison: 'is', platform: 'any' })).resolves.toBe(true);
+        await expect(
+            platformRestriction.predicate(kickTrigger, {
+                comparison: "is",
+                platform: "any"
+            })
+        ).resolves.toBe(true);
     });
 
     it('resolves true when comparison is "is" and platform is "unknown" and currentPlatform is unknown', async () => {
-        const unknownTrigger: Trigger = { ...baseTrigger, metadata: { ...baseTrigger.metadata } };
-        await expect(platformRestriction.predicate(unknownTrigger, { comparison: 'is', platform: 'unknown' })).resolves.toBe(true);
+        const unknownTrigger: Trigger = {
+            ...baseTrigger,
+            metadata: { ...baseTrigger.metadata }
+        };
+        await expect(
+            platformRestriction.predicate(unknownTrigger, {
+                comparison: "is",
+                platform: "unknown"
+            })
+        ).resolves.toBe(true);
     });
 
     it('resolves true when comparison is "isNot" and platform is "unknown" and currentPlatform is not unknown', async () => {
-        await expect(platformRestriction.predicate(kickTrigger, { comparison: 'isNot', platform: 'unknown' })).resolves.toBe(true);
+        await expect(
+            platformRestriction.predicate(kickTrigger, {
+                comparison: "isNot",
+                platform: "unknown"
+            })
+        ).resolves.toBe(true);
     });
 
     it('resolves true when comparison is "isNot" and platform is "any" and currentPlatform is unknown', async () => {
-        const unknownTrigger: Trigger = { ...baseTrigger, metadata: { ...baseTrigger.metadata } };
-        await expect(platformRestriction.predicate(unknownTrigger, { comparison: 'isNot', platform: 'any' })).resolves.toBe(true);
+        const unknownTrigger: Trigger = {
+            ...baseTrigger,
+            metadata: { ...baseTrigger.metadata }
+        };
+        await expect(
+            platformRestriction.predicate(unknownTrigger, {
+                comparison: "isNot",
+                platform: "any"
+            })
+        ).resolves.toBe(true);
     });
 
     it('resolves true when comparison is "isNot" and platform does not match', async () => {
-        await expect(platformRestriction.predicate(kickTrigger, { comparison: 'isNot', platform: 'twitch' })).resolves.toBe(true);
+        await expect(
+            platformRestriction.predicate(kickTrigger, {
+                comparison: "isNot",
+                platform: "twitch"
+            })
+        ).resolves.toBe(true);
     });
 
-    it('rejects when none of the conditions are met', async () => {
-        const twitchTrigger: Trigger = { ...baseTrigger, metadata: { ...baseTrigger.metadata, eventSource: { id: 'twitch', name: 'twitch' } } };
-        await expect(platformRestriction.predicate(twitchTrigger, { comparison: 'is', platform: 'kick' })).rejects.toThrow('Platform restriction failed');
+    it("rejects when none of the conditions are met", async () => {
+        const twitchTrigger: Trigger = {
+            ...baseTrigger,
+            metadata: {
+                ...baseTrigger.metadata,
+                eventSource: { id: "twitch", name: "twitch" }
+            }
+        };
+        await expect(
+            platformRestriction.predicate(twitchTrigger, {
+                comparison: "is",
+                platform: "kick"
+            })
+        ).rejects.toThrow("Platform restriction failed");
     });
 });

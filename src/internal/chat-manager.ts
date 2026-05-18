@@ -1,22 +1,22 @@
 import type { FirebotChatMessage } from "@crowbartools/firebot-custom-scripts-types/types/chat";
-import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { integration } from "../integration";
 import { firebot, logger } from "../main";
-import { getPlatformFromTrigger } from "./platform-detection";
-import { Kick } from "./kick";
+import type { Kick } from "./kick";
 import { MessageQueue } from "./message-queue";
+import { getPlatformFromTrigger } from "./platform-detection";
 
 interface inboundSendChatMessage {
-    message: string,
-    accountType: "Streamer" | "Bot",
-    replyToMessageId: string | undefined
+    message: string;
+    accountType: "Streamer" | "Bot";
+    replyToMessageId: string | undefined;
 }
 
 export class ChatManager {
     private isListeningForChatMessages = false;
     private isRunning = false;
     private kick: Kick;
-    private messagePlatform: Record<string, 'twitch' | 'kick' | 'unknown'> = {};
+    private messagePlatform: Record<string, "twitch" | "kick" | "unknown"> = {};
     private messageCache: Record<string, FirebotChatMessage> = {};
     private messageCacheOrder: string[] = [];
     private readonly maxCachedMessages = 100;
@@ -83,7 +83,7 @@ export class ChatManager {
     async handleDeleteMessage(messageId: string): Promise<boolean> {
         // Check if this is a Kick message
         const platform = this.messagePlatform[messageId];
-        if (platform !== 'kick') {
+        if (platform !== "kick") {
             logger.debug(`Message ${messageId} is not a Kick message (platform: ${platform}). Skipping Kick deletion.`);
             return false;
         }
@@ -91,11 +91,7 @@ export class ChatManager {
         return this.deleteKickChatMessage(messageId);
     }
 
-    async registerMessage(
-        messageId: string,
-        platform: 'twitch' | 'kick' | 'unknown',
-        chatMessage?: FirebotChatMessage
-    ): Promise<boolean> {
+    async registerMessage(messageId: string, platform: "twitch" | "kick" | "unknown", chatMessage?: FirebotChatMessage): Promise<boolean> {
         if (this.messagePlatform[messageId]) {
             return false;
         }
@@ -106,9 +102,7 @@ export class ChatManager {
             if (this.messageCacheOrder.length > this.maxCachedMessages) {
                 const evictedId = this.messageCacheOrder.shift();
                 if (evictedId) {
-                    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
                     delete this.messageCache[evictedId];
-                    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
                     delete this.messagePlatform[evictedId];
                 }
             }
@@ -121,11 +115,9 @@ export class ChatManager {
     }
 
     forgetMessage(messageId: string): void {
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete this.messagePlatform[messageId];
-        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
         delete this.messageCache[messageId];
-        this.messageCacheOrder = this.messageCacheOrder.filter(id => id !== messageId);
+        this.messageCacheOrder = this.messageCacheOrder.filter((id) => id !== messageId);
     }
 
     enqueueMessage(message: string, chatter: "Streamer" | "Bot", replyToMessageId?: string): string {
@@ -136,7 +128,7 @@ export class ChatManager {
         // This could get called with a twitch message ID, so we're going to
         // make sure that we have seen the Kick message we are supposedly
         // replying to. This can avoid problems with the API call.
-        if (replyToMessageId && (!this.messagePlatform[replyToMessageId] || this.messagePlatform[replyToMessageId] !== 'kick')) {
+        if (replyToMessageId && (!this.messagePlatform[replyToMessageId] || this.messagePlatform[replyToMessageId] !== "kick")) {
             logger.debug(`Discarding reply-to with non-Kick message ID: ${replyToMessageId}`);
             replyToMessageId = undefined;
         }
@@ -149,7 +141,7 @@ export class ChatManager {
                 break;
             }
             // Try to split at the last space before maxLen
-            let splitIdx = msg.lastIndexOf(' ', maxLen);
+            let splitIdx = msg.lastIndexOf(" ", maxLen);
             if (splitIdx === -1 || splitIdx < maxLen * 0.5) {
                 // No reasonable space found, hard split
                 splitIdx = maxLen;
@@ -177,16 +169,14 @@ export class ChatManager {
         const payload: Record<string, any> = {
             content: message,
             type: "user", // "bot" here is the registered Kick integration, not the second account registered as the bot
-            // eslint-disable-next-line camelcase
             broadcaster_user_id: this.kick.broadcaster.userId
         };
         if (replyToMessageId) {
-            // eslint-disable-next-line camelcase
             payload.reply_to_message_id = replyToMessageId;
         }
 
         try {
-            await this.kick.httpCallWithTimeout('/public/v1/chat', "POST", JSON.stringify(payload), null, undefined, chatter === "Bot" ? this.kick.getBotAuthToken() : this.kick.getAuthToken());
+            await this.kick.httpCallWithTimeout("/public/v1/chat", "POST", JSON.stringify(payload), null, undefined, chatter === "Bot" ? this.kick.getBotAuthToken() : this.kick.getAuthToken());
             logger.debug(`Successfully sent chat message as ${chatter}`);
         } catch (error) {
             logger.error(`Failed to send chat message: ${error}`);
@@ -230,14 +220,14 @@ export class ChatManager {
         const parts = payload.message.trim().split(/\s+/);
         const command = parts[0].toLowerCase();
         const args = parts.slice(1);
-        logger.debug(`Handling slash command: ${command} with args: ${args.join(' ')}`);
+        logger.debug(`Handling slash command: ${command} with args: ${args.join(" ")}`);
 
         switch (command) {
             case "/ban": {
                 if (args.length === 0) {
                     throw new Error("Usage: /ban <user> [reason]");
                 }
-                const reason = args.length > 1 ? args.slice(1).join(' ') : 'No reason given';
+                const reason = args.length > 1 ? args.slice(1).join(" ") : "No reason given";
                 const success = await this.kick.userApi.banUserByUsername(args[0], 0, true, reason);
                 if (!success) {
                     throw new Error(`Failed to ban user: ${args[0]}`);
@@ -268,7 +258,7 @@ export class ChatManager {
                     throw new Error("Timeout duration cannot exceed 10800 minutes (7.5 days).");
                 }
 
-                const reason = args.length > 2 ? args.slice(2).join(' ') : 'No reason given';
+                const reason = args.length > 2 ? args.slice(2).join(" ") : "No reason given";
                 const success = await this.kick.userApi.banUserByUsername(args[0], durationMinutes, true, reason);
                 if (!success) {
                     throw new Error(`Failed to timeout user: ${args[0]}`);
@@ -296,13 +286,14 @@ export class ChatManager {
                 if (args.length === 0) {
                     throw new Error(`No message specified for ${command} command.`);
                 }
-                const message = args.join(' ');
+                const message = args.join(" ");
                 await this.sendKickChatMessage(`[Announcement] ${message}`, payload.accountType, undefined);
                 return true;
             }
+            default: {
+                logger.warn(`Slash command ${command} is not implemented for Kick. Ignoring.`);
+                return false;
+            }
         }
-
-        logger.warn(`Slash command ${command} is not implemented for Kick. Ignoring.`);
-        return false;
     }
 }

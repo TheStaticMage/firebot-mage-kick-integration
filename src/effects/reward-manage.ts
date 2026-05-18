@@ -1,4 +1,4 @@
-import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import type { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { integration } from "../integration";
 import { reflectEvent } from "../internal/reflector";
 import { logger } from "../main";
@@ -14,7 +14,7 @@ type rewardManagementParams = {
         cost: StringUpdatable;
         skipQueue: BooleanUpdatable;
     };
-}
+};
 
 export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
     definition: {
@@ -106,8 +106,7 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
                 $scope.effect.rewardName = undefined;
                 return;
             }
-            const match = ($scope.rewardOptions as { id: string; name: string }[])
-                .find(reward => reward.id === $scope.effect.rewardId);
+            const match = ($scope.rewardOptions as { id: string; name: string }[]).find((reward) => reward.id === $scope.effect.rewardId);
             $scope.effect.rewardName = match?.name || undefined;
         };
 
@@ -115,11 +114,7 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
             setRewardName();
         });
 
-        $scope.showRewardSettings = () => (
-            $scope.effect.action === "manage" &&
-            $scope.effect.rewardId != null &&
-            $scope.effect.rewardId !== ""
-        );
+        $scope.showRewardSettings = () => $scope.effect.action === "manage" && $scope.effect.rewardId != null && $scope.effect.rewardId !== "";
 
         if ($scope.effect.rewardSettings == null) {
             $scope.effect.rewardSettings = {
@@ -149,16 +144,10 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
         if (!effect.action) {
             errors.push("You must select an action.");
         }
-        if (effect.action === "manage" &&
-            !effect.rewardSettings.cost.update &&
-            !effect.rewardSettings.skipQueue.update
-        ) {
+        if (effect.action === "manage" && !effect.rewardSettings.cost.update && !effect.rewardSettings.skipQueue.update) {
             errors.push("Please select at least one property to update.");
         }
-        if (effect.rewardSettings.cost.update &&
-            (effect.rewardSettings.cost.newValue == null ||
-            effect.rewardSettings.cost.newValue === "")
-        ) {
+        if (effect.rewardSettings.cost.update && (effect.rewardSettings.cost.newValue == null || effect.rewardSettings.cost.newValue === "")) {
             errors.push("Please provide a new cost for the reward.");
         }
         return errors;
@@ -173,8 +162,7 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
             return `Unmanage ${rewardName}`;
         }
 
-        if (!effect.rewardSettings?.cost.update &&
-            !effect.rewardSettings?.skipQueue.update) {
+        if (!effect.rewardSettings?.cost.update && !effect.rewardSettings?.skipQueue.update) {
             return "";
         }
 
@@ -228,27 +216,19 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
             return false;
         }
 
-        if (!effect.rewardSettings.cost.update &&
-            !effect.rewardSettings.skipQueue.update) {
+        if (!effect.rewardSettings.cost.update && !effect.rewardSettings.skipQueue.update) {
             logger.error("Manage Kick Reward: No updates selected. Skipping effect.");
             return false;
         }
 
-        if (effect.rewardSettings.cost.update &&
-            (effect.rewardSettings.cost.newValue == null ||
-            isNaN(parseInt(effect.rewardSettings.cost.newValue)) ||
-            parseInt(effect.rewardSettings.cost.newValue) < 1)) {
+        if (effect.rewardSettings.cost.update && (effect.rewardSettings.cost.newValue == null || isNaN(parseInt(effect.rewardSettings.cost.newValue, 10)) || parseInt(effect.rewardSettings.cost.newValue, 10) < 1)) {
             logger.error("Manage Kick Reward: Invalid Cost.");
             return false;
         }
 
         const overrides: any = {
-            cost: effect.rewardSettings.cost.update ?
-                parseInt(effect.rewardSettings.cost.newValue) :
-                firebotReward.cost,
-            skipQueue: effect.rewardSettings.skipQueue.update ?
-                (effect.rewardSettings.skipQueue.newValue === true || effect.rewardSettings.skipQueue.newValue === "true") :
-                firebotReward.shouldRedemptionsSkipRequestQueue ?? false
+            cost: effect.rewardSettings.cost.update ? parseInt(effect.rewardSettings.cost.newValue, 10) : firebotReward.cost,
+            skipQueue: effect.rewardSettings.skipQueue.update ? effect.rewardSettings.skipQueue.newValue === true || effect.rewardSettings.skipQueue.newValue === "true" : (firebotReward.shouldRedemptionsSkipRequestQueue ?? false)
         };
 
         // Check if already managed on Kick
@@ -278,6 +258,5 @@ export const rewardManageEffect: Firebot.EffectType<rewardManagementParams> = {
             }
         }
         return false;
-
     }
 };

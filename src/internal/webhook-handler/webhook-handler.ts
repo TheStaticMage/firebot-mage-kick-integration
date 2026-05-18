@@ -1,3 +1,4 @@
+import NodeCache from "node-cache";
 import { handleChatMessageSentEvent } from "../../events/chat-message-sent";
 import { handleFollowerEvent } from "../../events/follower";
 import { kicksHandler } from "../../events/kicks";
@@ -8,8 +9,9 @@ import { handleChannelSubscriptionEvent, handleChannelSubscriptionGiftsEvent } f
 import { handleWebhookReceivedEvent } from "../../events/webhook-received";
 import { integration } from "../../integration";
 import { logger } from "../../main";
-import { rewardRedemptionHandler } from "./reward-redemption-handler";
 import { parseDate } from "../util";
+import { rewardRedemptionHandler } from "./reward-redemption-handler";
+import type { InboundWebhook } from "./webhook";
 import {
     parseChannelSubscriptionGiftsEvent,
     parseChannelSubscriptionNewEvent,
@@ -23,8 +25,6 @@ import {
     parsePusherTestWebhook,
     parseRewardRedemptionWebhook
 } from "./webhook-parsers";
-import { InboundWebhook } from './webhook';
-import NodeCache from 'node-cache';
 
 export class WebhookHandler {
     private eventIdCache = new NodeCache({ stdTTL: 86400, checkperiod: 3600 });
@@ -35,8 +35,7 @@ export class WebhookHandler {
             logger.debug(`Received webhook: ${JSON.stringify(webhook)}`);
         }
 
-        if (!webhook.kickEventMessageId || !webhook.kickEventSubscriptionId || !webhook.kickEventMessageTimestamp ||
-        !webhook.kickEventType || !webhook.kickEventVersion || !webhook.rawData) {
+        if (!webhook.kickEventMessageId || !webhook.kickEventSubscriptionId || !webhook.kickEventMessageTimestamp || !webhook.kickEventType || !webhook.kickEventVersion || !webhook.rawData) {
             throw new Error("Invalid webhook data");
         }
 
@@ -53,8 +52,8 @@ export class WebhookHandler {
         // we hash the payload (rawData) and then check it against a cache so that
         // we can reject duplicate payloads.
         if (!webhook.isTestEvent) {
-            const crypto = await import('crypto');
-            const payloadHash = crypto.createHash('sha256').update(webhook.rawData).digest('hex');
+            const crypto = await import("crypto");
+            const payloadHash = crypto.createHash("sha256").update(webhook.rawData).digest("hex");
 
             if (this.payloadCache.has(payloadHash)) {
                 logger.warn(`Duplicate webhook payload detected (id: ${webhook.kickEventMessageId}, type: ${webhook.kickEventType}, version: ${webhook.kickEventVersion}, hash: ${payloadHash}), ignoring.`);

@@ -64,7 +64,7 @@ Learnings:
 
 Conventions:
 
-- TypeScript: camelCase, PascalCase classes, satisfies eslint rules defined in package
+- TypeScript: camelCase, PascalCase classes, satisfies Biome linting rules defined in `biome.json`
 - "Kick": Capitalize as "Kick" (or "kick" in lowercase contexts where appropriate)
 - Logging: Provide observability via logger.debug
 - Documentation: In Markdown, placed in `doc` directory, referenced from `README.md`, satisfies markdownlint

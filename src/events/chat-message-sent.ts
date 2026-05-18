@@ -1,10 +1,10 @@
-import { FirebotChatMessage, FirebotParsedMessagePart } from "@crowbartools/firebot-custom-scripts-types/types/chat";
+import type { FirebotChatMessage, FirebotParsedMessagePart } from "@crowbartools/firebot-custom-scripts-types/types/chat";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { commandHandler } from "../internal/command";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { ChatMessage, KickIdentity } from "../shared/types";
+import type { ChatMessage, KickIdentity } from "../shared/types";
 
 interface chatBadge {
     title: string;
@@ -70,7 +70,7 @@ async function processAndSendChatMessage(payload: ChatMessage): Promise<void> {
     const firebotChatMessage = await helpers.buildFirebotChatMessage(payload, payload.content);
 
     // Skip duplicate messages
-    const isRegistered = await integration.kick.chatManager.registerMessage(payload.messageId, 'kick', firebotChatMessage);
+    const isRegistered = await integration.kick.chatManager.registerMessage(payload.messageId, "kick", firebotChatMessage);
     if (!isRegistered) {
         logger.debug(`Duplicate chat message ignored: id=${payload.messageId}`);
         return;
@@ -88,13 +88,7 @@ async function processAndSendChatMessage(payload: ChatMessage): Promise<void> {
 
     // Maybe trigger viewer arrived event
     if (integration.kick.chatManager.checkViewerArrived(payload.sender.userId)) {
-        triggerViewerArrived(
-            firebotChatMessage.username,
-            firebotChatMessage.userId,
-            firebotChatMessage.userDisplayName || viewer?.username || firebotChatMessage.username,
-            firebotChatMessage.rawText,
-            firebotChatMessage
-        );
+        triggerViewerArrived(firebotChatMessage.username, firebotChatMessage.userId, firebotChatMessage.userDisplayName || viewer?.username || firebotChatMessage.username, firebotChatMessage.rawText, firebotChatMessage);
     }
 
     // Send to the chat client
@@ -124,13 +118,7 @@ function triggerChatMessage(userId: string, username: string, firebotChatMessage
     }
 }
 
-export function triggerViewerArrived(
-    username: string,
-    userId: string,
-    userDisplayName: string,
-    messageText: string,
-    firebotChatMessage: FirebotChatMessage
-) {
+export function triggerViewerArrived(username: string, userId: string, userDisplayName: string, messageText: string, firebotChatMessage: FirebotChatMessage) {
     const { eventManager } = firebot.modules;
     const metadata = {
         username: username,
@@ -150,11 +138,11 @@ export function triggerViewerArrived(
 export class FirebotChatHelpers {
     getBadges(identity: KickIdentity): chatBadge[] {
         return identity.badges
-            .map(badge => ({
+            .map((badge) => ({
                 title: badge.type,
                 url: IntegrationConstants.KICK_BADGE_DATA[badge.type] ? `data:image/svg+xml;base64,${btoa(IntegrationConstants.KICK_BADGE_DATA[badge.type])}` : ""
             }))
-            .filter(badge => badge.url !== "");
+            .filter((badge) => badge.url !== "");
     }
 
     getTwitchRoles(identity: KickIdentity): string[] {
@@ -249,12 +237,12 @@ export class FirebotChatHelpers {
         }
         firebotChatMessage.parts = messageParts;
 
-        firebotChatMessage.isFounder = msg.sender.identity.badges.some(b => b.type === "founder");
-        firebotChatMessage.isBroadcaster = msg.sender.identity.badges.some(b => b.type === "broadcaster");
+        firebotChatMessage.isFounder = msg.sender.identity.badges.some((b) => b.type === "founder");
+        firebotChatMessage.isBroadcaster = msg.sender.identity.badges.some((b) => b.type === "broadcaster");
         firebotChatMessage.isBot = kickifyUserId(msg.sender.userId) === kickifyUserId(integration.kick.bot?.userId || "");
-        firebotChatMessage.isMod = msg.sender.identity.badges.some(b => b.type === "moderator");
-        firebotChatMessage.isSubscriber = msg.sender.identity.badges.some(b => b.type === "subscriber");
-        firebotChatMessage.isVip = msg.sender.identity.badges.some(b => b.type === "vip");
+        firebotChatMessage.isMod = msg.sender.identity.badges.some((b) => b.type === "moderator");
+        firebotChatMessage.isSubscriber = msg.sender.identity.badges.some((b) => b.type === "subscriber");
+        firebotChatMessage.isVip = msg.sender.identity.badges.some((b) => b.type === "vip");
 
         firebotChatMessage.roles = this.getTwitchRoles(msg.sender.identity);
 

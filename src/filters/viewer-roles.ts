@@ -1,4 +1,4 @@
-import { EventFilter } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
+import type { EventFilter } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration-singleton";
 
@@ -7,9 +7,18 @@ export const viewerRolesFilter: EventFilter = {
     name: "Viewer's Roles",
     description: "Filter to a given viewer role",
     events: [
-        { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "viewer-arrived" },
-        { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "chat-message" },
-        { eventSourceId: IntegrationConstants.INTEGRATION_ID, eventId: "chat-message-deleted" }
+        {
+            eventSourceId: IntegrationConstants.INTEGRATION_ID,
+            eventId: "viewer-arrived"
+        },
+        {
+            eventSourceId: IntegrationConstants.INTEGRATION_ID,
+            eventId: "chat-message"
+        },
+        {
+            eventSourceId: IntegrationConstants.INTEGRATION_ID,
+            eventId: "chat-message-deleted"
+        }
     ],
     comparisonTypes: ["include", "doesn't include"],
     valueType: "preset",
@@ -27,14 +36,17 @@ export const viewerRolesFilter: EventFilter = {
         return filterSettings != null && filterSettings.value != null && ["broadcaster", "mod", "vip", "founder", "sub", "og"].includes(filterSettings.value);
     },
     getSelectedValueDisplay: (filterSettings) => {
-        return [ // These are the "Twitch roles" to align with what's stored in the database
-            { value: "broadcaster", display: "Broadcaster" },
-            { value: "mod", display: "Moderator" },
-            { value: "vip", display: "VIP" },
-            { value: "founder", display: "Founder" },
-            { value: "sub", display: "Subscriber" },
-            { value: "og", display: "OG" }
-        ].find(v => v.value === filterSettings.value)?.display || filterSettings.value;
+        return (
+            [
+                // These are the "Twitch roles" to align with what's stored in the database
+                { value: "broadcaster", display: "Broadcaster" },
+                { value: "mod", display: "Moderator" },
+                { value: "vip", display: "VIP" },
+                { value: "founder", display: "Founder" },
+                { value: "sub", display: "Subscriber" },
+                { value: "og", display: "OG" }
+            ].find((v) => v.value === filterSettings.value)?.display || filterSettings.value
+        );
     },
     predicate: async (filterSettings, eventData) => {
         const { comparisonType, value } = filterSettings;
@@ -47,9 +59,7 @@ export const viewerRolesFilter: EventFilter = {
             return false;
         }
 
-        const viewer = userId
-            ? await integration.kick.userManager.getViewerById(userId)
-            : await integration.kick.userManager.getViewerByUsername(username);
+        const viewer = userId ? await integration.kick.userManager.getViewerById(userId) : await integration.kick.userManager.getViewerByUsername(username);
 
         if (!viewer) {
             return false;

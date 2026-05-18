@@ -1,24 +1,24 @@
-import { Firebot, RunRequest } from '@crowbartools/firebot-custom-scripts-types';
-import { Logger } from '@crowbartools/firebot-custom-scripts-types/types/modules/logger';
-import { satisfies } from 'semver';
-import { IntegrationConstants } from './constants';
-import { definition, integration } from './integration';
-import { checkPlatformLibCompatibility } from '@thestaticmage/mage-platform-lib-client';
+import type { Firebot, RunRequest } from "@crowbartools/firebot-custom-scripts-types";
+import type { Logger } from "@crowbartools/firebot-custom-scripts-types/types/modules/logger";
+import { checkPlatformLibCompatibility } from "@thestaticmage/mage-platform-lib-client";
+import { satisfies } from "semver";
+import { IntegrationConstants } from "./constants";
+import { definition, integration } from "./integration";
 
 export let firebot: RunRequest<any>;
 export let logger: LogWrapper;
 
-export const scriptVersion = '0.11.0';
+export const scriptVersion = "0.11.0";
 
 const script: Firebot.CustomScript = {
     getScriptManifest: () => {
         return {
-            name: 'Kick Integration',
-            description: 'Integration with certain events for the Kick platform.',
-            author: 'The Static Mage',
+            name: "Kick Integration",
+            description: "Integration with certain events for the Kick platform.",
+            author: "The Static Mage",
             version: scriptVersion,
             startupOnly: true,
-            firebotVersion: '5'
+            firebotVersion: "5"
         };
     },
     getDefaultParameters: () => {

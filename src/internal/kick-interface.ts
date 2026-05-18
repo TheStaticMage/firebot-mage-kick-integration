@@ -14,12 +14,5 @@ export interface IKick {
     setAuthToken(token: string): void;
     getBotAuthToken(): string;
     setBotAuthToken(token: string): void;
-    httpCallWithTimeout(
-        uri: string,
-        method: string,
-        body?: string,
-        signal?: AbortSignal | null,
-        timeout?: number,
-        authToken?: string
-    ): Promise<any>;
+    httpCallWithTimeout(uri: string, method: string, body?: string, signal?: AbortSignal | null, timeout?: number, authToken?: string): Promise<any>;
 }

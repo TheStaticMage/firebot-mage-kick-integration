@@ -2,7 +2,7 @@ import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot } from "../main";
-import { KicksGiftedEvent } from "../shared/types";
+import type { KicksGiftedEvent } from "../shared/types";
 
 class KicksHandler {
     async handleKicksGiftedEvent(payload: KicksGiftedEvent): Promise<void> {

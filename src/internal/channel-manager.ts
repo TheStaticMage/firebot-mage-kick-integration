@@ -1,10 +1,10 @@
-import NodeCache from 'node-cache';
+import NodeCache from "node-cache";
 import { IntegrationConstants } from "../constants";
-import { triggerCategoryChangedEvent, triggerTitleChangedEvent } from '../events/livestream-metadata-updated';
+import { triggerCategoryChangedEvent, triggerTitleChangedEvent } from "../events/livestream-metadata-updated";
 import { firebot, logger } from "../main";
-import { CategoryInfo, Channel } from "../shared/types";
-import { Kick } from "./kick";
-import { kickifyUserId, kickifyUsername, unkickifyUsername } from './util';
+import type { CategoryInfo, Channel } from "../shared/types";
+import type { Kick } from "./kick";
+import { kickifyUserId, kickifyUsername, unkickifyUsername } from "./util";
 import { parseChannel } from "./webhook-handler/webhook-parsers";
 
 export class KickChannelManager {
@@ -61,7 +61,7 @@ export class KickChannelManager {
         if (typeof username === "number" || (typeof username === "string" && username.length > 0 && !isNaN(Number(username)))) {
             const userId = Number(username);
             if (userId === 0 || userId === this.kick.broadcaster?.userId) {
-                cacheKey = 'this_channel';
+                cacheKey = "this_channel";
                 cacheValue = this.channel;
             } else {
                 cacheKey = `b_${userId}`;
@@ -69,7 +69,7 @@ export class KickChannelManager {
             }
         } else if (typeof username === "string") {
             if (unkickifyUsername(username).length === 0 || unkickifyUsername(username).toLowerCase() === this.channel?.slug.toLowerCase()) {
-                cacheKey = 'this_channel';
+                cacheKey = "this_channel";
                 cacheValue = this.channel;
             } else {
                 cacheKey = `u_${username.toLowerCase()}`;
@@ -84,7 +84,7 @@ export class KickChannelManager {
         logger.debug(`Retrieving channel for username: '${username}'`);
         try {
             const response = await this.getChannelReal(username);
-            if (cacheKey === 'this_channel') {
+            if (cacheKey === "this_channel") {
                 this.channel = response;
             } else {
                 this.channelCache.set(cacheKey, response);
@@ -104,10 +104,10 @@ export class KickChannelManager {
             formVariables.append("broadcaster_user_id", username.toString());
         }
 
-        const uri = `/public/v1/channels${formVariables.toString().length > 0 ? `?${formVariables.toString()}` : ''}`;
+        const uri = `/public/v1/channels${formVariables.toString().length > 0 ? `?${formVariables.toString()}` : ""}`;
         const response = await this.kick.httpCallWithTimeout(uri, "GET", "", this.channelRefresherAborter.signal);
 
-        logger.debug(`Successfully retrieved channel status for ${username || '(you)'}`);
+        logger.debug(`Successfully retrieved channel status for ${username || "(you)"}`);
         const channel = parseChannel(response);
         return channel;
     }
@@ -123,7 +123,7 @@ export class KickChannelManager {
                 }
                 this.channel = channelStatus;
                 this.triggerChannelDataUpdatedEvent();
-                logger.debug(`Channel status updated: isLive=${channelStatus.stream.isLive}, title=${channelStatus.streamTitle || ''}, category=${channelStatus.category.id}, viewers=${channelStatus.stream.viewerCount}`);
+                logger.debug(`Channel status updated: isLive=${channelStatus.stream.isLive}, title=${channelStatus.streamTitle || ""}, category=${channelStatus.category.id}, viewers=${channelStatus.stream.viewerCount}`);
             })
             .catch((error) => {
                 logger.error(`Failed to refresh channel status: ${error}`);
@@ -133,7 +133,7 @@ export class KickChannelManager {
     private refreshChannelWrapper(): void {
         // Refresh less frequently if we are not live
         this.channelWrapperCount++;
-        if (this.channel && !this.channel.stream.isLive && (this.channelWrapperCount % 3 !== 0)) {
+        if (this.channel && !this.channel.stream.isLive && this.channelWrapperCount % 3 !== 0) {
             return;
         }
 
@@ -202,9 +202,9 @@ export class KickChannelManager {
             return false;
         }
 
-        const titleWasEmpty = this.channel.streamTitle === '';
+        const titleWasEmpty = this.channel.streamTitle === "";
         this.channel.streamTitle = title;
-        logger.debug(`Title ${titleWasEmpty ? 'initially set' : 'updated'} to "${title}".`);
+        logger.debug(`Title ${titleWasEmpty ? "initially set" : "updated"} to "${title}".`);
         return true;
     }
 

@@ -1,5 +1,5 @@
-import { ConditionType } from "@crowbartools/firebot-custom-scripts-types/types/modules/condition-manager";
-import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
+import type { ConditionType } from "@crowbartools/firebot-custom-scripts-types/types/modules/condition-manager";
+import { detectPlatform } from "@thestaticmage/mage-platform-lib-client";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration-singleton";
 import { logger } from "../main";
@@ -19,16 +19,16 @@ export const viewerRolesCondition: ConditionType<any, any, any> = {
             { value: "mod", display: "Moderator [Platform Aware]" },
             { value: "vip", display: "VIP [Platform Aware]" },
             { value: "sub", display: "Subscriber [Platform Aware]" }
-        ].concat(viewerRolesService.getCustomRoles()
-            .map((r: { id: any; name: any; }) => ({
+        ].concat(
+            viewerRolesService.getCustomRoles().map((r: { id: any; name: any }) => ({
                 value: r.id,
                 display: r.name
-            })));
+            }))
+        );
     },
     valueIsStillValid: (condition, viewerRolesService: any) => {
         if (typeof condition.rightSideValue === "string" && condition.rightSideValue.length === 36) {
-            return viewerRolesService.getCustomRoles()
-                .some((r: { id: any; name: any; }) => r.id === condition.rightSideValue);
+            return viewerRolesService.getCustomRoles().some((r: { id: any; name: any }) => r.id === condition.rightSideValue);
         }
         return true;
     },
@@ -39,13 +39,14 @@ export const viewerRolesCondition: ConditionType<any, any, any> = {
             { value: "mod", display: "Moderator [Platform Aware]" },
             { value: "vip", display: "VIP [Platform Aware]" },
             { value: "sub", display: "Subscriber [Platform Aware]" }
-        ].concat(viewerRolesService.getCustomRoles()
-            .map((r: { id: any; name: any; }) => ({
+        ].concat(
+            viewerRolesService.getCustomRoles().map((r: { id: any; name: any }) => ({
                 value: r.id,
                 display: r.name
-            })));
+            }))
+        );
 
-        const preset = v.find(vv => vv.value === condition.rightSideValue);
+        const preset = v.find((vv) => vv.value === condition.rightSideValue);
         if (preset) {
             return String(preset.display);
         }
@@ -55,7 +56,7 @@ export const viewerRolesCondition: ConditionType<any, any, any> = {
         const { comparisonType, leftSideValue, rightSideValue } = conditionSettings;
 
         let userNameOrId = leftSideValue;
-        if ((userNameOrId == null || userNameOrId === "")) {
+        if (userNameOrId == null || userNameOrId === "") {
             userNameOrId = trigger.metadata.username;
         }
 

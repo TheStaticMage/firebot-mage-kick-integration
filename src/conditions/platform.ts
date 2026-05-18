@@ -1,14 +1,14 @@
-import { ConditionType, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/condition-manager";
-import { TriggersObject } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
-import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
+import type { ConditionType, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/condition-manager";
+import type { TriggersObject } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { detectPlatform } from "@thestaticmage/mage-platform-lib-client";
 import { IntegrationConstants } from "../constants";
 
 const triggers: TriggersObject = {
-    "channel_reward": true,
-    "command": true,
-    "event": true,
-    "preset": true,
-    "manual": true
+    channel_reward: true,
+    command: true,
+    event: true,
+    preset: true,
+    manual: true
 };
 
 export const platformCondition: ConditionType<any, any, any> = {

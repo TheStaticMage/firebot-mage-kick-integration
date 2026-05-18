@@ -1,6 +1,6 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { integration } from '../integration';
-import { logger } from '../main';
+import type { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import { integration } from "../integration";
+import { logger } from "../main";
 
 export const kickChannelIdVariable: ReplaceVariable = {
     definition: {

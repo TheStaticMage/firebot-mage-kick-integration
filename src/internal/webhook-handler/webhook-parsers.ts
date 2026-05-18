@@ -1,33 +1,33 @@
-import { IntegrationConstants } from "../../constants";
-import {
+import type {
     ChannelFollowEvent,
+    ChannelRewardRedemptionEvent,
     ChatMessageEvent,
     EventBadge,
     EventUser,
     EventUserWithIdentity,
     Channel as KickApiChannel,
     KicksGiftedEvent as KickApiKicksGiftedEvent,
-    KicksGiftedEventUser,
     ModerationBannedEvent as KickApiModerationBannedEvent,
+    KicksGiftedEventUser,
     LivestreamMetadataUpdatedEvent,
     LivestreamStatusUpdatedEvent,
     NewSubscriptionEvent,
     SubscriptionGiftEvent,
     SubscriptionRenewalEvent,
-    User,
-    ChannelRewardRedemptionEvent
+    User
 } from "kick-api-types/v1";
+import { IntegrationConstants } from "../../constants";
 
-import {
+import type {
     BasicKickUser,
     Channel,
     ChannelGiftSubscription,
     ChannelSubscription,
     ChatMessage,
     KickFollower,
+    KicksGiftedEvent,
     KickUser,
     KickUserWithIdentity,
-    KicksGiftedEvent,
     LivestreamMetadataUpdated,
     LivestreamStatusUpdated,
     ModerationBannedEvent,
@@ -44,7 +44,7 @@ function parseRawData(rawData: string): any {
     } catch {
         // If that fails, assume it's base64-encoded and decode it
         try {
-            return JSON.parse(Buffer.from(rawData, 'base64').toString('utf-8'));
+            return JSON.parse(Buffer.from(rawData, "base64").toString("utf-8"));
         } catch (error) {
             throw new Error(`Failed to parse raw data as JSON or base64-encoded JSON: ${error}`);
         }
@@ -82,11 +82,13 @@ export function parseKickUserWithIdentity(user: EventUserWithIdentity): KickUser
         ...base,
         identity: {
             usernameColor: user.identity.username_color || "",
-            badges: user.identity.badges ? user.identity.badges.map((badge: EventBadge) => ({
-                text: badge.text || "",
-                type: badge.type || "",
-                count: badge.count || 0
-            })) : []
+            badges: user.identity.badges
+                ? user.identity.badges.map((badge: EventBadge) => ({
+                      text: badge.text || "",
+                      type: badge.type || "",
+                      count: badge.count || 0
+                  }))
+                : []
         }
     };
 }
@@ -137,11 +139,13 @@ export function parseChatMessageEvent(rawData: string): ChatMessage {
     const data: ChatMessageEvent = parseRawData(rawData);
     return {
         messageId: data.message_id,
-        repliesTo: data.replies_to ? {
-            messageId: data.replies_to.message_id,
-            content: data.replies_to.content,
-            sender: parseKickUser(data.replies_to.sender)
-        } : undefined,
+        repliesTo: data.replies_to
+            ? {
+                  messageId: data.replies_to.message_id,
+                  content: data.replies_to.content,
+                  sender: parseKickUser(data.replies_to.sender)
+              }
+            : undefined,
         broadcaster: parseKickUser(data.broadcaster),
         sender: parseKickUserWithIdentity(data.sender),
         content: data.content,
@@ -246,19 +250,19 @@ export function parsePusherTestWebhook(rawData: string): InboundPayload {
 
     // Test webhooks contain the message data in the 'payload' field
     // Extract the message and construct a Pusher-like event
-    if (data.payload && typeof data.payload === 'object') {
+    if (data.payload && typeof data.payload === "object") {
         // This is a test chat message
         return {
-            event: 'message.add',
-            channel: `chatrooms.${data.payload.broadcaster?.channel_slug || 'unknown'}`,
+            event: "message.add",
+            channel: `chatrooms.${data.payload.broadcaster?.channel_slug || "unknown"}`,
             data: data.payload
         };
     }
 
     // Fallback for other test event types
     return {
-        event: data.event || 'unknown',
-        channel: data.channel || 'unknown',
+        event: data.event || "unknown",
+        channel: data.channel || "unknown",
         data: data.data || data.payload || {}
     };
 }

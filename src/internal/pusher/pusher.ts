@@ -6,13 +6,13 @@ import { handleRaidSentOffEvent } from "../../events/raid-sent-off-event";
 import { handleStreamHostedEvent } from "../../events/stream-hosted-event";
 import { integration } from "../../integration";
 import { logger } from "../../main";
-import { ChatMessage, KickUser, KickUserWithIdentity } from "../../shared/types";
+import type { ChatMessage, KickUser, KickUserWithIdentity } from "../../shared/types";
 import { parseChatMessageEvent, parseChatMoveToSupportedChannelEvent, parseMessageDeletedEvent, parseStreamHostedEvent, parseViewerUnbannedEvent } from "./pusher-parsers";
 
-const Pusher = require('pusher-js');
+// biome-ignore lint/style/noCommonJs: x
+const Pusher = require("pusher-js");
 
 export class KickPusher {
-    // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
     private pusher: typeof Pusher | null = null;
 
     connect(pusherAppKey: string, chatroomId: string, channelId: string): void {
@@ -36,9 +36,9 @@ export class KickPusher {
             }
         };
 
-        this.pusher = new Pusher(pusherAppKey, { cluster: 'us2' });
+        this.pusher = new Pusher(pusherAppKey, { cluster: "us2" });
 
-        this.pusher.connection.bind('error', (err: any) => {
+        this.pusher.connection.bind("error", (err: any) => {
             logger.error(`Pusher error: ${JSON.stringify(err)}`);
         });
 
@@ -82,7 +82,7 @@ export class KickPusher {
                 case "App\\Events\\ChatMoveToSupportedChannelEvent":
                     await handleRaidSentOffEvent(parseChatMoveToSupportedChannelEvent(data));
                     break;
-                case 'pusher:subscription_succeeded':
+                case "pusher:subscription_succeeded":
                     logger.info("Pusher subscribed successfully to channel events.");
                     break;
                 default:
@@ -96,7 +96,7 @@ export class KickPusher {
     private async dispatchChatroomEvent(event: string, data: any): Promise<void> {
         try {
             switch (event) {
-                case 'App\\Events\\ChatMessageEvent': {
+                case "App\\Events\\ChatMessageEvent": {
                     const broadcaster = this.getBroadcaster();
                     if (broadcaster) {
                         await handleChatMessageSentEvent(parseChatMessageEvent(data, broadcaster));
@@ -105,22 +105,22 @@ export class KickPusher {
                     }
                     break;
                 }
-                case 'message.add': {
+                case "message.add": {
                     // Test webhook event format with broadcaster info embedded in payload
                     const chatMessage = this.parseChatMessageFromWebhookPayload(data);
                     await handleChatMessageSentEvent(chatMessage);
                     break;
                 }
-                case 'App\\Events\\MessageDeletedEvent':
+                case "App\\Events\\MessageDeletedEvent":
                     await handleMessageDeletedEvent(parseMessageDeletedEvent(data));
                     break;
-                case 'App\\Events\\StreamHostedEvent':
+                case "App\\Events\\StreamHostedEvent":
                     await handleStreamHostedEvent(parseStreamHostedEvent(data));
                     break;
-                case 'App\\Events\\UserUnbannedEvent':
+                case "App\\Events\\UserUnbannedEvent":
                     await handleModerationUnbannedEvent(parseViewerUnbannedEvent(data));
                     break;
-                case 'pusher:subscription_succeeded':
+                case "pusher:subscription_succeeded":
                     logger.info("Pusher subscribed successfully to chatroom events.");
                     break;
                 default:
@@ -133,13 +133,13 @@ export class KickPusher {
 
     async dispatchTestEvent(payload: InboundPayload): Promise<void> {
         try {
-            const channelPrefix = payload.channel.split('.')[0];
+            const channelPrefix = payload.channel.split(".")[0];
             switch (channelPrefix) {
-                case 'channel':
+                case "channel":
                     logger.debug(`Dispatching Pusher test event for channel: ${payload.channel}, event: ${payload.event}, data: ${JSON.stringify(payload.data)}`);
                     await this.dispatchChannelEvent(payload.event, payload.data);
                     return;
-                case 'chatrooms':
+                case "chatrooms":
                     logger.debug(`Dispatching Pusher test event for chatroom: ${payload.channel}, event: ${payload.event}, data: ${JSON.stringify(payload.data)}`);
                     await this.dispatchChatroomEvent(payload.event, payload.data);
                     return;
@@ -171,11 +171,13 @@ export class KickPusher {
         // Parse webhook payload format (from test webhooks) where broadcaster/sender info is embedded
         return {
             messageId: data.message_id,
-            repliesTo: data.replies_to ? {
-                messageId: data.replies_to.message_id,
-                content: data.replies_to.content,
-                sender: this.parseWebhookUser(data.replies_to.sender)
-            } : undefined,
+            repliesTo: data.replies_to
+                ? {
+                      messageId: data.replies_to.message_id,
+                      content: data.replies_to.content,
+                      sender: this.parseWebhookUser(data.replies_to.sender)
+                  }
+                : undefined,
             broadcaster: this.parseWebhookUser(data.broadcaster),
             sender: this.parseWebhookUserWithIdentity(data.sender),
             content: data.content,
@@ -201,11 +203,13 @@ export class KickPusher {
             ...base,
             identity: {
                 usernameColor: user.identity?.username_color || "",
-                badges: user.identity?.badges ? user.identity.badges.map((badge: any) => ({
-                    text: badge.text || "",
-                    type: badge.type || "",
-                    count: badge.count || 0
-                })) : []
+                badges: user.identity?.badges
+                    ? user.identity.badges.map((badge: any) => ({
+                          text: badge.text || "",
+                          type: badge.type || "",
+                          count: badge.count || 0
+                      }))
+                    : []
             }
         };
     }

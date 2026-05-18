@@ -1,7 +1,7 @@
-import { EventData, EventFilter, FilterEvent, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
-import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import type { EventData, EventFilter, FilterEvent, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
+import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { detectPlatform } from "@thestaticmage/mage-platform-lib-client";
 import { IntegrationConstants } from "../constants";
-import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 
 // This can be useful if the user is forwarding Kick events to the corresponding
 // Twitch handlers. Otherwise it's kind of silly...
@@ -10,18 +10,9 @@ import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
 // version of the events only ever come from Kick anyway, so this filter would
 // be pointless to add to the Kick events.
 
-const events = [
-    "banned",
-    "chat-message",
-    "chat-message-deleted",
-    "follow",
-    "stream-offline",
-    "stream-online",
-    "timeout",
-    "viewer-arrived"
-];
+const events = ["banned", "chat-message", "chat-message-deleted", "follow", "stream-offline", "stream-online", "timeout", "viewer-arrived"];
 
-const applicableTwitchEvents: FilterEvent[] = events.map(eventId => ({
+const applicableTwitchEvents: FilterEvent[] = events.map((eventId) => ({
     eventSourceId: "twitch",
     eventId
 }));
@@ -49,21 +40,20 @@ export const platformFilter: EventFilter = {
                 return `??? (${filterSettings.value})`;
         }
     },
-    predicate: (
-        filterSettings,
-        eventData: EventData
-    ): boolean => {
+    predicate: (filterSettings, eventData: EventData): boolean => {
         const { comparisonType, value } = filterSettings;
         const trigger: Trigger = {
             type: "event",
             metadata: {
-                eventSource: { id: eventData.eventSourceId, name: eventData.eventSourceId },
+                eventSource: {
+                    id: eventData.eventSourceId,
+                    name: eventData.eventSourceId
+                },
                 eventData: eventData.eventMeta,
                 username: "" // We don't know it in the filter
             }
         };
         const platform = detectPlatform(trigger);
-        return (comparisonType === "is" && platform === value) ||
-               (comparisonType === "is not" && platform !== value);
+        return (comparisonType === "is" && platform === value) || (comparisonType === "is not" && platform !== value);
     }
 };

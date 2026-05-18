@@ -2,7 +2,7 @@ import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { RaidSentOffEvent } from "../shared/types";
+import type { RaidSentOffEvent } from "../shared/types";
 
 export async function handleRaidSentOffEvent(payload: RaidSentOffEvent): Promise<void> {
     logger.debug(`Handling raid sent off event (sending ${payload.numberOfViewers} viewers to ${payload.targetUser.username})`);

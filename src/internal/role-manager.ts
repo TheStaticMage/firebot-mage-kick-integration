@@ -1,7 +1,7 @@
-import { PlatformUser } from '@thestaticmage/mage-platform-lib-client';
-import NodeCache from 'node-cache';
+import type { PlatformUser } from "@thestaticmage/mage-platform-lib-client";
+import NodeCache from "node-cache";
 import { firebot, logger } from "../main";
-import { IKick } from './kick-interface';
+import type { IKick } from "./kick-interface";
 import { kickifyUserId, kickifyUsername, unkickifyUserId, unkickifyUsername } from "./util";
 
 export class RoleManager {
@@ -28,7 +28,7 @@ export class RoleManager {
                 return false;
             }
 
-            const isBroadcaster = (firebot.firebot.accounts.streamer.userId === id || firebot.firebot.accounts.streamer.username.toLowerCase() === name?.toLowerCase());
+            const isBroadcaster = firebot.firebot.accounts.streamer.userId === id || firebot.firebot.accounts.streamer.username.toLowerCase() === name?.toLowerCase();
             logger.debug(`twitchUserHasRole: Checking 'broadcaster' for user ${userNameOrId} (${id}/${name}), result=${isBroadcaster}`);
             return isBroadcaster;
         }
@@ -39,7 +39,7 @@ export class RoleManager {
                 return false;
             }
 
-            const isBot = (firebot.firebot.accounts.bot.userId === id || firebot.firebot.accounts.bot.username.toLowerCase() === name?.toLowerCase());
+            const isBot = firebot.firebot.accounts.bot.userId === id || firebot.firebot.accounts.bot.username.toLowerCase() === name?.toLowerCase();
             logger.debug(`twitchUserHasRole: Checking 'bot' for user ${userNameOrId} (${id}/${name}), result=${isBot}`);
             return isBot;
         }
@@ -78,7 +78,7 @@ export class RoleManager {
             return false;
         }
 
-        let viewer: PlatformUser | undefined = undefined;
+        let viewer: PlatformUser | undefined;
         if (id) {
             logger.debug(`kickUserHasRole: Looking up Kick viewer by user ID: ${id}`);
             viewer = await this._kick.userManager.getViewerById(id);
@@ -105,7 +105,7 @@ export class RoleManager {
                 return false;
             }
 
-            const isBroadcaster = (unkickifyUserId(id) === unkickifyUserId(this._kick.broadcaster.userId) || unkickifyUsername(name).toLowerCase() === unkickifyUsername(this._kick.broadcaster.name).toLowerCase());
+            const isBroadcaster = unkickifyUserId(id) === unkickifyUserId(this._kick.broadcaster.userId) || unkickifyUsername(name).toLowerCase() === unkickifyUsername(this._kick.broadcaster.name).toLowerCase();
             logger.debug(`kickUserHasRole: Checking 'broadcaster' for user ${userNameOrId} (${id}/${name}), result=${isBroadcaster}`);
             return isBroadcaster;
         }
@@ -116,7 +116,7 @@ export class RoleManager {
                 return false;
             }
 
-            const isBot = (unkickifyUserId(id) === unkickifyUserId(this._kick.bot.userId) || unkickifyUsername(name).toLowerCase() === unkickifyUsername(this._kick.bot.name).toLowerCase());
+            const isBot = unkickifyUserId(id) === unkickifyUserId(this._kick.bot.userId) || unkickifyUsername(name).toLowerCase() === unkickifyUsername(this._kick.bot.name).toLowerCase();
             logger.debug(`kickUserHasRole: Checking 'bot' for user ${userNameOrId} (${id}/${name}), result=${isBot}`);
             return isBot;
         }
@@ -164,10 +164,10 @@ export class RoleManager {
     private async twitchUserHasTwitchRole(id: string | undefined, name: string | undefined, roleId: string): Promise<boolean> {
         switch (roleId) {
             case "broadcaster": {
-                return (firebot.firebot.accounts.streamer.userId === id || firebot.firebot.accounts.streamer.username.toLowerCase() === name?.toLowerCase());
+                return firebot.firebot.accounts.streamer.userId === id || firebot.firebot.accounts.streamer.username.toLowerCase() === name?.toLowerCase();
             }
             case "bot": {
-                return (firebot.firebot.accounts.bot.userId === id || firebot.firebot.accounts.bot.username.toLowerCase() === name?.toLowerCase());
+                return firebot.firebot.accounts.bot.userId === id || firebot.firebot.accounts.bot.username.toLowerCase() === name?.toLowerCase();
             }
             case "sub": {
                 return this.isTwitchSub(id, name);
@@ -235,13 +235,13 @@ export class RoleManager {
     private async isTwitchVip(id: string | undefined, name: string | undefined): Promise<boolean> {
         if (typeof id === "string" && id.trim().length > 0) {
             await this.loadTwitchVips();
-            const vips = this._twitchGlobalCache.get('vips');
+            const vips = this._twitchGlobalCache.get("vips");
             return Array.isArray(vips) ? vips.includes(`id:${id}`) : false;
         }
 
         if (typeof name === "string" && name.trim().length > 0) {
             await this.loadTwitchVips();
-            const vips = this._twitchGlobalCache.get('vips');
+            const vips = this._twitchGlobalCache.get("vips");
             return Array.isArray(vips) ? vips.includes(`name:${name.toLowerCase()}`) : false;
         }
 
@@ -252,13 +252,13 @@ export class RoleManager {
     private async isTwitchModerator(id: string | undefined, name: string | undefined): Promise<boolean> {
         if (typeof id === "string" && id.trim().length > 0) {
             await this.loadTwitchModerators();
-            const moderators = this._twitchGlobalCache.get('moderators');
+            const moderators = this._twitchGlobalCache.get("moderators");
             return Array.isArray(moderators) ? moderators.includes(`id:${id}`) : false;
         }
 
         if (typeof name === "string" && name.trim().length > 0) {
             await this.loadTwitchModerators();
-            const moderators = this._twitchGlobalCache.get('moderators');
+            const moderators = this._twitchGlobalCache.get("moderators");
             return Array.isArray(moderators) ? moderators.includes(`name:${name.toLowerCase()}`) : false;
         }
 
@@ -267,32 +267,29 @@ export class RoleManager {
     }
 
     private async loadTwitchModerators(): Promise<void> {
-        if (!this._twitchGlobalCache.has('moderators')) {
+        if (!this._twitchGlobalCache.has("moderators")) {
             const startTime = performance.now();
             const { twitchApi } = firebot.modules;
             const moderators = await twitchApi.moderation.getModerators();
-            this._twitchGlobalCache.set('moderators', [
-                ...moderators.map(mod => `id:${mod.userId}`),
-                ...moderators.map(mod => `name:${mod.userName.toLowerCase()}`)
-            ]);
+            this._twitchGlobalCache.set("moderators", [...moderators.map((mod) => `id:${mod.userId}`), ...moderators.map((mod) => `name:${mod.userName.toLowerCase()}`)]);
             logger.debug(`Loaded ${moderators.length} moderators from Twitch API. Took ${(performance.now() - startTime).toFixed(2)} ms.`);
         }
     }
 
     private async loadTwitchVips(): Promise<void> {
-        if (!this._twitchGlobalCache.has('vips')) {
+        if (!this._twitchGlobalCache.has("vips")) {
             const startTime = performance.now();
             const { twitchApi } = firebot.modules;
             const vips = await twitchApi.channels.getVips();
-            this._twitchGlobalCache.set('vips', [
-                ...vips.map(vip => `id:${vip.id}`),
-                ...vips.map(vip => `name:${vip.name.toLowerCase()}`)
-            ]);
+            this._twitchGlobalCache.set("vips", [...vips.map((vip) => `id:${vip.id}`), ...vips.map((vip) => `name:${vip.name.toLowerCase()}`)]);
             logger.debug(`Loaded ${vips.length} VIPs from Twitch API. Took ${(performance.now() - startTime).toFixed(2)} ms.`);
         }
     }
 
-    private parseTwitchUserNameOrId(userNameOrId: string | number): { id: string | undefined, name: string | undefined } {
+    private parseTwitchUserNameOrId(userNameOrId: string | number): {
+        id: string | undefined;
+        name: string | undefined;
+    } {
         let id: string | undefined;
         let name: string | undefined;
 
@@ -312,7 +309,10 @@ export class RoleManager {
         return { id, name };
     }
 
-    private parseKickUserNameOrId(userNameOrId: string | number): { id: string | undefined, name: string | undefined } {
+    private parseKickUserNameOrId(userNameOrId: string | number): {
+        id: string | undefined;
+        name: string | undefined;
+    } {
         let id: string | undefined;
         let name: string | undefined;
 

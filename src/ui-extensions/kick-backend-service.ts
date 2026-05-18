@@ -1,4 +1,4 @@
-import { AngularJsFactory } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
+import type { AngularJsFactory } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
 
 export const kickBackendService: AngularJsFactory = {
     name: "kickBackendService",
@@ -51,11 +51,15 @@ export const kickBackendService: AngularJsFactory = {
             },
 
             manageReward: (firebotRewardId: string) => {
-                return backendCommunicator.fireEventAsync("kick:manage-reward", { firebotRewardId });
+                return backendCommunicator.fireEventAsync("kick:manage-reward", {
+                    firebotRewardId
+                });
             },
 
             unmanageReward: (firebotRewardId: string) => {
-                return backendCommunicator.fireEventAsync("kick:unmanage-reward", { firebotRewardId });
+                return backendCommunicator.fireEventAsync("kick:unmanage-reward", {
+                    firebotRewardId
+                });
             },
 
             updateRewardOverrides: (firebotRewardId: string, overrides: any) => {
@@ -66,7 +70,9 @@ export const kickBackendService: AngularJsFactory = {
             },
 
             resyncReward: (firebotRewardId: string) => {
-                return backendCommunicator.fireEventAsync("kick:resync-reward", { firebotRewardId });
+                return backendCommunicator.fireEventAsync("kick:resync-reward", {
+                    firebotRewardId
+                });
             },
 
             syncAllRewards: () => {

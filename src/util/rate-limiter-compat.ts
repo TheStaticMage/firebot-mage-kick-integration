@@ -1,4 +1,4 @@
-import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { logger } from "../main";
 
 /**
@@ -34,9 +34,7 @@ export type LimitExceededEventMetadata = {
  * - trigger.metadata.eventData.triggerMetadata exists and is an object
  */
 export function isRateLimiterEvent(trigger: Trigger): boolean {
-    return trigger.type === "event" &&
-           trigger.metadata?.eventSource?.id === "rate-limiter" &&
-           typeof trigger.metadata?.eventData?.triggerMetadata === "object";
+    return trigger.type === "event" && trigger.metadata?.eventSource?.id === "rate-limiter" && typeof trigger.metadata?.eventData?.triggerMetadata === "object";
 }
 
 /**

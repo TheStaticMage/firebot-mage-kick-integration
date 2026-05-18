@@ -27,6 +27,7 @@ node_modules/
 # AI tooling
 /plans/
 /.claude
+/.codenomad/
 /.github/copilot-instructions.md
 /AGENTS.md
 /GEMINI.md

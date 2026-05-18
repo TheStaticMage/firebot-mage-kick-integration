@@ -1,7 +1,7 @@
-import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
-import { IntegrationConstants } from '../constants';
+import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { IntegrationConstants } from "../constants";
 import { logger } from "../main";
-import { getEffectiveMetadata, isRateLimiterEvent } from '../util/rate-limiter-compat';
+import { getEffectiveMetadata, isRateLimiterEvent } from "../util/rate-limiter-compat";
 
 /**
  * Detects and returns the platform of a trigger event.
@@ -29,6 +29,8 @@ export function getPlatformFromTrigger(trigger: Trigger): string {
                 return debugPlatform("kick", "metadata.eventSource.id (manual)", trigger);
             case "twitch":
                 return debugPlatform("twitch", "metadata.eventSource.id (manual)", trigger);
+            default:
+                break;
         }
     }
 
@@ -83,11 +85,11 @@ export function getPlatformFromTrigger(trigger: Trigger): string {
     }
 
     // Username in top level metadata
-    if (typeof effectiveMetadata.username === 'string') {
-        if (effectiveMetadata.username.endsWith('@kick')) {
+    if (typeof effectiveMetadata.username === "string") {
+        if (effectiveMetadata.username.endsWith("@kick")) {
             return debugPlatform("kick", "metadata.username", trigger);
         }
-        if (effectiveMetadata.username !== '') {
+        if (effectiveMetadata.username !== "") {
             return debugPlatform("twitch", "metadata.username", trigger);
         }
     }

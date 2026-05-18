@@ -1,4 +1,4 @@
-import { AngularJsFactory } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
+import type { AngularJsFactory } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
 
 export interface CopyToClipboardOptions {
     url: string;
@@ -62,30 +62,9 @@ export const kickUtilitiesService: AngularJsFactory = {
                 window.focus();
 
                 if (navigator.clipboard) {
-                    navigator.clipboard.writeText(url).then(() => {
-                        if (copyButton) {
-                            $timeout(() => {
-                                copyButton.textContent = "Copied!";
-                            });
-                            if (newTimeout) {
-                                $timeout.cancel(newTimeout);
-                            }
-                            newTimeout = $timeout(() => {
-                                copyButton.textContent = originalText;
-                                newTimeout = null;
-                            }, 2000);
-                        }
-                    }).catch(() => {
-                        const textarea = document.createElement('textarea');
-                        textarea.value = url;
-                        textarea.style.position = 'fixed';
-                        textarea.style.opacity = '0';
-                        document.body.appendChild(textarea);
-                        textarea.focus();
-                        textarea.select();
-                        try {
-                            // eslint-disable-next-line @typescript-eslint/no-deprecated
-                            document.execCommand('copy');
+                    navigator.clipboard
+                        .writeText(url)
+                        .then(() => {
                             if (copyButton) {
                                 $timeout(() => {
                                     copyButton.textContent = "Copied!";
@@ -98,11 +77,34 @@ export const kickUtilitiesService: AngularJsFactory = {
                                     newTimeout = null;
                                 }, 2000);
                             }
-                        } catch {
-                            // Silently ignore if both methods fail
-                        }
-                        document.body.removeChild(textarea);
-                    });
+                        })
+                        .catch(() => {
+                            const textarea = document.createElement("textarea");
+                            textarea.value = url;
+                            textarea.style.position = "fixed";
+                            textarea.style.opacity = "0";
+                            document.body.appendChild(textarea);
+                            textarea.focus();
+                            textarea.select();
+                            try {
+                                document.execCommand("copy");
+                                if (copyButton) {
+                                    $timeout(() => {
+                                        copyButton.textContent = "Copied!";
+                                    });
+                                    if (newTimeout) {
+                                        $timeout.cancel(newTimeout);
+                                    }
+                                    newTimeout = $timeout(() => {
+                                        copyButton.textContent = originalText;
+                                        newTimeout = null;
+                                    }, 2000);
+                                }
+                            } catch {
+                                // Silently ignore if both methods fail
+                            }
+                            document.body.removeChild(textarea);
+                        });
                 }
 
                 return { timeout: newTimeout };
