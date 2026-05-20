@@ -1,7 +1,7 @@
-import { AngularJsFactory, UIExtension } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
+import type { AngularJsFactory, UIExtension } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
 import { IntegrationConstants } from "../constants";
 import { firebot, logger } from "../main";
-import { ReflectedEvent } from "../shared/types";
+import type { ReflectedEvent } from "../shared/types";
 
 const kickReflectorService: AngularJsFactory = {
     name: "kickReflectorService",
@@ -38,10 +38,12 @@ export async function reflectEvent<T>(eventName: string, eventData: any, isAsync
 
     const { frontendCommunicator } = firebot.modules;
     const timeoutMs = 1000;
-    return await Promise.race([
+    return (await Promise.race([
         frontendCommunicator.fireEventAsync<any>(`${IntegrationConstants.INTEGRATION_ID}:reflect-async`, payload),
-        new Promise<never>((_, reject) => setTimeout(() => {
-            reject(new Error("Reflect event timeout"));
-        }, timeoutMs))
-    ]) as T;
+        new Promise<never>((_, reject) =>
+            setTimeout(() => {
+                reject(new Error("Reflect event timeout"));
+            }, timeoutMs)
+        )
+    ])) as T;
 }

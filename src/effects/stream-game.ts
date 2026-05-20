@@ -1,4 +1,4 @@
-import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import type { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { integration } from "../integration";
 import { logger } from "../main";
 
@@ -22,12 +22,7 @@ export const streamGameEffect: Firebot.EffectType<{
     },
     optionsValidator: (effect) => {
         const errors = [];
-        if (
-            effect.gameId == null ||
-            typeof effect.gameId !== "string" ||
-            !/^\d+$/.test(effect.gameId) ||
-            Number(effect.gameId) <= 0
-        ) {
+        if (effect.gameId == null || typeof effect.gameId !== "string" || !/^\d+$/.test(effect.gameId) || Number(effect.gameId) <= 0) {
             errors.push("Please input a valid numeric ID for a category/game.");
         }
         return errors;
@@ -50,20 +45,15 @@ export const streamGameEffect: Firebot.EffectType<{
         // Set the stream category using the integration
         type categoryPayload = {
             category_id: number;
-        }
+        };
 
         const payload: categoryPayload = {
-            // eslint-disable-next-line camelcase
             category_id: Number(category)
         };
 
         logger.debug(`Setting stream category via payload: ${JSON.stringify(payload)}`);
 
-        await integration.kick.httpCallWithTimeout(
-            "/public/v1/channels",
-            "PATCH",
-            JSON.stringify(payload)
-        );
+        await integration.kick.httpCallWithTimeout("/public/v1/channels", "PATCH", JSON.stringify(payload));
 
         return true;
     }

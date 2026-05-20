@@ -1,5 +1,5 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { IntegrationConstants } from '../../constants';
+import type { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import { IntegrationConstants } from "../../constants";
 
 export const kickSubStreakVariable: ReplaceVariable = {
     definition: {

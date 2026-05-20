@@ -1,8 +1,8 @@
-import { hostViewerCountFilter } from '../host-viewer-count';
-import { IntegrationConstants } from '../../constants';
-import { ComparisonType } from '../common';
+import { IntegrationConstants } from "../../constants";
+import { ComparisonType } from "../common";
+import { hostViewerCountFilter } from "../host-viewer-count";
 
-jest.mock('../../main', () => ({
+jest.mock("../../main", () => ({
     logger: {
         debug: jest.fn(),
         info: jest.fn(),
@@ -11,10 +11,10 @@ jest.mock('../../main', () => ({
     }
 }));
 
-describe('hostViewerCountFilter.predicate', () => {
+describe("hostViewerCountFilter.predicate", () => {
     const baseEventData = {
         eventSourceId: IntegrationConstants.INTEGRATION_ID,
-        eventId: 'raid',
+        eventId: "raid",
         eventMeta: { viewerCount: 5 }
     };
 
@@ -55,14 +55,20 @@ describe('hostViewerCountFilter.predicate', () => {
 
     for (const [comparisonType, viewerCount, value, expectedResult] of cases) {
         it(`returns ${expectedResult} for ${comparisonType} when viewerCount=${viewerCount} and value=${value}`, async () => {
-            const eventData = { ...baseEventData, eventMeta: { viewerCount: Number(viewerCount) } };
+            const eventData = {
+                ...baseEventData,
+                eventMeta: { viewerCount: Number(viewerCount) }
+            };
             const result = await hostViewerCountFilter.predicate({ comparisonType: comparisonType as string, value }, eventData);
             expect(result).toBe(expectedResult);
         });
     }
 
-    it('treats non-numeric viewerCount as 0', async () => {
-        const eventData = { ...baseEventData, eventMeta: { viewerCount: 'not-a-number' } };
+    it("treats non-numeric viewerCount as 0", async () => {
+        const eventData = {
+            ...baseEventData,
+            eventMeta: { viewerCount: "not-a-number" }
+        };
         // For value 0, is should be true, greater than should be false, less than or equal to should be true, etc.
         expect(await hostViewerCountFilter.predicate({ comparisonType: ComparisonType.IS, value: 0 }, eventData)).toBe(true);
         expect(await hostViewerCountFilter.predicate({ comparisonType: ComparisonType.IS_NOT, value: 0 }, eventData)).toBe(false);

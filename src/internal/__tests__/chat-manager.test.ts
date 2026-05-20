@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/unbound-method */
-jest.mock('../../main', () => ({
+jest.mock("../../main", () => ({
     firebot: {
         modules: {
             frontendCommunicator: {
@@ -14,35 +13,35 @@ jest.mock('../../main', () => ({
         error: jest.fn()
     }
 }));
-jest.mock('../platform-detection', () => ({
+jest.mock("../platform-detection", () => ({
     getPlatformFromTrigger: jest.fn()
 }));
 
-jest.mock('../kick', () => ({
+jest.mock("../kick", () => ({
     Kick: jest.fn()
 }));
 
-jest.mock('../../integration', () => ({
+jest.mock("../../integration", () => ({
     integration: {
         getSettings: jest.fn()
     }
 }));
 
-import { integration } from '../../integration';
-import { logger } from '../../main';
-import { ChatManager } from '../chat-manager';
+import { integration } from "../../integration";
+import { logger } from "../../main";
+import { ChatManager } from "../chat-manager";
 
-describe('ChatManager', () => {
+describe("ChatManager", () => {
     let chatManager: ChatManager;
     let mockKick: any;
 
     beforeEach(() => {
         mockKick = {
-            broadcaster: { userId: 'broadcasterId' },
-            bot: { userId: 'botId' },
+            broadcaster: { userId: "broadcasterId" },
+            bot: { userId: "botId" },
             httpCallWithTimeout: jest.fn().mockResolvedValue(undefined),
-            getAuthToken: jest.fn().mockReturnValue('authToken'),
-            getBotAuthToken: jest.fn().mockReturnValue('botAuthToken'),
+            getAuthToken: jest.fn().mockReturnValue("authToken"),
+            getBotAuthToken: jest.fn().mockReturnValue("botAuthToken"),
             userApi: {
                 banUserByUsername: jest.fn().mockResolvedValue(true)
             }
@@ -63,97 +62,93 @@ describe('ChatManager', () => {
         await chatManager.stop();
     });
 
-    it('registers and checks message platform', async () => {
-        expect(await chatManager.registerMessage('msg1', 'kick')).toBe(true);
-        expect(await chatManager.registerMessage('msg1', 'kick')).toBe(false);
+    it("registers and checks message platform", async () => {
+        expect(await chatManager.registerMessage("msg1", "kick")).toBe(true);
+        expect(await chatManager.registerMessage("msg1", "kick")).toBe(false);
     });
 
-    it('stores chat message metadata when provided', async () => {
+    it("stores chat message metadata when provided", async () => {
         const chatMessage = {
-            id: 'kick-msg-1',
-            username: 'user@kick',
-            userId: 'k123',
-            userDisplayName: 'User',
-            rawText: 'hello'
+            id: "kick-msg-1",
+            username: "user@kick",
+            userId: "k123",
+            userDisplayName: "User",
+            rawText: "hello"
         } as any;
 
-        await chatManager.registerMessage(chatMessage.id, 'kick', chatMessage);
+        await chatManager.registerMessage(chatMessage.id, "kick", chatMessage);
         expect(chatManager.getChatMessage(chatMessage.id)).toBe(chatMessage);
 
         chatManager.forgetMessage(chatMessage.id);
         expect(chatManager.getChatMessage(chatMessage.id)).toBeUndefined();
-        expect(chatManager['messageCacheOrder']).not.toContain(chatMessage.id);
+        expect(chatManager.messageCacheOrder).not.toContain(chatMessage.id);
     });
 
-    it('evicts oldest cached messages beyond limit', async () => {
+    it("evicts oldest cached messages beyond limit", async () => {
         for (let i = 0; i < 101; i++) {
             const chatMessage = {
                 id: `kick-msg-${i}`,
                 username: `user${i}@kick`
             } as any;
-            await chatManager.registerMessage(chatMessage.id, 'kick', chatMessage);
+            await chatManager.registerMessage(chatMessage.id, "kick", chatMessage);
         }
 
-        expect(chatManager.getChatMessage('kick-msg-0')).toBeUndefined();
-        expect(chatManager['messagePlatform']['kick-msg-0']).toBeUndefined();
-        expect(chatManager['messageCacheOrder']).toHaveLength(100);
+        expect(chatManager.getChatMessage("kick-msg-0")).toBeUndefined();
+        expect(chatManager.messagePlatform["kick-msg-0"]).toBeUndefined();
+        expect(chatManager.messageCacheOrder).toHaveLength(100);
     });
 
-    it('splits and sends long messages in segments', async () => {
-        const longMsg = 'a'.repeat(1200);
-        const sendSpy = jest.spyOn<any, any>(chatManager, 'sendChatMessage').mockResolvedValue(undefined);
-        await chatManager.sendKickChatMessage(longMsg, 'Streamer');
+    it("splits and sends long messages in segments", async () => {
+        const longMsg = "a".repeat(1200);
+        const sendSpy = jest.spyOn<any, any>(chatManager, "sendChatMessage").mockResolvedValue(undefined);
+        await chatManager.sendKickChatMessage(longMsg, "Streamer");
         expect(sendSpy).toHaveBeenCalledTimes(3);
     });
 
-    it('does not send reply if replyToMessageId is not a kick message', async () => {
-        const sendSpy = jest.spyOn<any, any>(chatManager, 'sendChatMessage').mockResolvedValue(undefined);
+    it("does not send reply if replyToMessageId is not a kick message", async () => {
+        const sendSpy = jest.spyOn<any, any>(chatManager, "sendChatMessage").mockResolvedValue(undefined);
         // Register the message as a non-kick message
-        await chatManager.registerMessage('notKickMsg', 'twitch');
-        await chatManager.sendKickChatMessage('msg', 'Streamer', 'notKickMsg');
-        expect(sendSpy).toHaveBeenCalledWith('msg', 'Streamer', undefined);
+        await chatManager.registerMessage("notKickMsg", "twitch");
+        await chatManager.sendKickChatMessage("msg", "Streamer", "notKickMsg");
+        expect(sendSpy).toHaveBeenCalledWith("msg", "Streamer", undefined);
     });
 
-    it('sends chat message as bot if bot is authorized', async () => {
-        await chatManager['sendChatMessage']('msg', 'Bot');
-        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith(
-            '/public/v1/chat', 'POST', expect.any(String), null, undefined, 'botAuthToken'
-        );
+    it("sends chat message as bot if bot is authorized", async () => {
+        await chatManager.sendChatMessage("msg", "Bot");
+        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith("/public/v1/chat", "POST", expect.any(String), null, undefined, "botAuthToken");
     });
 
-    it('falls back to streamer if bot is not authorized', async () => {
+    it("falls back to streamer if bot is not authorized", async () => {
         mockKick.bot = undefined;
-        const warnSpy = jest.spyOn(logger, 'warn');
-        await chatManager['sendChatMessage']('msg', 'Bot');
-        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Falling back to streamer'));
-        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith(
-            '/public/v1/chat', 'POST', expect.any(String), null, undefined, 'authToken'
-        );
+        const warnSpy = jest.spyOn(logger, "warn");
+        await chatManager.sendChatMessage("msg", "Bot");
+        expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Falling back to streamer"));
+        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith("/public/v1/chat", "POST", expect.any(String), null, undefined, "authToken");
     });
 
-    it('does not send if broadcaster is missing', async () => {
+    it("does not send if broadcaster is missing", async () => {
         mockKick.broadcaster = undefined;
-        const errorSpy = jest.spyOn(logger, 'error');
-        await chatManager['sendChatMessage']('msg', 'Streamer');
-        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('broadcaster info not available'));
+        const errorSpy = jest.spyOn(logger, "error");
+        await chatManager.sendChatMessage("msg", "Streamer");
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("broadcaster info not available"));
     });
 
-    it('adds and checks viewerArrivedCache', () => {
-        expect(chatManager.checkViewerArrived('user1')).toBe(true);
-        expect(chatManager.checkViewerArrived('user1')).toBe(false);
+    it("adds and checks viewerArrivedCache", () => {
+        expect(chatManager.checkViewerArrived("user1")).toBe(true);
+        expect(chatManager.checkViewerArrived("user1")).toBe(false);
     });
 
-    it('getPlatformFromTrigger returns platform or unknown', () => {
-        const { getPlatformFromTrigger } = require('../platform-detection');
-        (getPlatformFromTrigger as jest.Mock).mockReturnValue('kick');
-        expect(ChatManager.getPlatformFromTrigger({} as any)).toBe('kick');
+    it("getPlatformFromTrigger returns platform or unknown", () => {
+        const { getPlatformFromTrigger } = require("../platform-detection");
+        (getPlatformFromTrigger as jest.Mock).mockReturnValue("kick");
+        expect(ChatManager.getPlatformFromTrigger({} as any)).toBe("kick");
         (getPlatformFromTrigger as jest.Mock).mockImplementation(() => {
-            throw new Error('fail');
+            throw new Error("fail");
         });
-        expect(ChatManager.getPlatformFromTrigger({} as any)).toBe('unknown');
+        expect(ChatManager.getPlatformFromTrigger({} as any)).toBe("unknown");
     });
 
-    it('handles /announce slash command correctly', async () => {
+    it("handles /announce slash command correctly", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -163,30 +158,23 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith(
-            '/public/v1/chat',
-            'POST',
-            expect.stringContaining('[Announcement] test message'),
-            null,
-            undefined,
-            'authToken'
-        );
+        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith("/public/v1/chat", "POST", expect.stringContaining("[Announcement] test message"), null, undefined, "authToken");
 
         // Verify the payload structure
         const httpCallArgs = mockKick.httpCallWithTimeout.mock.calls[0];
         const payloadString = httpCallArgs[2];
         const sentPayload = JSON.parse(payloadString);
 
-        expect(sentPayload.content).toBe('[Announcement] test message');
-        expect(sentPayload.type).toBe('user');
-        expect(sentPayload.broadcaster_user_id).toBe('broadcasterId');
+        expect(sentPayload.content).toBe("[Announcement] test message");
+        expect(sentPayload.type).toBe("user");
+        expect(sentPayload.broadcaster_user_id).toBe("broadcasterId");
         expect(sentPayload.reply_to_message_id).toBeUndefined();
     });
 
-    it('handles /announce slash command as Bot account', async () => {
+    it("handles /announce slash command as Bot account", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -196,20 +184,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith(
-            '/public/v1/chat',
-            'POST',
-            expect.stringContaining('[Announcement] bot announcement'),
-            null,
-            undefined,
-            'botAuthToken'
-        );
+        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith("/public/v1/chat", "POST", expect.stringContaining("[Announcement] bot announcement"), null, undefined, "botAuthToken");
     });
 
-    it('returns false for unsupported slash commands', async () => {
+    it("returns false for unsupported slash commands", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -219,14 +200,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.httpCallWithTimeout).not.toHaveBeenCalled();
-        expect(logger.warn as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('not implemented for Kick'));
+        expect(logger.warn as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("not implemented for Kick"));
     });
 
-    it('handles slash command errors', async () => {
+    it("handles slash command errors", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -236,14 +217,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.httpCallWithTimeout).not.toHaveBeenCalled();
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Error handling slash command'));
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Error handling slash command"));
     });
 
-    it('handles /timeout command with duration conversion - values below 1 minute', async () => {
+    it("handles /timeout command with duration conversion - values below 1 minute", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(true);
@@ -255,13 +236,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 1, true, 'test reason');
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("testuser", 1, true, "test reason");
     });
 
-    it('handles /timeout command with duration conversion - exact minutes', async () => {
+    it("handles /timeout command with duration conversion - exact minutes", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(true);
@@ -273,13 +254,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 2, true, 'No reason given');
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("testuser", 2, true, "No reason given");
     });
 
-    it('handles /timeout command with duration conversion - rounding to nearest minute', async () => {
+    it("handles /timeout command with duration conversion - rounding to nearest minute", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(true);
@@ -291,13 +272,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 2, true, 'rounded reason');
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("testuser", 2, true, "rounded reason");
     });
 
-    it('handles /timeout command with duration conversion - rounding down', async () => {
+    it("handles /timeout command with duration conversion - rounding down", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(true);
@@ -309,13 +290,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 1, true, 'No reason given');
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("testuser", 1, true, "No reason given");
     });
 
-    it('throws error for /timeout command with duration exceeding maximum', async () => {
+    it("throws error for /timeout command with duration exceeding maximum", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -326,14 +307,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.userApi.banUserByUsername).not.toHaveBeenCalled();
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Timeout duration cannot exceed 10800 minutes'));
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Timeout duration cannot exceed 10800 minutes"));
     });
 
-    it('handles /timeout command at maximum duration limit', async () => {
+    it("handles /timeout command at maximum duration limit", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(true);
@@ -345,13 +326,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 10800, true, 'max duration');
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("testuser", 10800, true, "max duration");
     });
 
-    it('handles /ban command successfully with reason', async () => {
+    it("handles /ban command successfully with reason", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(true);
@@ -362,13 +343,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('baduser', 0, true, 'spamming chat');
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("baduser", 0, true, "spamming chat");
     });
 
-    it('handles /ban command successfully without reason', async () => {
+    it("handles /ban command successfully without reason", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(true);
@@ -379,13 +360,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('baduser', 0, true, 'No reason given');
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("baduser", 0, true, "No reason given");
     });
 
-    it('throws error for /ban command with missing username', async () => {
+    it("throws error for /ban command with missing username", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -395,14 +376,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.userApi.banUserByUsername).not.toHaveBeenCalled();
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Usage: /ban <user> [reason]'));
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Usage: /ban <user> [reason]"));
     });
 
-    it('throws error when /ban command API fails', async () => {
+    it("throws error when /ban command API fails", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(false);
@@ -413,14 +394,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('baduser', 0, true, 'reason');
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Failed to ban user: baduser'));
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("baduser", 0, true, "reason");
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Failed to ban user: baduser"));
     });
 
-    it('handles /unban command successfully', async () => {
+    it("handles /unban command successfully", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(true);
@@ -431,13 +412,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 0, false);
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("testuser", 0, false);
     });
 
-    it('handles /untimeout command successfully', async () => {
+    it("handles /untimeout command successfully", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(true);
@@ -448,13 +429,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 0, false);
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("testuser", 0, false);
     });
 
-    it('throws error for /unban command with missing username', async () => {
+    it("throws error for /unban command with missing username", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -464,14 +445,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.userApi.banUserByUsername).not.toHaveBeenCalled();
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Usage: /unban <user>'));
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Usage: /unban <user>"));
     });
 
-    it('throws error for /untimeout command with missing username', async () => {
+    it("throws error for /untimeout command with missing username", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -481,14 +462,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.userApi.banUserByUsername).not.toHaveBeenCalled();
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Usage: /untimeout <user>'));
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Usage: /untimeout <user>"));
     });
 
-    it('throws error when /unban command API fails', async () => {
+    it("throws error when /unban command API fails", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(false);
@@ -499,14 +480,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 0, false);
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Failed to unban/untimeout user: testuser'));
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("testuser", 0, false);
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Failed to unban/untimeout user: testuser"));
     });
 
-    it('throws error when /untimeout command API fails', async () => {
+    it("throws error when /untimeout command API fails", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(false);
@@ -517,14 +498,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 0, false);
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Failed to unban/untimeout user: testuser'));
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("testuser", 0, false);
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Failed to unban/untimeout user: testuser"));
     });
 
-    it('handles /announcegreen command correctly', async () => {
+    it("handles /announcegreen command correctly", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -534,20 +515,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith(
-            '/public/v1/chat',
-            'POST',
-            expect.stringContaining('[Announcement] This is a green announcement'),
-            null,
-            undefined,
-            'authToken'
-        );
+        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith("/public/v1/chat", "POST", expect.stringContaining("[Announcement] This is a green announcement"), null, undefined, "authToken");
     });
 
-    it('handles /announceorange command correctly', async () => {
+    it("handles /announceorange command correctly", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -557,20 +531,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith(
-            '/public/v1/chat',
-            'POST',
-            expect.stringContaining('[Announcement] Orange announcement here'),
-            null,
-            undefined,
-            'botAuthToken'
-        );
+        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith("/public/v1/chat", "POST", expect.stringContaining("[Announcement] Orange announcement here"), null, undefined, "botAuthToken");
     });
 
-    it('handles /announcepurple command correctly', async () => {
+    it("handles /announcepurple command correctly", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -580,20 +547,13 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(true);
-        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith(
-            '/public/v1/chat',
-            'POST',
-            expect.stringContaining('[Announcement] Purple message test'),
-            null,
-            undefined,
-            'authToken'
-        );
+        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith("/public/v1/chat", "POST", expect.stringContaining("[Announcement] Purple message test"), null, undefined, "authToken");
     });
 
-    it('throws error for announcement commands with missing message', async () => {
+    it("throws error for announcement commands with missing message", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -603,14 +563,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.httpCallWithTimeout).not.toHaveBeenCalled();
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('No message specified for /announcegreen command'));
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("No message specified for /announcegreen command"));
     });
 
-    it('throws error for /timeout command with invalid duration', async () => {
+    it("throws error for /timeout command with invalid duration", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -620,14 +580,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.userApi.banUserByUsername).not.toHaveBeenCalled();
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Duration must be a positive integer representing seconds'));
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Duration must be a positive integer representing seconds"));
     });
 
-    it('throws error for /timeout command with negative duration', async () => {
+    it("throws error for /timeout command with negative duration", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -637,14 +597,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.userApi.banUserByUsername).not.toHaveBeenCalled();
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Duration must be a positive integer representing seconds'));
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Duration must be a positive integer representing seconds"));
     });
 
-    it('throws error for /timeout command with zero duration', async () => {
+    it("throws error for /timeout command with zero duration", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -654,14 +614,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.userApi.banUserByUsername).not.toHaveBeenCalled();
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Duration must be a positive integer representing seconds'));
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Duration must be a positive integer representing seconds"));
     });
 
-    it('throws error for /timeout command with missing duration', async () => {
+    it("throws error for /timeout command with missing duration", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
 
@@ -671,14 +631,14 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
         expect(mockKick.userApi.banUserByUsername).not.toHaveBeenCalled();
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Usage: /timeout <user> <duration> [reason]'));
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Usage: /timeout <user> <duration> [reason]"));
     });
 
-    it('throws error when /timeout command API fails', async () => {
+    it("throws error when /timeout command API fails", async () => {
         // Clear any previous calls
         jest.clearAllMocks();
         mockKick.userApi.banUserByUsername.mockResolvedValue(false);
@@ -689,88 +649,81 @@ describe('ChatManager', () => {
             replyToMessageId: undefined
         };
 
-        const result = await chatManager['handleChatMessageTypedInChatFeed'](payload);
+        const result = await chatManager.handleChatMessageTypedInChatFeed(payload);
 
         expect(result).toBe(false);
-        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith('testuser', 5, true, 'timeout reason');
-        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining('Failed to timeout user: testuser'));
+        expect(mockKick.userApi.banUserByUsername).toHaveBeenCalledWith("testuser", 5, true, "timeout reason");
+        expect(logger.error as jest.Mock).toHaveBeenCalledWith(expect.stringContaining("Failed to timeout user: testuser"));
     });
 });
 
-describe('ChatManager.handleDeleteMessage', () => {
+describe("ChatManager.handleDeleteMessage", () => {
     let chatManager: ChatManager;
     let mockKick: any;
 
     beforeEach(() => {
         mockKick = {
-            broadcaster: { userId: 'broadcasterId' },
+            broadcaster: { userId: "broadcasterId" },
             httpCallWithTimeout: jest.fn().mockResolvedValue(undefined),
-            getAuthToken: jest.fn().mockReturnValue('authToken')
+            getAuthToken: jest.fn().mockReturnValue("authToken")
         };
 
         chatManager = new ChatManager(mockKick);
         jest.clearAllMocks();
     });
 
-    it('deletes Kick message when platform is kick', async () => {
-        const messageId = 'kick-msg-123';
-        chatManager['messagePlatform'][messageId] = 'kick';
+    it("deletes Kick message when platform is kick", async () => {
+        const messageId = "kick-msg-123";
+        chatManager.messagePlatform[messageId] = "kick";
 
-        const result = await chatManager['handleDeleteMessage'](messageId);
+        const result = await chatManager.handleDeleteMessage(messageId);
 
-        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith(
-            '/public/v1/chat/kick-msg-123',
-            'DELETE',
-            '',
-            null,
-            undefined,
-            'authToken'
-        );
-        expect(logger.debug).toHaveBeenCalledWith('Successfully deleted chat message: kick-msg-123');
+        expect(mockKick.httpCallWithTimeout).toHaveBeenCalledWith("/public/v1/chat/kick-msg-123", "DELETE", "", null, undefined, "authToken");
+        expect(logger.debug).toHaveBeenCalledWith("Successfully deleted chat message: kick-msg-123");
         expect(result).toBe(true);
     });
 
-    it('returns false for Twitch message', async () => {
-        const messageId = 'twitch-msg-456';
-        chatManager['messagePlatform'][messageId] = 'twitch';
+    it("returns false for Twitch message", async () => {
+        const messageId = "twitch-msg-456";
+        chatManager.messagePlatform[messageId] = "twitch";
 
-        const result = await chatManager['handleDeleteMessage'](messageId);
+        const result = await chatManager.handleDeleteMessage(messageId);
 
         expect(mockKick.httpCallWithTimeout).not.toHaveBeenCalled();
-        expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('is not a Kick message'));
+        expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining("is not a Kick message"));
         expect(result).toBe(false);
     });
 
-    it('returns false for unknown message platform', async () => {
-        const messageId = 'unknown-msg-789';
-        chatManager['messagePlatform'][messageId] = 'unknown';
+    it("returns false for unknown message platform", async () => {
+        const messageId = "unknown-msg-789";
+        chatManager.messagePlatform[messageId] = "unknown";
 
-        const result = await chatManager['handleDeleteMessage'](messageId);
+        const result = await chatManager.handleDeleteMessage(messageId);
 
         expect(mockKick.httpCallWithTimeout).not.toHaveBeenCalled();
-        expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('is not a Kick message'));
+        expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining("is not a Kick message"));
         expect(result).toBe(false);
     });
 
-    it('returns false for unregistered message ID', async () => {
-        const messageId = 'unregistered-msg';
+    it("returns false for unregistered message ID", async () => {
+        const messageId = "unregistered-msg";
 
-        const result = await chatManager['handleDeleteMessage'](messageId);
+        const result = await chatManager.handleDeleteMessage(messageId);
 
         expect(mockKick.httpCallWithTimeout).not.toHaveBeenCalled();
-        expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining('is not a Kick message'));
+        expect(logger.debug).toHaveBeenCalledWith(expect.stringContaining("is not a Kick message"));
         expect(result).toBe(false);
     });
 
-    it('returns false when API call fails', async () => {
-        const messageId = 'kick-msg-999';
-        chatManager['messagePlatform'][messageId] = 'kick';
-        mockKick.httpCallWithTimeout.mockRejectedValue(new Error('API error'));
+    it("returns false when API call fails", async () => {
+        const messageId = "kick-msg-999";
+        chatManager.messagePlatform[messageId] = "kick";
+        mockKick.httpCallWithTimeout.mockRejectedValue(new Error("API error"));
 
-        const result = await chatManager['handleDeleteMessage'](messageId);
+        const result = await chatManager.handleDeleteMessage(messageId);
 
         expect(mockKick.httpCallWithTimeout).toHaveBeenCalled();
-        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Failed to delete chat message'));
+        expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("Failed to delete chat message"));
         expect(result).toBe(false);
     });
 });

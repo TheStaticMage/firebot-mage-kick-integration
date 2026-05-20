@@ -131,41 +131,41 @@ export interface StreamHostedEvent {
 }
 
 export interface ChannelSubscription {
-    broadcaster: KickUser,
-    subscriber: KickUser,
-    duration: number,
-    isResub: boolean
-    createdAt: Date,
-    expiresAt?: Date
+    broadcaster: KickUser;
+    subscriber: KickUser;
+    duration: number;
+    isResub: boolean;
+    createdAt: Date;
+    expiresAt?: Date;
 }
 
 export interface ChannelGiftSubscription {
-    broadcaster: KickUser,
-    gifter: KickUser,
-    giftees: KickUser[],
-    createdAt: Date,
-    expiresAt?: Date
+    broadcaster: KickUser;
+    gifter: KickUser;
+    giftees: KickUser[];
+    createdAt: Date;
+    expiresAt?: Date;
 }
 
 export interface KickGifter {
-    userId: string,
-    gifts: KickGiftSub[],
-    totalSubs: number,
+    userId: string;
+    gifts: KickGiftSub[];
+    totalSubs: number;
 }
 
 export interface KickGiftSub {
-    userId: string,
-    sub: KickSubscription
+    userId: string;
+    sub: KickSubscription;
 }
 
 export interface KickSubscription {
-    createdAt: Date,
-    expiresAt: Date
+    createdAt: Date;
+    expiresAt: Date;
 }
 
 export interface RaidSentOffEvent {
-    targetUser: KickUser
-    targetSlug: string
+    targetUser: KickUser;
+    targetSlug: string;
     numberOfViewers: number;
 }
 
@@ -189,15 +189,15 @@ export interface ReflectedEvent {
 }
 
 export interface KicksGiftedEvent {
-    gifter: KickUser,
-    kicks: number,
-    giftId: string,
-    giftName: string,
-    giftType: string,
-    giftTier: string,
-    characterLimit: number,
-    pinnedTime: number,
-    message: string
+    gifter: KickUser;
+    kicks: number;
+    giftId: string;
+    giftName: string;
+    giftType: string;
+    giftTier: string;
+    characterLimit: number;
+    pinnedTime: number;
+    message: string;
 }
 
 export interface KickConnection {

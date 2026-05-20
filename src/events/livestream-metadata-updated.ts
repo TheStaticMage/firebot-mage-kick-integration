@@ -1,7 +1,7 @@
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { firebot } from "../main";
-import { CategoryInfo, LivestreamMetadataUpdated } from "../shared/types";
+import type { CategoryInfo, LivestreamMetadataUpdated } from "../shared/types";
 
 export function triggerCategoryChangedEvent(category: CategoryInfo): void {
     const { eventManager } = firebot.modules;

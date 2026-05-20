@@ -1,6 +1,6 @@
 export const triggerEventMock = jest.fn();
 
-jest.mock('../integration', () => ({
+jest.mock("../integration", () => ({
     integration: {
         getSettings: jest.fn(),
         kick: {
@@ -16,7 +16,7 @@ jest.mock('../integration', () => ({
     }
 }));
 
-jest.mock('../main', () => ({
+jest.mock("../main", () => ({
     firebot: {
         modules: {
             eventManager: {
@@ -35,16 +35,16 @@ jest.mock('../main', () => ({
     }
 }));
 
-import { IntegrationConstants } from '../constants';
-import { InboundWebhook } from '../internal/webhook-handler/webhook';
-import { webhookHandler } from '../internal/webhook-handler/webhook-handler';
+import { IntegrationConstants } from "../constants";
+import type { InboundWebhook } from "../internal/webhook-handler/webhook";
+import { webhookHandler } from "../internal/webhook-handler/webhook-handler";
 
-describe('e2e livestream status updated', () => {
+describe("e2e livestream status updated", () => {
     beforeEach(() => {
         jest.clearAllMocks();
 
         // Set default integration settings
-        const integration = require('../integration').integration;
+        const integration = require("../integration").integration;
         integration.kick.channelManager.updateLiveStatus.mockReturnValue(true);
         integration.getSettings = () => ({
             triggerTwitchEvents: {
@@ -56,21 +56,23 @@ describe('e2e livestream status updated', () => {
     });
 
     // Webhook stream start payload - base64 encoded JSON
-    const webhookStreamStartData = Buffer.from(JSON.stringify({
-        "eventType": "livestream.status.updated",
-        "eventVersion": "1",
-        "broadcaster": {
-            "user_id": 123456,
-            "username": "teststreamer",
-            "is_verified": false,
-            "profile_picture": "https://example.com/avatar.jpg",
-            "channel_slug": "teststreamer"
-        },
-        "is_live": true,
-        "title": "Live Stream from Webhook",
-        "started_at": "2025-09-02T10:05:00+00:00",
-        "ended_at": null
-    })).toString('base64');
+    const webhookStreamStartData = Buffer.from(
+        JSON.stringify({
+            eventType: "livestream.status.updated",
+            eventVersion: "1",
+            broadcaster: {
+                user_id: 123456,
+                username: "teststreamer",
+                is_verified: false,
+                profile_picture: "https://example.com/avatar.jpg",
+                channel_slug: "teststreamer"
+            },
+            is_live: true,
+            title: "Live Stream from Webhook",
+            started_at: "2025-09-02T10:05:00+00:00",
+            ended_at: null
+        })
+    ).toString("base64");
 
     const webhookStreamStartPayload: InboundWebhook = {
         kickEventMessageId: "msg-stream-start-123",
@@ -82,21 +84,23 @@ describe('e2e livestream status updated', () => {
     };
 
     // Webhook stream start payload for disabled test - different content to avoid conflicts
-    const webhookStreamStartDataDisabled = Buffer.from(JSON.stringify({
-        "eventType": "livestream.status.updated",
-        "eventVersion": "1",
-        "broadcaster": {
-            "user_id": 123457,
-            "username": "teststreamer2",
-            "is_verified": false,
-            "profile_picture": "https://example.com/avatar2.jpg",
-            "channel_slug": "teststreamer2"
-        },
-        "is_live": true,
-        "title": "Live Stream from Webhook Disabled",
-        "started_at": "2025-09-02T10:06:00+00:00",
-        "ended_at": null
-    })).toString('base64');
+    const webhookStreamStartDataDisabled = Buffer.from(
+        JSON.stringify({
+            eventType: "livestream.status.updated",
+            eventVersion: "1",
+            broadcaster: {
+                user_id: 123457,
+                username: "teststreamer2",
+                is_verified: false,
+                profile_picture: "https://example.com/avatar2.jpg",
+                channel_slug: "teststreamer2"
+            },
+            is_live: true,
+            title: "Live Stream from Webhook Disabled",
+            started_at: "2025-09-02T10:06:00+00:00",
+            ended_at: null
+        })
+    ).toString("base64");
 
     const webhookStreamStartPayloadDisabled: InboundWebhook = {
         kickEventMessageId: "msg-stream-start-disabled-123",
@@ -108,21 +112,23 @@ describe('e2e livestream status updated', () => {
     };
 
     // Webhook stream stop payload - base64 encoded JSON
-    const webhookStreamStopData = Buffer.from(JSON.stringify({
-        "eventType": "livestream.status.updated",
-        "eventVersion": "1",
-        "broadcaster": {
-            "user_id": 123456,
-            "username": "teststreamer",
-            "is_verified": false,
-            "profile_picture": "https://example.com/avatar.jpg",
-            "channel_slug": "teststreamer"
-        },
-        "is_live": false,
-        "title": "Stream Ended",
-        "started_at": "2025-09-02T10:05:00+00:00",
-        "ended_at": "2025-09-02T12:05:00+00:00"
-    })).toString('base64');
+    const webhookStreamStopData = Buffer.from(
+        JSON.stringify({
+            eventType: "livestream.status.updated",
+            eventVersion: "1",
+            broadcaster: {
+                user_id: 123456,
+                username: "teststreamer",
+                is_verified: false,
+                profile_picture: "https://example.com/avatar.jpg",
+                channel_slug: "teststreamer"
+            },
+            is_live: false,
+            title: "Stream Ended",
+            started_at: "2025-09-02T10:05:00+00:00",
+            ended_at: "2025-09-02T12:05:00+00:00"
+        })
+    ).toString("base64");
 
     const webhookStreamStopPayload: InboundWebhook = {
         kickEventMessageId: "msg-stream-stop-789",
@@ -134,21 +140,23 @@ describe('e2e livestream status updated', () => {
     };
 
     // Webhook stream stop payload for disabled test - different content to avoid conflicts
-    const webhookStreamStopDataDisabled = Buffer.from(JSON.stringify({
-        "eventType": "livestream.status.updated",
-        "eventVersion": "1",
-        "broadcaster": {
-            "user_id": 123458,
-            "username": "teststreamer3",
-            "is_verified": false,
-            "profile_picture": "https://example.com/avatar3.jpg",
-            "channel_slug": "teststreamer3"
-        },
-        "is_live": false,
-        "title": "Stream Ended Disabled",
-        "started_at": "2025-09-02T10:07:00+00:00",
-        "ended_at": "2025-09-02T12:07:00+00:00"
-    })).toString('base64');
+    const webhookStreamStopDataDisabled = Buffer.from(
+        JSON.stringify({
+            eventType: "livestream.status.updated",
+            eventVersion: "1",
+            broadcaster: {
+                user_id: 123458,
+                username: "teststreamer3",
+                is_verified: false,
+                profile_picture: "https://example.com/avatar3.jpg",
+                channel_slug: "teststreamer3"
+            },
+            is_live: false,
+            title: "Stream Ended Disabled",
+            started_at: "2025-09-02T10:07:00+00:00",
+            ended_at: "2025-09-02T12:07:00+00:00"
+        })
+    ).toString("base64");
 
     const webhookStreamStopPayloadDisabled: InboundWebhook = {
         kickEventMessageId: "msg-stream-stop-disabled-789",
@@ -159,17 +167,17 @@ describe('e2e livestream status updated', () => {
         rawData: webhookStreamStopDataDisabled
     };
 
-    describe('stream start via webhook', () => {
+    describe("stream start via webhook", () => {
         const expectedStreamOnlineMetadata = {
-            username: 'teststreamer@kick',
-            userId: 'k123456',
-            userDisplayName: 'teststreamer',
-            platform: 'kick'
+            username: "teststreamer@kick",
+            userId: "k123456",
+            userDisplayName: "teststreamer",
+            platform: "kick"
         };
 
-        describe('twitch forwarding enabled', () => {
+        describe("twitch forwarding enabled", () => {
             beforeEach(() => {
-                const integration = require('../integration').integration;
+                const integration = require("../integration").integration;
                 integration.getSettings = () => ({
                     triggerTwitchEvents: {
                         streamOnline: true,
@@ -179,7 +187,7 @@ describe('e2e livestream status updated', () => {
                 });
             });
 
-            it('triggers all expected events', async () => {
+            it("triggers all expected events", async () => {
                 await expect(webhookHandler.handleWebhook(webhookStreamStartPayload)).resolves.not.toThrow();
                 expect(triggerEventMock).toHaveBeenCalledTimes(3); // 2 kick online + 1 webhook-received
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-online", expectedStreamOnlineMetadata);
@@ -193,20 +201,20 @@ describe('e2e livestream status updated', () => {
                     IntegrationConstants.INTEGRATION_ID,
                     "webhook-received",
                     expect.objectContaining({
-                        username: 'teststreamer@kick',
-                        userId: 'k123456',
-                        userDisplayName: 'teststreamer',
+                        username: "teststreamer@kick",
+                        userId: "k123456",
+                        userDisplayName: "teststreamer",
                         webhookType: "livestream.status.updated",
                         webhookVersion: "1",
-                        platform: 'kick'
+                        platform: "kick"
                     })
                 );
             });
         });
 
-        describe('twitch forwarding disabled', () => {
+        describe("twitch forwarding disabled", () => {
             beforeEach(() => {
-                const integration = require('../integration').integration;
+                const integration = require("../integration").integration;
                 integration.getSettings = () => ({
                     triggerTwitchEvents: {
                         streamOnline: false,
@@ -216,13 +224,13 @@ describe('e2e livestream status updated', () => {
                 });
             });
 
-            it('triggers only kick events', async () => {
+            it("triggers only kick events", async () => {
                 await expect(webhookHandler.handleWebhook(webhookStreamStartPayloadDisabled)).resolves.not.toThrow();
                 const expectedMetadata = {
-                    username: 'teststreamer2@kick',
-                    userId: 'k123457',
-                    userDisplayName: 'teststreamer2',
-                    platform: 'kick'
+                    username: "teststreamer2@kick",
+                    userId: "k123457",
+                    userDisplayName: "teststreamer2",
+                    platform: "kick"
                 };
                 expect(triggerEventMock).toHaveBeenCalledTimes(2); // 1 kick online + 1 webhook-received
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-online", expectedMetadata);
@@ -230,17 +238,17 @@ describe('e2e livestream status updated', () => {
         });
     });
 
-    describe('stream stop via webhook', () => {
+    describe("stream stop via webhook", () => {
         const expectedStreamOfflineMetadata = {
-            username: 'teststreamer@kick',
-            userId: 'k123456',
-            userDisplayName: 'teststreamer',
-            platform: 'kick'
+            username: "teststreamer@kick",
+            userId: "k123456",
+            userDisplayName: "teststreamer",
+            platform: "kick"
         };
 
-        describe('twitch forwarding enabled', () => {
+        describe("twitch forwarding enabled", () => {
             beforeEach(() => {
-                const integration = require('../integration').integration;
+                const integration = require("../integration").integration;
                 integration.getSettings = () => ({
                     triggerTwitchEvents: {
                         streamOnline: false,
@@ -250,7 +258,7 @@ describe('e2e livestream status updated', () => {
                 });
             });
 
-            it('triggers all expected events', async () => {
+            it("triggers all expected events", async () => {
                 await expect(webhookHandler.handleWebhook(webhookStreamStopPayload)).resolves.not.toThrow();
                 expect(triggerEventMock).toHaveBeenCalledTimes(3); // 2 kick offline + 1 webhook-received
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-offline", expectedStreamOfflineMetadata);
@@ -264,20 +272,20 @@ describe('e2e livestream status updated', () => {
                     IntegrationConstants.INTEGRATION_ID,
                     "webhook-received",
                     expect.objectContaining({
-                        username: 'teststreamer@kick',
-                        userId: 'k123456',
-                        userDisplayName: 'teststreamer',
+                        username: "teststreamer@kick",
+                        userId: "k123456",
+                        userDisplayName: "teststreamer",
                         webhookType: "livestream.status.updated",
                         webhookVersion: "1",
-                        platform: 'kick'
+                        platform: "kick"
                     })
                 );
             });
         });
 
-        describe('twitch forwarding disabled', () => {
+        describe("twitch forwarding disabled", () => {
             beforeEach(() => {
-                const integration = require('../integration').integration;
+                const integration = require("../integration").integration;
                 integration.getSettings = () => ({
                     triggerTwitchEvents: {
                         streamOnline: false,
@@ -287,13 +295,13 @@ describe('e2e livestream status updated', () => {
                 });
             });
 
-            it('triggers only kick events', async () => {
+            it("triggers only kick events", async () => {
                 await expect(webhookHandler.handleWebhook(webhookStreamStopPayloadDisabled)).resolves.not.toThrow();
                 const expectedMetadata = {
-                    username: 'teststreamer3@kick',
-                    userId: 'k123458',
-                    userDisplayName: 'teststreamer3',
-                    platform: 'kick'
+                    username: "teststreamer3@kick",
+                    userId: "k123458",
+                    userDisplayName: "teststreamer3",
+                    platform: "kick"
                 };
                 expect(triggerEventMock).toHaveBeenCalledTimes(2); // 1 kick offline + 1 webhook-received
                 expect(triggerEventMock).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-offline", expectedMetadata);
@@ -301,9 +309,9 @@ describe('e2e livestream status updated', () => {
         });
     });
 
-    describe('no status change scenarios', () => {
+    describe("no status change scenarios", () => {
         beforeEach(() => {
-            const integration = require('../integration').integration;
+            const integration = require("../integration").integration;
             // Mock updateLiveStatus to return false (no change)
             integration.kick.channelManager.updateLiveStatus.mockReturnValue(false);
             integration.getSettings = () => ({
@@ -315,7 +323,7 @@ describe('e2e livestream status updated', () => {
             });
         });
 
-        it('does not trigger stream events when status unchanged via webhook stream start', async () => {
+        it("does not trigger stream events when status unchanged via webhook stream start", async () => {
             await expect(webhookHandler.handleWebhook(webhookStreamStartPayload)).resolves.not.toThrow();
             // With webhook-received events, we expect at least that event to be triggered
             // If no events are triggered at all, the webhook-received feature may not be implemented
@@ -331,19 +339,15 @@ describe('e2e livestream status updated', () => {
                     "webhook-received",
                     expect.objectContaining({
                         webhookType: "livestream.status.updated",
-                        platform: 'kick'
+                        platform: "kick"
                     })
                 );
                 // Should not trigger stream-online when status unchanged
-                expect(triggerEventMock).not.toHaveBeenCalledWith(
-                    IntegrationConstants.INTEGRATION_ID,
-                    "stream-online",
-                    expect.any(Object)
-                );
+                expect(triggerEventMock).not.toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-online", expect.any(Object));
             }
         });
 
-        it('does not trigger stream events when status unchanged via webhook stream stop', async () => {
+        it("does not trigger stream events when status unchanged via webhook stream stop", async () => {
             await expect(webhookHandler.handleWebhook(webhookStreamStopPayload)).resolves.not.toThrow();
             // With webhook-received events, we expect at least that event to be triggered
             // If no events are triggered at all, the webhook-received feature may not be implemented
@@ -359,15 +363,11 @@ describe('e2e livestream status updated', () => {
                     "webhook-received",
                     expect.objectContaining({
                         webhookType: "livestream.status.updated",
-                        platform: 'kick'
+                        platform: "kick"
                     })
                 );
                 // Should not trigger stream-offline when status unchanged
-                expect(triggerEventMock).not.toHaveBeenCalledWith(
-                    IntegrationConstants.INTEGRATION_ID,
-                    "stream-offline",
-                    expect.any(Object)
-                );
+                expect(triggerEventMock).not.toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "stream-offline", expect.any(Object));
             }
         });
     });

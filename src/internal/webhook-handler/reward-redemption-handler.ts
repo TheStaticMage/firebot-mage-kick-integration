@@ -1,8 +1,8 @@
-import { ChannelRewardRedemptionEvent } from "kick-api-types/v1";
-import { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
-import { RestrictionData } from "@crowbartools/firebot-custom-scripts-types/types/modules/command-manager";
+import type { Effects } from "@crowbartools/firebot-custom-scripts-types/types/effects";
+import type { RestrictionData } from "@crowbartools/firebot-custom-scripts-types/types/modules/command-manager";
 import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
-import { JsonDB } from "node-json-db";
+import type { ChannelRewardRedemptionEvent } from "kick-api-types/v1";
+import type { JsonDB } from "node-json-db";
 import { integration } from "../../integration-singleton";
 import { firebot, logger } from "../../main";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../util";
@@ -46,9 +46,7 @@ export class RewardRedemptionHandler {
         const kickRewardId = event.reward.id;
 
         const managementState = integration.getKickRewardsState().getAllManagementData();
-        const firebotRewardEntry = Object.entries(managementState).find(
-            ([, data]) => data.kickRewardId === kickRewardId
-        );
+        const firebotRewardEntry = Object.entries(managementState).find(([, data]) => data.kickRewardId === kickRewardId);
 
         if (!firebotRewardEntry) {
             logger.debug(`Reward redemption webhook received for unknown/unmanaged reward ID: ${kickRewardId}. Ignoring.`);
@@ -107,19 +105,13 @@ export class RewardRedemptionHandler {
 
         // Check if reward is disabled in Firebot
         if (channelReward.twitchData.isEnabled === false) {
-            logger.warn(
-                `Reward redemption ignored for "${event.reward.title}" - ` +
-                `Firebot channel reward is disabled. Enable it in Firebot's Channel Rewards Manager.`
-            );
+            logger.warn(`Reward redemption ignored for "${event.reward.title}" - Firebot channel reward is disabled. Enable it in Firebot's Channel Rewards Manager.`);
             return;
         }
 
         // Check if reward is paused in Firebot
         if (channelReward.twitchData.isPaused === true) {
-            logger.warn(
-                `Reward redemption ignored for "${event.reward.title}" - ` +
-                `Firebot channel reward is paused. Unpause it in Firebot's Channel Rewards Manager.`
-            );
+            logger.warn(`Reward redemption ignored for "${event.reward.title}" - Firebot channel reward is paused. Unpause it in Firebot's Channel Rewards Manager.`);
             return;
         }
 

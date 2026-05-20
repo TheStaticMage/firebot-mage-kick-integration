@@ -1,6 +1,6 @@
 import { integration } from "../integration-singleton";
 import { firebot, logger } from "../main";
-import { FirebotCustomReward, KickRewardManagementData } from "../shared/types";
+import type { FirebotCustomReward, KickRewardManagementData } from "../shared/types";
 import { reflectEvent } from "./reflector";
 
 function unwrapFirebotReward(firebotRewardWrapper: any): FirebotCustomReward | undefined {
@@ -13,7 +13,7 @@ function unwrapFirebotReward(firebotRewardWrapper: any): FirebotCustomReward | u
 }
 
 function getRewardById(rewards: any[], id: string): FirebotCustomReward | undefined {
-    const wrapper = rewards.find(r => r.id === id || r?.twitchData?.id === id);
+    const wrapper = rewards.find((r) => r.id === id || r?.twitchData?.id === id);
     return unwrapFirebotReward(wrapper);
 }
 
@@ -22,7 +22,12 @@ export class KickRewardsBackend {
 
     private buildInitialOverrides(
         reward: FirebotCustomReward,
-        overrides?: { cost?: number; skipQueue?: boolean; enabled?: boolean; paused?: boolean; }
+        overrides?: {
+            cost?: number;
+            skipQueue?: boolean;
+            enabled?: boolean;
+            paused?: boolean;
+        }
     ) {
         return {
             cost: overrides?.cost ?? reward.cost,
@@ -54,19 +59,10 @@ export class KickRewardsBackend {
 
             const currentEnabled = managementData.overrides?.enabled;
             const currentPaused = managementData.overrides?.paused;
-            const nextEnabled = typeof firebotReward.isEnabled === "boolean"
-                ? firebotReward.isEnabled
-                : currentEnabled;
-            const nextPaused = typeof firebotReward.isPaused === "boolean"
-                ? firebotReward.isPaused
-                : currentPaused;
+            const nextEnabled = typeof firebotReward.isEnabled === "boolean" ? firebotReward.isEnabled : currentEnabled;
+            const nextPaused = typeof firebotReward.isPaused === "boolean" ? firebotReward.isPaused : currentPaused;
 
-            if (
-                typeof currentEnabled === "boolean" &&
-                typeof currentPaused === "boolean" &&
-                nextEnabled === currentEnabled &&
-                nextPaused === currentPaused
-            ) {
+            if (typeof currentEnabled === "boolean" && typeof currentPaused === "boolean" && nextEnabled === currentEnabled && nextPaused === currentPaused) {
                 logger.debug(`Skipping Kick reward update for ${managementData.kickRewardId}. Enabled and paused state unchanged.`);
                 return;
             }
@@ -83,11 +79,7 @@ export class KickRewardsBackend {
                 overrides.paused = firebotReward.isPaused;
             }
 
-            const updateSuccess = await integration.kick.rewardsManager.updateReward(
-                managementData.kickRewardId,
-                firebotReward,
-                overrides
-            );
+            const updateSuccess = await integration.kick.rewardsManager.updateReward(managementData.kickRewardId, firebotReward, overrides);
 
             if (!updateSuccess) {
                 logger.error(`Failed to sync Kick reward ${managementData.kickRewardId} from Firebot update.`);
@@ -98,7 +90,9 @@ export class KickRewardsBackend {
             state.setManagementData(firebotRewardId, managementData);
             this.invalidateCache();
             this.sendStateUpdate();
-            frontendCommunicator.send("kick:channel-rewards-refresh", { firebotRewardId });
+            frontendCommunicator.send("kick:channel-rewards-refresh", {
+                firebotRewardId
+            });
         });
 
         frontendCommunicator.on("kick:get-reward-management-state", () => {
@@ -115,11 +109,11 @@ export class KickRewardsBackend {
                 const managementState = integration.getKickRewardsState().getAllManagementData();
                 const managedKickRewardIds = new Set(
                     Object.values(managementState)
-                        .filter(data => data.managedOnKick && data.kickRewardId)
-                        .map(data => data.kickRewardId)
+                        .filter((data) => data.managedOnKick && data.kickRewardId)
+                        .map((data) => data.kickRewardId)
                 );
 
-                const allRewardsData = kickRewards.map(reward => ({
+                const allRewardsData = kickRewards.map((reward) => ({
                     id: reward.id,
                     title: reward.title,
                     cost: reward.cost,
@@ -129,7 +123,7 @@ export class KickRewardsBackend {
                 }));
 
                 // Cache outside Firebot rewards (those not managed by us) for future calls
-                const outsideFirebotRewards = allRewardsData.filter(r => !r.isManaged);
+                const outsideFirebotRewards = allRewardsData.filter((r) => !r.isManaged);
                 this.cachedOutsideFirebotRewards = outsideFirebotRewards;
 
                 return allRewardsData;
@@ -139,10 +133,7 @@ export class KickRewardsBackend {
             }
         });
 
-        frontendCommunicator.onAsync("kick:manage-reward", async (data: {
-            firebotRewardId: string,
-            overrides?: { cost?: number; skipQueue?: boolean; enabled?: boolean; }
-        }) => {
+        frontendCommunicator.onAsync("kick:manage-reward", async (data: { firebotRewardId: string; overrides?: { cost?: number; skipQueue?: boolean; enabled?: boolean } }) => {
             try {
                 const state = integration.getKickRewardsState();
 
@@ -155,11 +146,7 @@ export class KickRewardsBackend {
                     throw new Error("Maximum of 15 Kick rewards reached. Cannot manage more rewards.");
                 }
 
-                const allRewards = await reflectEvent<FirebotCustomReward[]>(
-                    "get-channel-rewards",
-                    {},
-                    false
-                );
+                const allRewards = await reflectEvent<FirebotCustomReward[]>("get-channel-rewards", {}, false);
 
                 const firebotReward = getRewardById(allRewards || [], data.firebotRewardId);
                 if (!firebotReward) {
@@ -183,7 +170,6 @@ export class KickRewardsBackend {
                 state.setManagementData(data.firebotRewardId, managementData);
                 this.invalidateCache();
                 this.sendStateUpdate();
-
             } catch (error: any) {
                 logger.error(`Error managing reward: ${error.message}`);
                 frontendCommunicator.send("kick:reward-management-error", {
@@ -218,7 +204,6 @@ export class KickRewardsBackend {
                 state.removeManagementData(data.firebotRewardId);
                 this.invalidateCache();
                 this.sendStateUpdate();
-
             } catch (error: any) {
                 logger.error(`Error unmanaging reward: ${error.message}`);
                 frontendCommunicator.send("kick:reward-management-error", {
@@ -240,56 +225,59 @@ export class KickRewardsBackend {
             }
         });
 
-        frontendCommunicator.onAsync("kick:update-reward-overrides", async (data: {
-            firebotRewardId: string,
-            overrides: { cost?: number; skipQueue?: boolean; enabled?: boolean; paused?: boolean; }
-        }) => {
-            try {
-                const state = integration.getKickRewardsState();
-                const managementData = state.getManagementData(data.firebotRewardId);
-
-                if (!managementData || !managementData.kickRewardId) {
-                    throw new Error("Reward is not managed on Kick.");
-                }
-
-                const allRewards = await reflectEvent<FirebotCustomReward[]>(
-                    "get-channel-rewards",
-                    {},
-                    false
-                );
-
-                const firebotReward = getRewardById(allRewards || [], data.firebotRewardId);
-                if (!firebotReward) {
-                    throw new Error(`Firebot reward with ID ${data.firebotRewardId} not found.`);
-                }
-
-                const overrides = this.buildInitialOverrides(firebotReward, data.overrides);
-                const rewardUpdate = {
-                    ...firebotReward,
-                    isPaused: overrides.paused ?? firebotReward.isPaused
+        frontendCommunicator.onAsync(
+            "kick:update-reward-overrides",
+            async (data: {
+                firebotRewardId: string;
+                overrides: {
+                    cost?: number;
+                    skipQueue?: boolean;
+                    enabled?: boolean;
+                    paused?: boolean;
                 };
-                const success = await integration.kick.rewardsManager.updateReward(managementData.kickRewardId, rewardUpdate, overrides);
+            }) => {
+                try {
+                    const state = integration.getKickRewardsState();
+                    const managementData = state.getManagementData(data.firebotRewardId);
 
-                if (!success) {
-                    throw new Error("Failed to update reward on Kick API.");
+                    if (!managementData || !managementData.kickRewardId) {
+                        throw new Error("Reward is not managed on Kick.");
+                    }
+
+                    const allRewards = await reflectEvent<FirebotCustomReward[]>("get-channel-rewards", {}, false);
+
+                    const firebotReward = getRewardById(allRewards || [], data.firebotRewardId);
+                    if (!firebotReward) {
+                        throw new Error(`Firebot reward with ID ${data.firebotRewardId} not found.`);
+                    }
+
+                    const overrides = this.buildInitialOverrides(firebotReward, data.overrides);
+                    const rewardUpdate = {
+                        ...firebotReward,
+                        isPaused: overrides.paused ?? firebotReward.isPaused
+                    };
+                    const success = await integration.kick.rewardsManager.updateReward(managementData.kickRewardId, rewardUpdate, overrides);
+
+                    if (!success) {
+                        throw new Error("Failed to update reward on Kick API.");
+                    }
+
+                    // Update state with new overrides
+                    managementData.overrides = overrides;
+                    state.setManagementData(data.firebotRewardId, managementData);
+                    this.invalidateCache();
+                    this.sendStateUpdate();
+                } catch (error: any) {
+                    logger.error(`Error updating reward overrides: ${error.message}`);
+                    frontendCommunicator.send("kick:reward-management-error", {
+                        message: error.message,
+                        status: error.status,
+                        details: error.message
+                    });
+                    throw error;
                 }
-
-                // Update state with new overrides
-                managementData.overrides = overrides;
-                state.setManagementData(data.firebotRewardId, managementData);
-                this.invalidateCache();
-                this.sendStateUpdate();
-
-            } catch (error: any) {
-                logger.error(`Error updating reward overrides: ${error.message}`);
-                frontendCommunicator.send("kick:reward-management-error", {
-                    message: error.message,
-                    status: error.status,
-                    details: error.message
-                });
-                throw error;
             }
-        });
+        );
 
         frontendCommunicator.onAsync("kick:resync-reward", async (data: { firebotRewardId: string }) => {
             try {
@@ -300,11 +288,7 @@ export class KickRewardsBackend {
                     throw new Error("Reward is not managed on Kick.");
                 }
 
-                const allRewards = await reflectEvent<FirebotCustomReward[]>(
-                    "get-channel-rewards",
-                    {},
-                    false
-                );
+                const allRewards = await reflectEvent<FirebotCustomReward[]>("get-channel-rewards", {}, false);
 
                 const firebotReward = getRewardById(allRewards || [], data.firebotRewardId);
                 if (!firebotReward) {
@@ -329,7 +313,6 @@ export class KickRewardsBackend {
 
                 this.invalidateCache();
                 this.sendStateUpdate();
-
             } catch (error: any) {
                 logger.error(`Error re-syncing reward: ${error.message}`);
                 frontendCommunicator.send("kick:reward-management-error", {
@@ -346,11 +329,7 @@ export class KickRewardsBackend {
                 const state = integration.getKickRewardsState();
                 const managementState = state.getAllManagementData();
 
-                const allRewards = await reflectEvent<FirebotCustomReward[]>(
-                    "get-channel-rewards",
-                    {},
-                    false
-                );
+                const allRewards = await reflectEvent<FirebotCustomReward[]>("get-channel-rewards", {}, false);
 
                 const firebotRewardsMap = new Map<string, FirebotCustomReward>();
                 if (allRewards) {
@@ -364,7 +343,7 @@ export class KickRewardsBackend {
                 }
 
                 const kickRewards = await integration.kick.rewardsManager.getAllRewards();
-                const kickRewardsMap = new Map(kickRewards?.map(r => [r.id, r]) || []);
+                const kickRewardsMap = new Map(kickRewards?.map((r) => [r.id, r]) || []);
 
                 let unchangedCount = 0;
                 let updatedCount = 0;
@@ -385,17 +364,10 @@ export class KickRewardsBackend {
                     const kickReward = kickRewardsMap.get(data.kickRewardId);
                     const syncOverrides = {
                         ...(data.overrides || {}),
-                        enabled: typeof firebotReward.isEnabled === "boolean"
-                            ? firebotReward.isEnabled
-                            : data.overrides?.enabled,
-                        paused: typeof firebotReward.isPaused === "boolean"
-                            ? firebotReward.isPaused
-                            : data.overrides?.paused
+                        enabled: typeof firebotReward.isEnabled === "boolean" ? firebotReward.isEnabled : data.overrides?.enabled,
+                        paused: typeof firebotReward.isPaused === "boolean" ? firebotReward.isPaused : data.overrides?.paused
                     };
-                    const overridesChanged = (
-                        data.overrides?.enabled !== syncOverrides.enabled ||
-                        data.overrides?.paused !== syncOverrides.paused
-                    );
+                    const overridesChanged = data.overrides?.enabled !== syncOverrides.enabled || data.overrides?.paused !== syncOverrides.paused;
                     if (!kickReward) {
                         logger.debug(`Kick reward ${data.kickRewardId} not found, will recreate.`);
                     } else if (this.rewardNeedsSync(firebotReward, syncOverrides, kickReward)) {
@@ -429,11 +401,7 @@ export class KickRewardsBackend {
                             updatedCount++;
 
                             if (firebotReward.isPaused === true) {
-                                const pauseUpdateSuccess = await integration.kick.rewardsManager.updateReward(
-                                    newKickReward.id,
-                                    firebotReward,
-                                    syncOverrides
-                                );
+                                const pauseUpdateSuccess = await integration.kick.rewardsManager.updateReward(newKickReward.id, firebotReward, syncOverrides);
                                 if (!pauseUpdateSuccess) {
                                     logger.error(`Failed to sync paused state for Kick reward ${newKickReward.id}.`);
                                 }
@@ -444,11 +412,7 @@ export class KickRewardsBackend {
                         continue;
                     }
 
-                    const updateSuccess = await integration.kick.rewardsManager.updateReward(
-                        data.kickRewardId,
-                        firebotReward,
-                        syncOverrides
-                    );
+                    const updateSuccess = await integration.kick.rewardsManager.updateReward(data.kickRewardId, firebotReward, syncOverrides);
 
                     if (updateSuccess) {
                         data.firebotRewardTitle = firebotReward.title;
@@ -462,8 +426,11 @@ export class KickRewardsBackend {
 
                 this.invalidateCache();
                 this.sendStateUpdate();
-                return { unchanged: unchangedCount, updated: updatedCount, failed: failedCount };
-
+                return {
+                    unchanged: unchangedCount,
+                    updated: updatedCount,
+                    failed: failedCount
+                };
             } catch (error: any) {
                 logger.error(`Error syncing all rewards: ${error.message}`);
                 frontendCommunicator.send("kick:reward-management-error", {
@@ -484,7 +451,7 @@ export class KickRewardsBackend {
 
                 // Get all current Kick rewards to verify existence
                 const kickRewards = await integration.kick.rewardsManager.getAllRewards();
-                const kickRewardIds = new Set(kickRewards?.map(r => r.id) || []);
+                const kickRewardIds = new Set(kickRewards?.map((r) => r.id) || []);
 
                 // Fetch all Firebot rewards once
                 const firebotRewardWrappers = await reflectEvent<any[]>("get-channel-rewards", {}, false);
@@ -538,7 +505,6 @@ export class KickRewardsBackend {
                 this.invalidateCache();
                 this.sendStateUpdate();
                 return { updated: updatedCount };
-
             } catch (error: any) {
                 logger.error(`Error reconciling rewards: ${error.message}`);
                 frontendCommunicator.send("kick:reward-management-error", {
@@ -553,7 +519,12 @@ export class KickRewardsBackend {
 
     private rewardNeedsSync(
         firebotReward: FirebotCustomReward,
-        overrides: { cost?: number; skipQueue?: boolean; enabled?: boolean; paused?: boolean; },
+        overrides: {
+            cost?: number;
+            skipQueue?: boolean;
+            enabled?: boolean;
+            paused?: boolean;
+        },
         kickReward: any
     ): boolean {
         const expectedCost = overrides.cost ?? firebotReward.cost;
@@ -576,7 +547,12 @@ export class KickRewardsBackend {
 
     private logRewardChanges(
         firebotReward: FirebotCustomReward,
-        overrides: { cost?: number; skipQueue?: boolean; enabled?: boolean; paused?: boolean; },
+        overrides: {
+            cost?: number;
+            skipQueue?: boolean;
+            enabled?: boolean;
+            paused?: boolean;
+        },
         kickReward: any
     ): void {
         const expectedCost = overrides.cost ?? firebotReward.cost;

@@ -2,7 +2,7 @@ import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { StreamHostedEvent } from "../shared/types";
+import type { StreamHostedEvent } from "../shared/types";
 
 export async function handleStreamHostedEvent(payload: StreamHostedEvent): Promise<void> {
     const userId = kickifyUserId(payload.user.userId.toString());

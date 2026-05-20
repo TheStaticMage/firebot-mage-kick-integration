@@ -1,7 +1,7 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
-import { IntegrationConstants } from '../../constants';
-import { logger } from '../../main';
+import type { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import { detectPlatform } from "@thestaticmage/mage-platform-lib-client";
+import { IntegrationConstants } from "../../constants";
+import { logger } from "../../main";
 
 export const kickSubTypeVariable: ReplaceVariable = {
     definition: {
@@ -28,9 +28,13 @@ export const kickSubTypeVariable: ReplaceVariable = {
                         return "Tier 2";
                     case "3000":
                         return "Tier 3";
+                    default:
+                        break;
                 }
                 logger.warn(`kickSubTypeVariable: Unknown Twitch sub plan! ${JSON.stringify(trigger.metadata)}`);
                 return "";
+            default:
+                break;
         }
         logger.warn(`kickSubTypeVariable: Unknown platform! ${JSON.stringify(trigger.metadata)}`);
         return "";

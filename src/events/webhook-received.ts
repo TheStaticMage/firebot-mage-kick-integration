@@ -2,7 +2,7 @@ import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { WebhookReceivedEvent } from "../shared/types";
+import type { WebhookReceivedEvent } from "../shared/types";
 
 export async function handleWebhookReceivedEvent(payload: WebhookReceivedEvent): Promise<void> {
     const broadcaster = integration.kick.broadcaster;

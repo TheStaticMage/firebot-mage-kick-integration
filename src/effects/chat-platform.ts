@@ -1,4 +1,4 @@
-import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import type { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { integration } from "../integration";
 import { ChatManager } from "../internal/chat-manager";
 import { logger } from "../main";
@@ -20,7 +20,7 @@ type chatPlatformEffectParams = {
     skipTwitch?: boolean; // DEPRECATED
     sendTwitch: "never" | "always" | "trigger";
     sendKick: "never" | "always" | "trigger";
-}
+};
 
 export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = {
     definition: {
@@ -141,10 +141,10 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
 
         // Backward compatibility / update
         if ($scope.effect.sendKick === undefined) {
-            $scope.effect.sendKick = $scope.effect.alwaysSendKick ? "always" : ($scope.effect.skipKick ? "never" : "trigger");
+            $scope.effect.sendKick = $scope.effect.alwaysSendKick ? "always" : $scope.effect.skipKick ? "never" : "trigger";
         }
         if ($scope.effect.sendTwitch === undefined) {
-            $scope.effect.sendTwitch = $scope.effect.alwaysSendTwitch ? "always" : ($scope.effect.skipTwitch ? "never" : "trigger");
+            $scope.effect.sendTwitch = $scope.effect.alwaysSendTwitch ? "always" : $scope.effect.skipTwitch ? "never" : "trigger";
         }
 
         // Deprecation
@@ -204,10 +204,10 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
     onTriggerEvent: async ({ effect, trigger }) => {
         // Handle deprecated parameters gracefully
         if (effect.sendKick === undefined) {
-            effect.sendKick = effect.alwaysSendKick ? "always" : (effect.skipKick ? "never" : "trigger");
+            effect.sendKick = effect.alwaysSendKick ? "always" : effect.skipKick ? "never" : "trigger";
         }
         if (effect.sendTwitch === undefined) {
-            effect.sendTwitch = effect.alwaysSendTwitch ? "always" : (effect.skipTwitch ? "never" : "trigger");
+            effect.sendTwitch = effect.alwaysSendTwitch ? "always" : effect.skipTwitch ? "never" : "trigger";
         }
 
         // The user ID determines which platform the message came from.
@@ -215,9 +215,9 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
 
         // Send the message via the Kick
         if ((platform === "kick" && effect.sendKick === "trigger") || (platform === "unknown" && effect.defaultSendKick && effect.sendKick === "trigger") || effect.sendKick === "always") {
-            let messageId = undefined;
-            if (effect.sendAsReplyKick && platform === 'kick') {
-                messageId = getPropertyFromChatMessage(trigger, 'id') || undefined;
+            let messageId;
+            if (effect.sendAsReplyKick && platform === "kick") {
+                messageId = getPropertyFromChatMessage(trigger, "id") || undefined;
             }
 
             logger.debug(`Sending message to Kick. (Reply: ${messageId ? messageId : "N/A"})`);
@@ -227,9 +227,9 @@ export const chatPlatformEffect: Firebot.EffectType<chatPlatformEffectParams> = 
 
         // Send the message via Twitch
         if ((platform === "twitch" && effect.sendTwitch === "trigger") || (platform === "unknown" && effect.defaultSendTwitch && effect.sendTwitch === "trigger") || effect.sendTwitch === "always") {
-            let messageId = undefined;
-            if (effect.sendAsReply && platform === 'twitch') {
-                messageId = getPropertyFromChatMessage(trigger, 'id') || undefined;
+            let messageId;
+            if (effect.sendAsReply && platform === "twitch") {
+                messageId = getPropertyFromChatMessage(trigger, "id") || undefined;
             }
 
             logger.debug(`Sending message to Twitch. (Reply: ${messageId ? messageId : "N/A"})`);

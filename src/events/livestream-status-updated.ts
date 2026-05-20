@@ -2,7 +2,7 @@ import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot } from "../main";
-import { LivestreamStatusUpdated } from "../shared/types";
+import type { LivestreamStatusUpdated } from "../shared/types";
 
 class LivestreamStatusUpdatedHandler {
     // This can be triggered by pusher and webhook, probably in close proximity.
@@ -23,11 +23,7 @@ class LivestreamStatusUpdatedHandler {
         }
     }
 
-    private triggerStreamOnline(
-        username: string,
-        userId: string,
-        userDisplayName: string
-    ) {
+    private triggerStreamOnline(username: string, userId: string, userDisplayName: string) {
         const { eventManager } = firebot.modules;
         const metadata = {
             username: kickifyUsername(username),
@@ -42,11 +38,7 @@ class LivestreamStatusUpdatedHandler {
         }
     }
 
-    private triggerStreamOffline(
-        username: string,
-        userId: string,
-        userDisplayName: string
-    ) {
+    private triggerStreamOffline(username: string, userId: string, userDisplayName: string) {
         const { eventManager } = firebot.modules;
         const metadata = {
             username: kickifyUsername(username),

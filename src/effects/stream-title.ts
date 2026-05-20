@@ -1,4 +1,4 @@
-import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import type { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { integration } from "../integration";
 import { logger } from "../main";
 
@@ -33,17 +33,12 @@ export const streamTitleEffect: Firebot.EffectType<{
 
         // Set the stream title using the integration
         const payload = {
-            // eslint-disable-next-line camelcase
             stream_title: effect.title
         };
 
         logger.debug(`Setting stream title via payload: ${JSON.stringify(payload)}`);
 
-        await integration.kick.httpCallWithTimeout(
-            "/public/v1/channels",
-            "PATCH",
-            JSON.stringify(payload)
-        );
+        await integration.kick.httpCallWithTimeout("/public/v1/channels", "PATCH", JSON.stringify(payload));
 
         return true;
     }

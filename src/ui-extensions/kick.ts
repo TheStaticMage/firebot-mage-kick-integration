@@ -1,10 +1,6 @@
-import {
-    AngularJsFactory,
-    AngularJsPage,
-    UIExtension
-} from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
-import { loadTemplate } from "./kick-template-loader";
+import type { AngularJsFactory, AngularJsPage, UIExtension } from "@crowbartools/firebot-custom-scripts-types/types/modules/ui-extension-manager";
 import { kickBackendService } from "./kick-backend-service";
+import { loadTemplate } from "./kick-template-loader";
 import { kickUtilitiesService } from "./kick-utilities";
 
 const kickIntegrationPage: AngularJsPage = {
@@ -125,7 +121,7 @@ const kickIntegrationPage: AngularJsPage = {
                     authModalCloser = closeModal;
                     $scope.close = closeModal;
 
-                    $scope.$on('$destroy', () => {
+                    $scope.$on("$destroy", () => {
                         $interval.cancel(statusCheckInterval);
                         authModalCloser = null;
                     });
@@ -147,10 +143,7 @@ const kickIntegrationPage: AngularJsPage = {
         };
 
         $scope.deauthorizeStreamer = () => {
-            showConfirmModal(
-                "Deauthorize Streamer",
-                "Are you sure you want to deauthorize the streamer connection?"
-            ).then((confirmed) => {
+            showConfirmModal("Deauthorize Streamer", "Are you sure you want to deauthorize the streamer connection?").then((confirmed) => {
                 if (confirmed) {
                     kickBackendService.deauthorizeStreamer();
                 }
@@ -162,10 +155,7 @@ const kickIntegrationPage: AngularJsPage = {
         };
 
         $scope.deauthorizeBot = () => {
-            showConfirmModal(
-                "Deauthorize Bot",
-                "Are you sure you want to deauthorize the bot connection?"
-            ).then((confirmed) => {
+            showConfirmModal("Deauthorize Bot", "Are you sure you want to deauthorize the bot connection?").then((confirmed) => {
                 if (confirmed) {
                     kickBackendService.deauthorizeBot();
                 }
@@ -250,45 +240,51 @@ const kickIntegrationPage: AngularJsPage = {
         };
 
         $scope.registerWebhook = () => {
-            kickBackendService.registerWebhook().then((result: any) => {
-                $timeout(() => {
-                    if (result.success) {
-                        $scope.webhookUrl = result.url;
-                    } else {
-                        showErrorModal("Webhook Registration Failed", result.error || "Failed to register webhook");
-                    }
+            kickBackendService
+                .registerWebhook()
+                .then((result: any) => {
+                    $timeout(() => {
+                        if (result.success) {
+                            $scope.webhookUrl = result.url;
+                        } else {
+                            showErrorModal("Webhook Registration Failed", result.error || "Failed to register webhook");
+                        }
+                    });
+                })
+                .catch((error: any) => {
+                    logger.error("Failed to register webhook:", error);
+                    $timeout(() => {
+                        showErrorModal("Webhook Registration Failed", error?.message || "An error occurred while registering the webhook");
+                    });
                 });
-            }).catch((error: any) => {
-                logger.error("Failed to register webhook:", error);
-                $timeout(() => {
-                    showErrorModal("Webhook Registration Failed", error?.message || "An error occurred while registering the webhook");
-                });
-            });
         };
 
         $scope.resetWebhookSubscriptions = () => {
-            showConfirmModal(
-                "Reset Webhook Subscriptions",
-                "This will reset all webhook subscriptions and reconnect the integration. This may cause brief instability. Are you sure?"
-            ).then((confirmed) => {
+            showConfirmModal("Reset Webhook Subscriptions", "This will reset all webhook subscriptions and reconnect the integration. This may cause brief instability. Are you sure?").then((confirmed) => {
                 if (!confirmed) {
                     return;
                 }
 
-                kickBackendService.resetWebhookSubscriptions().then((result: any) => {
-                    $timeout(() => {
-                        if (result.success) {
-                            showInfoModal("Webhook Reset Complete", "Webhook subscriptions have been reset and the integration has been reconnected. If webhooks do not work correctly, please check the Firebot logs for any error messages.");
-                        } else {
-                            showErrorModal("Webhook Reset Failed", result.error || "Failed to reset webhook subscriptions");
-                        }
+                kickBackendService
+                    .resetWebhookSubscriptions()
+                    .then((result: any) => {
+                        $timeout(() => {
+                            if (result.success) {
+                                showInfoModal(
+                                    "Webhook Reset Complete",
+                                    "Webhook subscriptions have been reset and the integration has been reconnected. If webhooks do not work correctly, please check the Firebot logs for any error messages."
+                                );
+                            } else {
+                                showErrorModal("Webhook Reset Failed", result.error || "Failed to reset webhook subscriptions");
+                            }
+                        });
+                    })
+                    .catch((error: any) => {
+                        logger.error("Failed to reset webhook subscriptions:", error);
+                        $timeout(() => {
+                            showErrorModal("Webhook Reset Failed", error?.message || "An error occurred while resetting webhook subscriptions");
+                        });
                     });
-                }).catch((error: any) => {
-                    logger.error("Failed to reset webhook subscriptions:", error);
-                    $timeout(() => {
-                        showErrorModal("Webhook Reset Failed", error?.message || "An error occurred while resetting webhook subscriptions");
-                    });
-                });
             });
         };
 
@@ -308,7 +304,7 @@ const kickIntegrationPage: AngularJsPage = {
         $scope.rewardHeaders = [
             {
                 headerStyles: {
-                    'width': '200px'
+                    width: "200px"
                 },
                 name: "REWARD",
                 icon: "fa-gifts",
@@ -324,7 +320,7 @@ const kickIntegrationPage: AngularJsPage = {
                 name: "STATUS",
                 icon: "fa-circle",
                 headerStyles: {
-                    'width': '125px'
+                    width: "125px"
                 },
                 cellTemplate: `
                     <span class="label" ng-class="{'label-success': data.syncState.managedOnKick, 'label-default': !data.syncState.managedOnKick, 'label-warning': data.isExternal}">
@@ -339,7 +335,7 @@ const kickIntegrationPage: AngularJsPage = {
                 dataField: "cost",
                 sortable: true,
                 headerStyles: {
-                    'width': '125px'
+                    width: "125px"
                 },
                 cellTemplate: `
                     <span ng-if="!data.isExternal">{{ data.cost }}</span>
@@ -350,7 +346,7 @@ const kickIntegrationPage: AngularJsPage = {
                 name: "KICK COST",
                 icon: "fa-coin",
                 headerStyles: {
-                    'width': '125px'
+                    width: "125px"
                 },
                 cellTemplate: `
                     <span ng-if="data.isExternal">{{ data.cost }}</span>
@@ -364,11 +360,11 @@ const kickIntegrationPage: AngularJsPage = {
                 name: "SKIP QUEUE",
                 icon: "fa-forward",
                 headerStyles: {
-                    'width': '100px',
-                    'text-align': 'center'
+                    width: "100px",
+                    "text-align": "center"
                 },
                 cellStyles: {
-                    'text-align': 'center'
+                    "text-align": "center"
                 },
                 cellTemplate: `
                     <span ng-if="data.isExternal">&nbsp;</span>
@@ -381,11 +377,11 @@ const kickIntegrationPage: AngularJsPage = {
                 name: "ENABLED",
                 icon: "fa-toggle-on",
                 headerStyles: {
-                    'width': '100px',
-                    'text-align': 'center'
+                    width: "100px",
+                    "text-align": "center"
                 },
                 cellStyles: {
-                    'text-align': 'center'
+                    "text-align": "center"
                 },
                 cellTemplate: `
                     <span ng-if="data.isExternal">&nbsp;</span>
@@ -398,11 +394,11 @@ const kickIntegrationPage: AngularJsPage = {
                 name: "PAUSED",
                 icon: "fa-pause",
                 headerStyles: {
-                    'width': '100px',
-                    'text-align': 'center'
+                    width: "100px",
+                    "text-align": "center"
                 },
                 cellStyles: {
-                    'text-align': 'center'
+                    "text-align": "center"
                 },
                 cellTemplate: `
                     <span ng-if="data.isExternal">&nbsp;</span>
@@ -415,7 +411,10 @@ const kickIntegrationPage: AngularJsPage = {
 
         const applyManagementStateToRewards = (rewards: any[], managementState: any) => {
             return rewards.map((reward) => {
-                const management = managementState[reward.id] || { managedOnKick: false, overrides: {} };
+                const management = managementState[reward.id] || {
+                    managedOnKick: false,
+                    overrides: {}
+                };
                 const overrides = management.overrides || {};
                 return {
                     ...reward,
@@ -514,7 +513,8 @@ const kickIntegrationPage: AngularJsPage = {
                         syncState.overrides.cost = $scope.cost;
                         syncState.overrides.skipQueue = $scope.skipQueue;
 
-                        kickBackendService.updateRewardOverrides(reward.id, syncState.overrides)
+                        kickBackendService
+                            .updateRewardOverrides(reward.id, syncState.overrides)
                             .then(() => {
                                 $uibModalInstance.close({ action: "save" });
                             })
@@ -568,28 +568,29 @@ const kickIntegrationPage: AngularJsPage = {
                 });
 
                 // Fetch all Kick rewards to get external ones
-                kickBackendService.getAllKickRewards().then((kickRewards: any[]) => {
-                    const kickRewardsById = new Map(kickRewards.map((reward: any) => [reward.id, reward]));
-                    const outsideFirebotRewards = kickRewards
-                        .filter((r: any) => !r.isManaged)
-                        .map((r: any) => ({
-                            id: `outside-firebot-${r.id}`,
-                            title: r.title,
-                            cost: r.cost,
-                            isExternal: true,
-                            syncState: { managedOnKick: false, overrides: {} }
-                        }));
+                kickBackendService
+                    .getAllKickRewards()
+                    .then((kickRewards: any[]) => {
+                        const kickRewardsById = new Map(kickRewards.map((reward: any) => [reward.id, reward]));
+                        const outsideFirebotRewards = kickRewards
+                            .filter((r: any) => !r.isManaged)
+                            .map((r: any) => ({
+                                id: `outside-firebot-${r.id}`,
+                                title: r.title,
+                                cost: r.cost,
+                                isExternal: true,
+                                syncState: { managedOnKick: false, overrides: {} }
+                            }));
 
-                    $timeout(() => {
-                        const normalizedState = kickUtilitiesService.normalizeManagementState(state);
-                        $scope.rewardsTab.syncState = normalizedState;
-                        $scope.rewardsTab.syncedCount = Object.values(normalizedState).filter((s: any) => s.managedOnKick).length;
-                        $scope.rewardsTab.baseRewards = manageable;
-                        $scope.rewardsTab.kickRewards = kickRewards;
-                        $scope.rewardsTab.totalKickRewardsCount = kickRewards.length;
-                        $scope.rewardsTab.outsideFirebotRewards = outsideFirebotRewards;
-                        const firebotRewardsWithSync = applyManagementStateToRewards(manageable, normalizedState)
-                            .map((reward: any) => {
+                        $timeout(() => {
+                            const normalizedState = kickUtilitiesService.normalizeManagementState(state);
+                            $scope.rewardsTab.syncState = normalizedState;
+                            $scope.rewardsTab.syncedCount = Object.values(normalizedState).filter((s: any) => s.managedOnKick).length;
+                            $scope.rewardsTab.baseRewards = manageable;
+                            $scope.rewardsTab.kickRewards = kickRewards;
+                            $scope.rewardsTab.totalKickRewardsCount = kickRewards.length;
+                            $scope.rewardsTab.outsideFirebotRewards = outsideFirebotRewards;
+                            const firebotRewardsWithSync = applyManagementStateToRewards(manageable, normalizedState).map((reward: any) => {
                                 const kickRewardId = reward.syncState.kickRewardId;
                                 const kickReward = kickRewardId ? kickRewardsById.get(kickRewardId) : undefined;
                                 return {
@@ -598,24 +599,25 @@ const kickIntegrationPage: AngularJsPage = {
                                     kickIsPaused: kickReward?.isPaused
                                 };
                             });
-                        $scope.rewardsTab.firebotRewards = [...firebotRewardsWithSync, ...outsideFirebotRewards];
-                        $scope.rewardsTab.loading = false;
-                        logger.debug("Final sync state after load:", $scope.rewardsTab.syncState);
-                        logger.debug("Synced count:", $scope.rewardsTab.syncedCount);
-                        logger.debug("Total Kick rewards:", $scope.rewardsTab.totalKickRewardsCount);
+                            $scope.rewardsTab.firebotRewards = [...firebotRewardsWithSync, ...outsideFirebotRewards];
+                            $scope.rewardsTab.loading = false;
+                            logger.debug("Final sync state after load:", $scope.rewardsTab.syncState);
+                            logger.debug("Synced count:", $scope.rewardsTab.syncedCount);
+                            logger.debug("Total Kick rewards:", $scope.rewardsTab.totalKickRewardsCount);
+                        });
+                    })
+                    .catch((error: any) => {
+                        logger.error("Failed to load Kick rewards:", error);
+                        $timeout(() => {
+                            const normalizedState = kickUtilitiesService.normalizeManagementState(state);
+                            $scope.rewardsTab.syncState = normalizedState;
+                            $scope.rewardsTab.syncedCount = Object.values(normalizedState).filter((s: any) => s.managedOnKick).length;
+                            $scope.rewardsTab.baseRewards = manageable;
+                            $scope.rewardsTab.kickRewards = [];
+                            $scope.rewardsTab.firebotRewards = applyManagementStateToRewards(manageable, normalizedState);
+                            $scope.rewardsTab.loading = false;
+                        });
                     });
-                }).catch((error: any) => {
-                    logger.error("Failed to load Kick rewards:", error);
-                    $timeout(() => {
-                        const normalizedState = kickUtilitiesService.normalizeManagementState(state);
-                        $scope.rewardsTab.syncState = normalizedState;
-                        $scope.rewardsTab.syncedCount = Object.values(normalizedState).filter((s: any) => s.managedOnKick).length;
-                        $scope.rewardsTab.baseRewards = manageable;
-                        $scope.rewardsTab.kickRewards = [];
-                        $scope.rewardsTab.firebotRewards = applyManagementStateToRewards(manageable, normalizedState);
-                        $scope.rewardsTab.loading = false;
-                    });
-                });
             } catch (error: any) {
                 logger.error("Failed to load rewards:", error);
                 $timeout(() => {
@@ -627,58 +629,64 @@ const kickIntegrationPage: AngularJsPage = {
 
         $scope.reconcileRewards = () => {
             $scope.rewardsTab.loading = true;
-            kickBackendService.reconcileRewards().then(() => {
-                $timeout(() => {
-                    $scope.rewardsTab.loading = false;
-                    $scope.loadRewards();
+            kickBackendService
+                .reconcileRewards()
+                .then(() => {
+                    $timeout(() => {
+                        $scope.rewardsTab.loading = false;
+                        $scope.loadRewards();
+                    });
+                })
+                .catch((error: any) => {
+                    logger.error("Failed to reconcile rewards:", error);
+                    $timeout(() => {
+                        $scope.rewardsTab.loading = false;
+                        showErrorModal("Reconcile Failed", error?.message || "Failed to reconcile rewards", error?.details);
+                    });
                 });
-            }).catch((error: any) => {
-                logger.error("Failed to reconcile rewards:", error);
-                $timeout(() => {
-                    $scope.rewardsTab.loading = false;
-                    showErrorModal("Reconcile Failed", error?.message || "Failed to reconcile rewards", error?.details);
-                });
-            });
         };
 
         $scope.manageReward = (rewardId: string) => {
             $scope.rewardsTab.loading = true;
-            kickBackendService.manageReward(rewardId).then(() => {
-                $timeout(() => {
-                    $scope.rewardsTab.loading = false;
+            kickBackendService
+                .manageReward(rewardId)
+                .then(() => {
+                    $timeout(() => {
+                        $scope.rewardsTab.loading = false;
+                    });
+                })
+                .catch((error: any) => {
+                    logger.error("Failed to manage reward:", error);
+                    $timeout(() => {
+                        $scope.rewardsTab.loading = false;
+                        const statusMsg = error?.status ? ` (HTTP ${error.status})` : "";
+                        showErrorModal("Manage Reward Failed", error?.message || "Failed to manage reward in Kick", `${error?.message || ""}${statusMsg}`);
+                    });
                 });
-            }).catch((error: any) => {
-                logger.error("Failed to manage reward:", error);
-                $timeout(() => {
-                    $scope.rewardsTab.loading = false;
-                    const statusMsg = error?.status ? ` (HTTP ${error.status})` : "";
-                    showErrorModal("Manage Reward Failed", error?.message || "Failed to manage reward in Kick", `${error?.message || ""}${statusMsg}`);
-                });
-            });
         };
 
         $scope.unmanageReward = (rewardId: string) => {
-            showConfirmModal(
-                "Stop Managing Reward",
-                "This will delete the reward on Kick but keep it in Firebot."
-            ).then((confirmed) => {
+            showConfirmModal("Stop Managing Reward", "This will delete the reward on Kick but keep it in Firebot.").then((confirmed) => {
                 if (!confirmed) {
                     return;
                 }
 
                 $scope.rewardsTab.loading = true;
-                kickBackendService.unmanageReward(rewardId).then(() => {
-                    $timeout(() => {
-                        $scope.rewardsTab.loading = false;
+                kickBackendService
+                    .unmanageReward(rewardId)
+                    .then(() => {
+                        $timeout(() => {
+                            $scope.rewardsTab.loading = false;
+                        });
+                    })
+                    .catch((error: any) => {
+                        logger.error("Failed to unmanage reward:", error);
+                        $timeout(() => {
+                            $scope.rewardsTab.loading = false;
+                            const statusMsg = error?.status ? ` (HTTP ${error.status})` : "";
+                            showErrorModal("Remove Reward Failed", error?.message || "Failed to remove reward from Kick", `${error?.message || ""}${statusMsg}`);
+                        });
                     });
-                }).catch((error: any) => {
-                    logger.error("Failed to unmanage reward:", error);
-                    $timeout(() => {
-                        $scope.rewardsTab.loading = false;
-                        const statusMsg = error?.status ? ` (HTTP ${error.status})` : "";
-                        showErrorModal("Remove Reward Failed", error?.message || "Failed to remove reward from Kick", `${error?.message || ""}${statusMsg}`);
-                    });
-                });
             });
         };
 
@@ -699,48 +707,51 @@ const kickIntegrationPage: AngularJsPage = {
 
         $scope.resyncReward = (rewardId: string) => {
             $scope.rewardsTab.loading = true;
-            kickBackendService.resyncReward(rewardId).then(() => {
-                $timeout(() => {
-                    $scope.rewardsTab.loading = false;
+            kickBackendService
+                .resyncReward(rewardId)
+                .then(() => {
+                    $timeout(() => {
+                        $scope.rewardsTab.loading = false;
+                    });
+                })
+                .catch((error: any) => {
+                    logger.error("Failed to re-sync reward:", error);
+                    $timeout(() => {
+                        $scope.rewardsTab.loading = false;
+                        const statusMsg = error?.status ? ` (HTTP ${error.status})` : "";
+                        showErrorModal("Re-sync Failed", error?.message || "Failed to re-sync reward to Kick", `${error?.message || ""}${statusMsg}`);
+                    });
                 });
-            }).catch((error: any) => {
-                logger.error("Failed to re-sync reward:", error);
-                $timeout(() => {
-                    $scope.rewardsTab.loading = false;
-                    const statusMsg = error?.status ? ` (HTTP ${error.status})` : "";
-                    showErrorModal("Re-sync Failed", error?.message || "Failed to re-sync reward to Kick", `${error?.message || ""}${statusMsg}`);
-                });
-            });
         };
 
         $scope.syncAllRewards = () => {
-            showConfirmModal(
-                "Sync All Rewards",
-                "Sync all managed rewards to Kick with current Firebot settings?"
-            ).then((confirmed) => {
+            showConfirmModal("Sync All Rewards", "Sync all managed rewards to Kick with current Firebot settings?").then((confirmed) => {
                 if (!confirmed) {
                     return;
                 }
 
                 $scope.rewardsTab.loading = true;
-                kickBackendService.syncAllRewards().then((result: any) => {
-                    $timeout(() => {
-                        $scope.rewardsTab.loading = false;
-                        let message = `Unchanged: ${result.unchanged}, Updated: ${result.updated}`;
-                        if (result.failed > 0) {
-                            message += `, Failed: ${result.failed}`;
-                        }
-                        showInfoModal("Sync Complete", message);
-                        $scope.loadRewards();
+                kickBackendService
+                    .syncAllRewards()
+                    .then((result: any) => {
+                        $timeout(() => {
+                            $scope.rewardsTab.loading = false;
+                            let message = `Unchanged: ${result.unchanged}, Updated: ${result.updated}`;
+                            if (result.failed > 0) {
+                                message += `, Failed: ${result.failed}`;
+                            }
+                            showInfoModal("Sync Complete", message);
+                            $scope.loadRewards();
+                        });
+                    })
+                    .catch((error: any) => {
+                        logger.error("Failed to sync all rewards:", error);
+                        $timeout(() => {
+                            $scope.rewardsTab.loading = false;
+                            const statusMsg = error?.status ? ` (HTTP ${error.status})` : "";
+                            showErrorModal("Sync All Rewards Failed", error?.message || "Failed to sync all rewards to Kick", `${error?.message || ""}${statusMsg}`);
+                        });
                     });
-                }).catch((error: any) => {
-                    logger.error("Failed to sync all rewards:", error);
-                    $timeout(() => {
-                        $scope.rewardsTab.loading = false;
-                        const statusMsg = error?.status ? ` (HTTP ${error.status})` : "";
-                        showErrorModal("Sync All Rewards Failed", error?.message || "Failed to sync all rewards to Kick", `${error?.message || ""}${statusMsg}`);
-                    });
-                });
             });
         };
 
@@ -756,7 +767,8 @@ const kickIntegrationPage: AngularJsPage = {
             };
 
             $scope.rewardsTab.loading = true;
-            kickBackendService.updateRewardOverrides(rewardId, overrides)
+            kickBackendService
+                .updateRewardOverrides(rewardId, overrides)
                 .then(() => {
                     $timeout(() => {
                         $scope.rewardsTab.loading = false;
@@ -785,14 +797,14 @@ const kickIntegrationPage: AngularJsPage = {
             if (isSynced) {
                 options.push({
                     html: `<a href><i class="far fa-pen" style="margin-right: 10px;"></i> Edit Kick Properties</a>`,
-                    click: function () {
+                    click: () => {
                         $scope.showEditPropertiesModal(item);
                     },
                     enabled: !$scope.rewardsTab.loading
                 });
                 options.push({
                     html: `<a href><i class="far fa-sync" style="margin-right: 10px;"></i> Re-sync</a>`,
-                    click: function () {
+                    click: () => {
                         $scope.resyncReward(item.id);
                     },
                     enabled: !$scope.rewardsTab.loading
@@ -802,7 +814,7 @@ const kickIntegrationPage: AngularJsPage = {
             if (!isSynced) {
                 options.push({
                     html: `<a href><i class="far fa-sync" style="margin-right: 10px;"></i> Start Managing in Kick</a>`,
-                    click: function () {
+                    click: () => {
                         $scope.manageReward(item.id);
                     },
                     enabled: $scope.rewardsTab.totalKickRewardsCount < 15 && !$scope.rewardsTab.loading
@@ -810,7 +822,7 @@ const kickIntegrationPage: AngularJsPage = {
             } else {
                 options.push({
                     html: `<a href style="color: #fb7373;"><i class="far fa-times" style="margin-right: 10px;"></i> Stop Managing in Kick</a>`,
-                    click: function () {
+                    click: () => {
                         $scope.unmanageReward(item.id);
                     },
                     enabled: !$scope.rewardsTab.loading
@@ -824,13 +836,8 @@ const kickIntegrationPage: AngularJsPage = {
             $timeout(() => {
                 const normalizedState = kickUtilitiesService.normalizeManagementState(state);
                 $scope.rewardsTab.syncState = normalizedState;
-                const kickRewardsById = new Map<string, any>(
-                    ($scope.rewardsTab.kickRewards || []).map((reward: any) => [reward.id, reward])
-                );
-                const firebotRewardsWithSync = applyManagementStateToRewards(
-                    $scope.rewardsTab.baseRewards || [],
-                    normalizedState
-                ).map((reward: any) => {
+                const kickRewardsById = new Map<string, any>(($scope.rewardsTab.kickRewards || []).map((reward: any) => [reward.id, reward]));
+                const firebotRewardsWithSync = applyManagementStateToRewards($scope.rewardsTab.baseRewards || [], normalizedState).map((reward: any) => {
                     const kickRewardId = reward.syncState.kickRewardId;
                     const kickReward = kickRewardId ? kickRewardsById.get(kickRewardId) : undefined;
                     return {
@@ -881,9 +888,7 @@ const kickIntegrationPage: AngularJsPage = {
             }
 
             const data = connectionData || $scope.connections;
-            const authReady = $scope.currentAuthType === "streamer"
-                ? data.streamer.ready
-                : data.bot.ready;
+            const authReady = $scope.currentAuthType === "streamer" ? data.streamer.ready : data.bot.ready;
 
             if (authReady) {
                 authModalCloser();
@@ -899,7 +904,9 @@ const kickChannelReflectorService: AngularJsFactory = {
     name: "kickChannelReflectorService",
     function: (backendCommunicator: any) => {
         backendCommunicator.onAsync(`channel-reward-updated`, async (data: any) => {
-            backendCommunicator.fireEventAsync('kick:channel-reward-updated', { ...data });
+            backendCommunicator.fireEventAsync("kick:channel-reward-updated", {
+                ...data
+            });
         });
 
         return {};

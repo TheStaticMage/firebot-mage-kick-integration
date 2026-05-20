@@ -1,4 +1,4 @@
-import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import type { Firebot } from "@crowbartools/firebot-custom-scripts-types";
 import { integration } from "../integration";
 import { getPropertyFromChatMessage } from "../util/util";
 
@@ -6,7 +6,7 @@ type chatEffectParams = {
     chatter: "Streamer" | "Bot";
     message: string;
     sendAsReply: boolean;
-}
+};
 
 export const chatEffect: Firebot.EffectType<chatEffectParams> = {
     definition: {
@@ -51,9 +51,9 @@ export const chatEffect: Firebot.EffectType<chatEffectParams> = {
         return errors;
     },
     onTriggerEvent: async ({ trigger, effect }) => {
-        let messageId: string | undefined = undefined;
+        let messageId: string | undefined;
         if (effect.sendAsReply) {
-            messageId = getPropertyFromChatMessage(trigger, 'id') || undefined;
+            messageId = getPropertyFromChatMessage(trigger, "id") || undefined;
         }
 
         await integration.kick.chatManager.sendKickChatMessage(effect.message, effect.chatter || "Streamer", messageId);

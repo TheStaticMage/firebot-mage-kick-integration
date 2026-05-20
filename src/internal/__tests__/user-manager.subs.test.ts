@@ -1,8 +1,8 @@
-import Datastore from '@seald-io/nedb';
-import { KickUserManager } from '../user-manager';
-import { createMockKick } from '../mock-kick';
+import Datastore from "@seald-io/nedb";
+import { createMockKick } from "../mock-kick";
+import { KickUserManager } from "../user-manager";
 
-jest.mock('../../main', () => ({
+jest.mock("../../main", () => ({
     logger: {
         debug: jest.fn(),
         info: jest.fn(),
@@ -10,7 +10,6 @@ jest.mock('../../main', () => ({
         error: jest.fn()
     }
 }));
-
 
 class KickUserManagerTest extends KickUserManager {
     get giftDb(): Datastore | null {
@@ -22,8 +21,8 @@ class KickUserManagerTest extends KickUserManager {
     }
 }
 
-describe('KickUserManager recordSubscriber and getSubscriber', () => {
-    const fixedNow = new Date('2025-08-27T00:00:00Z');
+describe("KickUserManager recordSubscriber and getSubscriber", () => {
+    const fixedNow = new Date("2025-08-27T00:00:00Z");
 
     beforeAll(() => {
         jest.useFakeTimers();
@@ -36,9 +35,9 @@ describe('KickUserManager recordSubscriber and getSubscriber', () => {
 
     let mgr: KickUserManagerTest;
     let inMemoryDb: Datastore;
-    const userId = '12345678';
-    const now = new Date('2025-08-27T00:00:00Z');
-    const expires = new Date('2025-09-01T00:00:00Z');
+    const userId = "12345678";
+    const now = new Date("2025-08-27T00:00:00Z");
+    const expires = new Date("2025-09-01T00:00:00Z");
 
     beforeEach(async () => {
         const mockKick = createMockKick();
@@ -49,7 +48,7 @@ describe('KickUserManager recordSubscriber and getSubscriber', () => {
         await inMemoryDb.loadDatabaseAsync();
     });
 
-    it('records and retrieves a non-expired subscriber', async () => {
+    it("records and retrieves a non-expired subscriber", async () => {
         await mgr.recordSubscription(userId, now, expires);
         const rec = await mgr.getSubscriber(userId);
         expect(rec).toBeTruthy();
@@ -63,26 +62,26 @@ describe('KickUserManager recordSubscriber and getSubscriber', () => {
         }
     });
 
-    it('returns null for expired subscriber', async () => {
-        const expired = new Date('2025-08-01T00:00:00Z');
+    it("returns null for expired subscriber", async () => {
+        const expired = new Date("2025-08-01T00:00:00Z");
         await mgr.recordSubscription(userId, now, expired);
         const rec = await mgr.getSubscriber(userId);
         expect(rec).toBeNull();
     });
 
-    it('updates subscriber expiration if new expiresAt is later', async () => {
+    it("updates subscriber expiration if new expiresAt is later", async () => {
         await mgr.recordSubscription(userId, now, expires);
-        const later = new Date('2025-09-10T00:00:00Z');
+        const later = new Date("2025-09-10T00:00:00Z");
         await mgr.recordSubscription(userId, now, later);
         const rec = await mgr.getSubscriber(userId);
         expect(rec).toBeTruthy();
         expect(rec?.expiresAt.toISOString()).toBe(later.toISOString());
     });
 
-    it('does not update subscriber expiration if new expiresAt is earlier', async () => {
-        const later = new Date('2025-09-10T00:00:00Z');
+    it("does not update subscriber expiration if new expiresAt is earlier", async () => {
+        const later = new Date("2025-09-10T00:00:00Z");
         await mgr.recordSubscription(userId, now, later);
-        const earlier = new Date('2025-09-01T00:00:00Z');
+        const earlier = new Date("2025-09-01T00:00:00Z");
         await mgr.recordSubscription(userId, now, earlier);
         const rec = await mgr.getSubscriber(userId);
         expect(rec).toBeTruthy();

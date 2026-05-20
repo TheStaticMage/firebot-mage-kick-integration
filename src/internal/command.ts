@@ -1,6 +1,6 @@
-import { FirebotChatMessage } from "@crowbartools/firebot-custom-scripts-types/types/chat";
-import { CommandDefinition, UserCommand } from "@crowbartools/firebot-custom-scripts-types/types/modules/command-manager";
-import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import type { FirebotChatMessage } from "@crowbartools/firebot-custom-scripts-types/types/chat";
+import type { CommandDefinition, UserCommand } from "@crowbartools/firebot-custom-scripts-types/types/modules/command-manager";
+import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { firebot, logger } from "../main";
 
 interface TriggerWithArgs {
@@ -14,7 +14,7 @@ interface CommandMatch {
 }
 
 const escapeRegExp = (str: string) => {
-    return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"); // eslint-disable-line no-useless-escape
+    return str.replace(/[-[\]/{}()*+?.\\^$|]/g, "\\$&");
 };
 
 class CommandHandler {
@@ -37,9 +37,7 @@ class CommandHandler {
         message = message.toLowerCase();
 
         const normalizedTrigger = trigger.toLowerCase();
-        const commandRegexStr = triggerIsRegex
-            ? trigger
-            : this.buildCommandRegexStr(normalizedTrigger, scanWholeMessage);
+        const commandRegexStr = triggerIsRegex ? trigger : this.buildCommandRegexStr(normalizedTrigger, scanWholeMessage);
 
         const regex = new RegExp(commandRegexStr, "gi");
 
@@ -55,24 +53,13 @@ class CommandHandler {
         const allCommands = commandManager.getAllActiveCommands();
 
         for (const command of allCommands) {
-            if (this.testForTrigger(
-                rawMessage,
-                command.trigger,
-                command.scanWholeMessage || false,
-                command.triggerIsRegex || false
-            )
-            ) {
+            if (this.testForTrigger(rawMessage, command.trigger, command.scanWholeMessage || false, command.triggerIsRegex || false)) {
                 return { command, matchedTrigger: command.trigger };
             }
 
             if (!command.triggerIsRegex && command.aliases != null && Array.isArray(command.aliases)) {
                 for (const alias of command.aliases) {
-                    if (this.testForTrigger(
-                        rawMessage,
-                        alias,
-                        command.scanWholeMessage || false,
-                        false
-                    )) {
+                    if (this.testForTrigger(rawMessage, alias, command.scanWholeMessage || false, false)) {
                         return { command, matchedTrigger: alias };
                     }
                 }
@@ -104,7 +91,7 @@ class CommandHandler {
         // If it does, that means that one of the logged in accounts has already handled the message.
         if (this._handledMessageIds.includes(firebotChatMessage.id)) {
             // We can remove the handled id now, to keep the array small.
-            this._handledMessageIds = this._handledMessageIds.filter(id => id !== firebotChatMessage.id);
+            this._handledMessageIds = this._handledMessageIds.filter((id) => id !== firebotChatMessage.id);
             return false;
         }
         // throw the message id into the array. This prevents both the bot and the streamer accounts from replying
@@ -165,7 +152,7 @@ class CommandHandler {
         }
 
         // Can't auto delete whispers, so we ignore auto delete trigger for those
-        if (firebotChatMessage.whisper !== true && command.autoDeleteTrigger || (triggeredSubcmd && triggeredSubcmd.autoDeleteTrigger)) {
+        if ((firebotChatMessage.whisper !== true && command.autoDeleteTrigger) || (triggeredSubcmd && triggeredSubcmd.autoDeleteTrigger)) {
             // Delete chat message? Currently not implemented in Kick API.
         }
 
@@ -183,8 +170,7 @@ class CommandHandler {
         let restrictionData = command.restrictionData;
         let restrictionsAreInherited = false;
         if (triggeredSubcmd) {
-            const subCommandHasRestrictions = triggeredSubcmd.restrictionData && triggeredSubcmd.restrictionData.restrictions
-                && triggeredSubcmd.restrictionData.restrictions.length > 0;
+            const subCommandHasRestrictions = triggeredSubcmd.restrictionData && triggeredSubcmd.restrictionData.restrictions && triggeredSubcmd.restrictionData.restrictions.length > 0;
 
             if (subCommandHasRestrictions) {
                 restrictionData = triggeredSubcmd.restrictionData;
@@ -254,22 +240,20 @@ export class CommandRunner {
                 rawArgs = rawMessage.match(quotedArgRegExp) ?? [];
 
                 // Strip surrounding quotes from quoted args
-                rawArgs = rawArgs.map(rawArg => rawArg.replace(/^"(.+)"$/, '$1'));
+                rawArgs = rawArgs.map((rawArg) => rawArg.replace(/^"(.+)"$/, "$1"));
             } else {
                 rawArgs = rawMessage.split(" ");
             }
 
             if (scanWholeMessage) {
                 args = rawArgs;
-            } else {
-                if (rawArgs.length > 0) {
-                    trigger = rawArgs[0];
-                    args = rawArgs.splice(1);
-                }
+            } else if (rawArgs.length > 0) {
+                trigger = rawArgs[0];
+                args = rawArgs.splice(1);
             }
         }
 
-        args = args.filter(a => a.trim() !== "");
+        args = args.filter((a) => a.trim() !== "");
         return { trigger, args };
     }
 
@@ -284,11 +268,7 @@ export class CommandRunner {
             isInvalidSubcommandTrigger: false
         };
 
-        if (!command.scanWholeMessage &&
-            !command.triggerIsRegex &&
-            userCmd.args.length > 0 &&
-            command.subCommands && command.subCommands.length > 0) {
-
+        if (!command.scanWholeMessage && !command.triggerIsRegex && userCmd.args.length > 0 && command.subCommands && command.subCommands.length > 0) {
             for (const subcmd of command.subCommands) {
                 if (subcmd.active === false && command.type !== "system") {
                     continue;
@@ -299,11 +279,9 @@ export class CommandRunner {
                         userCmd.triggeredSubcmd = subcmd;
                         break;
                     }
-                } else {
-                    if (subcmd.arg.toLowerCase() === userCmd.args[0].toLowerCase()) {
-                        userCmd.triggeredSubcmd = subcmd;
-                        break;
-                    }
+                } else if (subcmd.arg.toLowerCase() === userCmd.args[0].toLowerCase()) {
+                    userCmd.triggeredSubcmd = subcmd;
+                    break;
                 }
             }
 
@@ -330,7 +308,7 @@ export class CommandRunner {
             if (userCommand.subcommandId === "fallback-subcommand" && command.fallbackSubcommand) {
                 effects = command.fallbackSubcommand.effects;
             } else {
-                const subcommand = command.subCommands.find(sc => sc.id === userCommand.subcommandId);
+                const subcommand = command.subCommands.find((sc) => sc.id === userCommand.subcommandId);
                 if (subcommand) {
                     effects = subcommand.effects;
                 }
@@ -367,13 +345,7 @@ export class CommandRunner {
         }
     }
 
-    fireCommand(
-        command: CommandDefinition,
-        userCmd: UserCommand,
-        firebotChatMessage: FirebotChatMessage,
-        commandSender: string,
-        isManual = false
-    ): void {
+    fireCommand(command: CommandDefinition, userCmd: UserCommand, firebotChatMessage: FirebotChatMessage, commandSender: string, isManual = false): void {
         if (command == null) {
             return;
         }

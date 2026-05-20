@@ -1,17 +1,9 @@
 import Datastore from "@seald-io/nedb";
-import {
-    getOrCreateUser,
-    getUserById,
-    getUserByUsername,
-    incrementChatMessages,
-    PlatformUser,
-    setUserRoles,
-    updateLastSeen
-} from "@thestaticmage/mage-platform-lib-client";
+import { getOrCreateUser, getUserById, getUserByUsername, incrementChatMessages, type PlatformUser, setUserRoles, updateLastSeen } from "@thestaticmage/mage-platform-lib-client";
 import { logger } from "../main";
-import { BasicKickUser, KickGifter, KickSubscription, KickUser } from "../shared/types";
+import type { BasicKickUser, KickGifter, KickSubscription, KickUser } from "../shared/types";
 import { getDataFilePath } from "../util/datafile";
-import { IKick } from "./kick-interface";
+import type { IKick } from "./kick-interface";
 import { kickifyUserId, kickifyUsername, unkickifyUserId, userIdToCleanString } from "./util";
 import { parseBasicKickUser } from "./webhook-handler/webhook-parsers";
 
@@ -62,7 +54,7 @@ export class KickUserManager {
     }
 
     async getOrCreateViewer(kickUser: KickUser, roles: string[] = [], isOnline = false): Promise<PlatformUser | undefined> {
-        if (unkickifyUserId(kickUser.userId.toString()) === '') {
+        if (unkickifyUserId(kickUser.userId.toString()) === "") {
             logger.warn(`getOrCreateViewer: Invalid userId for kickUser: ${JSON.stringify(kickUser)}`);
             return undefined;
         }
@@ -92,7 +84,7 @@ export class KickUserManager {
     }
 
     async getViewerById(id?: string): Promise<PlatformUser | null> {
-        if (!id || unkickifyUserId(id) === '') {
+        if (!id || unkickifyUserId(id) === "") {
             logger.warn(`getViewerById: Invalid userId!`);
             return null;
         }
@@ -137,7 +129,7 @@ export class KickUserManager {
             formVariables.append("id", unkickifiedUserId);
         }
 
-        const uri = `/public/v1/users${formVariables.toString().length > 0 ? `?${formVariables.toString()}` : ''}`;
+        const uri = `/public/v1/users${formVariables.toString().length > 0 ? `?${formVariables.toString()}` : ""}`;
         const response = await this.kick.httpCallWithTimeout(uri, "GET");
 
         if (!response || !response.data || response.data.length !== 1) {
@@ -168,7 +160,7 @@ export class KickUserManager {
     }
 
     async incrementChatMessages(userId: string): Promise<void> {
-        if (unkickifyUserId(userId) === '') {
+        if (unkickifyUserId(userId) === "") {
             logger.warn(`incrementChatMessages: Invalid userId.`);
             return;
         }
@@ -185,7 +177,7 @@ export class KickUserManager {
     }
 
     async updateLastSeen(userId: string): Promise<void> {
-        if (unkickifyUserId(userId) === '') {
+        if (unkickifyUserId(userId) === "") {
             logger.warn(`updateLastSeen: Invalid userId.`);
             return;
         }
@@ -205,7 +197,9 @@ export class KickUserManager {
             throw new Error("Gifter database is not connected.");
         }
 
-        const gifter = await this._giftDb.findOneAsync<KickGifterDBRecord>({ _id: unkickifyUserId(gifterId) });
+        const gifter = await this._giftDb.findOneAsync<KickGifterDBRecord>({
+            _id: unkickifyUserId(gifterId)
+        });
         const now = new Date();
         if (!gifter) {
             return {
@@ -215,8 +209,8 @@ export class KickUserManager {
             };
         }
         const filteredGifts = gifter.gifts
-            .filter(giftDb => new Date(giftDb.sub.expiresAt) > now)
-            .map(giftDb => ({
+            .filter((giftDb) => new Date(giftDb.sub.expiresAt) > now)
+            .map((giftDb) => ({
                 userId: giftDb._id,
                 sub: giftDb.sub
             }));
@@ -237,7 +231,9 @@ export class KickUserManager {
             sub: { createdAt, expiresAt }
         };
 
-        const currentGifter = await this._giftDb.findOneAsync<KickGifterDBRecord>({ _id: unkickifyUserId(gifterId) });
+        const currentGifter = await this._giftDb.findOneAsync<KickGifterDBRecord>({
+            _id: unkickifyUserId(gifterId)
+        });
         if (currentGifter) {
             currentGifter.gifts.push(giftSub);
             await this._giftDb.updateAsync(
@@ -248,7 +244,11 @@ export class KickUserManager {
                 }
             );
         } else {
-            await this._giftDb.insertAsync({ _id: unkickifyUserId(gifterId), gifts: [giftSub], totalSubs: 1 });
+            await this._giftDb.insertAsync({
+                _id: unkickifyUserId(gifterId),
+                gifts: [giftSub],
+                totalSubs: 1
+            });
         }
     }
 
@@ -257,7 +257,9 @@ export class KickUserManager {
             throw new Error("Subscriber database is not connected.");
         }
 
-        const rec = await this._subDb.findOneAsync<KickSubscription>({ _id: unkickifyUserId(userId) });
+        const rec = await this._subDb.findOneAsync<KickSubscription>({
+            _id: unkickifyUserId(userId)
+        });
         if (!rec) {
             return null;
         }
@@ -273,7 +275,9 @@ export class KickUserManager {
             throw new Error("Subscriber database is not connected.");
         }
 
-        const currentSubscriber = await this._subDb.findOneAsync<KickSubscription>({ _id: unkickifyUserId(userId) });
+        const currentSubscriber = await this._subDb.findOneAsync<KickSubscription>({
+            _id: unkickifyUserId(userId)
+        });
         if (currentSubscriber) {
             if (expiresAt && currentSubscriber.expiresAt >= expiresAt) {
                 logger.debug(`Not updating existing subscriber record for user ${userId}: Expiration date longer than requested.`);
@@ -291,9 +295,11 @@ export class KickUserManager {
             expiresAt
         };
 
-        await this._subDb.insertAsync({ _id: unkickifyUserId(userId), ...newSubscriber });
+        await this._subDb.insertAsync({
+            _id: unkickifyUserId(userId),
+            ...newSubscriber
+        });
     }
-
 
     private async purgeExpiredSubscribers(): Promise<void> {
         if (!this._subDb) {
@@ -303,7 +309,7 @@ export class KickUserManager {
         await this._subDb.removeAsync({ expiresAt: { $lte: now } }, { multi: true });
     }
 
-    private async purgeExpiredGiftSubs(): Promise<void> {
+    public async purgeExpiredGiftSubs(): Promise<void> {
         if (!this._giftDb) {
             throw new Error("Gift database is not connected.");
         }
@@ -325,12 +331,12 @@ export class KickUserManager {
 }
 
 interface KickGifterDBRecord {
-    _id: string,
-    gifts: KickGiftSubDBRecord[], // All current gift subs
-    totalSubs: number, // Total gift subs given
+    _id: string;
+    gifts: KickGiftSubDBRecord[]; // All current gift subs
+    totalSubs: number; // Total gift subs given
 }
 
 interface KickGiftSubDBRecord {
-    _id: string,
-    sub: KickSubscription
+    _id: string;
+    sub: KickSubscription;
 }

@@ -1,7 +1,7 @@
-import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import type { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger } from "../main";
-import { IntegrationConstants } from "../constants";
 
 export const moderatorBanEffect: Firebot.EffectType<{
     action: string;

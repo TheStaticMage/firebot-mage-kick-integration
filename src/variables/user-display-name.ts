@@ -1,5 +1,5 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import type { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { unkickifyUsername } from "../internal/util";
 
 export const kickUserDisplayNameVariable: ReplaceVariable = {
@@ -23,8 +23,7 @@ export const kickUserDisplayNameVariable: ReplaceVariable = {
             }
             const eventUsername = trigger.metadata?.eventData?.username;
             const metadataUsername = trigger.metadata?.username;
-            username = typeof eventUsername === "string" ? eventUsername
-                : typeof metadataUsername === "string" ? metadataUsername : null;
+            username = typeof eventUsername === "string" ? eventUsername : typeof metadataUsername === "string" ? metadataUsername : null;
             if (username == null) {
                 return "[No username available]";
             }

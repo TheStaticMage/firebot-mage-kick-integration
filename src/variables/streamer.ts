@@ -1,5 +1,5 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { integration } from '../integration';
+import type { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import { integration } from "../integration";
 
 export const kickStreamerVariable: ReplaceVariable = {
     definition: {

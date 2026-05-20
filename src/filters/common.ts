@@ -19,12 +19,7 @@ export enum ComparisonType {
     GREATER_THAN_OR_EQUAL_TO = "greater than or equal to"
 }
 
-export function compareValue(
-    filterName: string,
-    comparisonType: ComparisonType,
-    expectedValue: string | number | boolean | RegExp,
-    actualValue: string | number | boolean
-): boolean {
+export function compareValue(filterName: string, comparisonType: ComparisonType, expectedValue: string | number | boolean | RegExp, actualValue: string | number | boolean): boolean {
     logger.debug(`${filterName}: Comparing values: type=${comparisonType}, expected='${expectedValue}', actual='${actualValue}'`);
     switch (comparisonType) {
         case ComparisonType.IS:

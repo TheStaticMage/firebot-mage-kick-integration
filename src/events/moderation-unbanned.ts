@@ -2,7 +2,7 @@ import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot } from "../main";
-import { ModerationUnbannedEvent } from "../shared/types";
+import type { ModerationUnbannedEvent } from "../shared/types";
 
 // This event is triggered for un-bans and un-timeouts. Firebot currently does
 // not distinguish between unban and un-timeout for Twitch users so for

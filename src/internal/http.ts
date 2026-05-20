@@ -7,16 +7,16 @@ export function resetHttpRequestQueueForTests(): void {
 }
 
 export interface HttpCallRequest {
-    url: string,
-    method: string,
-    authToken?: string,
-    body?: string,
-    signal?: AbortSignal | null
-    timeout?: number
-    userAgent?: string
-    headers?: Record<string, string>
-    contentType?: string
-    maxRedirects?: number
+    url: string;
+    method: string;
+    authToken?: string;
+    body?: string;
+    signal?: AbortSignal | null;
+    timeout?: number;
+    userAgent?: string;
+    headers?: Record<string, string>;
+    contentType?: string;
+    maxRedirects?: number;
 }
 
 export async function httpCallWithTimeout<T = any>(req: HttpCallRequest): Promise<T> {
@@ -35,12 +35,7 @@ export async function httpCallWithTimeout<T = any>(req: HttpCallRequest): Promis
             timeoutController.abort();
         }, effectiveTimeout);
 
-        const reqHeaders: Record<string, string> = Object.assign(
-            {},
-            authToken ? { "Authorization": `Bearer ${authToken}` } : {},
-            userAgent ? { "User-Agent": userAgent } : {},
-            headers || {}
-        );
+        const reqHeaders: Record<string, string> = Object.assign({}, authToken ? { Authorization: `Bearer ${authToken}` } : {}, userAgent ? { "User-Agent": userAgent } : {}, headers || {});
 
         if (body !== undefined && body !== null && body !== "") {
             if (contentType) {
@@ -51,7 +46,7 @@ export async function httpCallWithTimeout<T = any>(req: HttpCallRequest): Promis
                 reqHeaders["Content-Type"] = "application/json";
             }
         }
-        reqHeaders["Accept"] = "application/json";
+        reqHeaders.Accept = "application/json";
 
         const signals: AbortSignal[] = [timeoutController.signal, ...(signal ? [signal] : [])];
 
@@ -63,7 +58,7 @@ export async function httpCallWithTimeout<T = any>(req: HttpCallRequest): Promis
         };
 
         if (body !== undefined && body !== null && body !== "" && !["GET", "HEAD"].includes(method)) {
-            fetchOptions['body'] = body;
+            fetchOptions.body = body;
         }
 
         const startTime = performance.now();
@@ -96,7 +91,7 @@ export async function httpCallWithTimeout<T = any>(req: HttpCallRequest): Promis
                         throw error;
                     }
                     logger.warn(`Rate limit exceeded for ${currentUrl}. Retrying in ${backOff}ms...`);
-                    await new Promise(res => setTimeout(res, backOff));
+                    await new Promise((res) => setTimeout(res, backOff));
                     backOff = Math.min(backOff * 2, 5000);
                     continue;
                 }

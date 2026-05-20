@@ -1,13 +1,10 @@
-import { KickConnection } from "../shared/types";
+import type { KickConnection } from "../shared/types";
 
 export function isConnectionReady(connection: KickConnection): boolean {
     return !!connection.refreshToken && connection.ready;
 }
 
-export function updateConnectionReadyStatus(
-    connection: KickConnection,
-    refreshSuccess: boolean
-): void {
+export function updateConnectionReadyStatus(connection: KickConnection, refreshSuccess: boolean): void {
     connection.ready = refreshSuccess;
 }
 

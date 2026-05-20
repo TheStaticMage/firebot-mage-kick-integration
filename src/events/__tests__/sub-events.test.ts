@@ -1,8 +1,8 @@
-import { IntegrationConstants } from '../../constants';
-import { ChannelSubscription } from '../../shared/types';
-import { handleChannelSubscriptionEvent } from '../sub-events';
+import { IntegrationConstants } from "../../constants";
+import type { ChannelSubscription } from "../../shared/types";
+import { handleChannelSubscriptionEvent } from "../sub-events";
 
-jest.mock('../../integration', () => ({
+jest.mock("../../integration", () => ({
     integration: {
         kick: {
             userManager: {
@@ -16,7 +16,7 @@ jest.mock('../../integration', () => ({
     }
 }));
 
-jest.mock('../../main', () => ({
+jest.mock("../../main", () => ({
     firebot: {
         modules: {
             eventManager: {
@@ -29,30 +29,30 @@ jest.mock('../../main', () => ({
     }
 }));
 
-const { firebot } = require('../../main');
+const { firebot } = require("../../main");
 
-describe('handleChannelSubscriptionEvent', () => {
+describe("handleChannelSubscriptionEvent", () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('triggers event with isResub=false', async () => {
+    it("triggers event with isResub=false", async () => {
         const payload: ChannelSubscription = {
             broadcaster: {
-                userId: 'k1',
-                username: 'broadcaster@kick',
-                displayName: '',
+                userId: "k1",
+                username: "broadcaster@kick",
+                displayName: "",
                 isVerified: false,
-                profilePicture: '',
-                channelSlug: ''
+                profilePicture: "",
+                channelSlug: ""
             },
             subscriber: {
-                userId: 'k2',
-                username: 'subscriber@kick',
-                displayName: '',
+                userId: "k2",
+                username: "subscriber@kick",
+                displayName: "",
                 isVerified: false,
-                profilePicture: '',
-                channelSlug: ''
+                profilePicture: "",
+                channelSlug: ""
             },
             duration: 1,
             isResub: false,
@@ -61,39 +61,39 @@ describe('handleChannelSubscriptionEvent', () => {
         await handleChannelSubscriptionEvent(payload as any);
         expect(firebot.modules.eventManager.triggerEvent).toHaveBeenCalledWith(
             IntegrationConstants.INTEGRATION_ID,
-            'sub',
+            "sub",
             expect.objectContaining({
                 isResub: false,
-                username: 'subscriber@kick',
-                userId: 'k2',
-                userDisplayName: 'subscriber',
-                subPlan: 'kickDefault',
+                username: "subscriber@kick",
+                userId: "k2",
+                userDisplayName: "subscriber",
+                subPlan: "kickDefault",
                 totalMonths: 1,
-                subMessage: '',
+                subMessage: "",
                 streak: 1,
                 isPrime: false,
-                platform: 'kick'
+                platform: "kick"
             })
         );
     });
 
-    it('triggers event with isResub=true', async () => {
+    it("triggers event with isResub=true", async () => {
         const payload: ChannelSubscription = {
             broadcaster: {
-                userId: 'k1',
-                username: 'broadcaster@kick',
-                displayName: '',
+                userId: "k1",
+                username: "broadcaster@kick",
+                displayName: "",
                 isVerified: false,
-                profilePicture: '',
-                channelSlug: ''
+                profilePicture: "",
+                channelSlug: ""
             },
             subscriber: {
-                userId: 'k2',
-                username: 'subscriber@kick',
-                displayName: '',
+                userId: "k2",
+                username: "subscriber@kick",
+                displayName: "",
                 isVerified: false,
-                profilePicture: '',
-                channelSlug: ''
+                profilePicture: "",
+                channelSlug: ""
             },
             duration: 69,
             isResub: true,
@@ -102,18 +102,18 @@ describe('handleChannelSubscriptionEvent', () => {
         await handleChannelSubscriptionEvent(payload as any);
         expect(firebot.modules.eventManager.triggerEvent).toHaveBeenCalledWith(
             IntegrationConstants.INTEGRATION_ID,
-            'sub',
+            "sub",
             expect.objectContaining({
                 isResub: true,
-                username: 'subscriber@kick',
-                userId: 'k2',
-                userDisplayName: 'subscriber',
-                subPlan: 'kickDefault',
+                username: "subscriber@kick",
+                userId: "k2",
+                userDisplayName: "subscriber",
+                subPlan: "kickDefault",
                 totalMonths: 69,
-                subMessage: '',
+                subMessage: "",
                 streak: 69,
                 isPrime: false,
-                platform: 'kick'
+                platform: "kick"
             })
         );
     });

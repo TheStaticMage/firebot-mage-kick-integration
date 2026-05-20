@@ -1,4 +1,5 @@
-import { ChannelRewardRedemptionEvent } from "kick-api-types/v1";
+import type { ChannelRewardRedemptionEvent } from "kick-api-types/v1";
+
 jest.mock("path", () => ({
     join: jest.fn(() => "/virtual/channel-rewards.json")
 }));
@@ -24,7 +25,9 @@ jest.mock("../main", () => ({
         modules: {
             effectRunner: { processEffects: processEffectsMock },
             frontendCommunicator: { send: sendMock },
-            restrictionManager: { runRestrictionPredicates: runRestrictionPredicatesMock },
+            restrictionManager: {
+                runRestrictionPredicates: runRestrictionPredicatesMock
+            },
             JsonDb: JsonDbMock,
             path
         }
@@ -51,7 +54,6 @@ import { rewardRedemptionHandler } from "../internal/webhook-handler/reward-rede
 (global as any).SCRIPTS_DIR = "/tmp";
 
 describe("channel reward redemption handler (direct)", () => {
-    /* eslint-disable camelcase */
     const webhookPayload: ChannelRewardRedemptionEvent = {
         eventType: "channel.reward.redemption.updated",
         eventVersion: "1",
@@ -198,9 +200,7 @@ describe("channel reward redemption handler (direct)", () => {
         expect(processEffectsMock).not.toHaveBeenCalled();
 
         // Verify warning was logged
-        expect((jest.mocked(require("../main").logger)).warn).toHaveBeenCalledWith(
-            expect.stringContaining("Firebot channel reward is disabled")
-        );
+        expect(jest.mocked(require("../main").logger).warn).toHaveBeenCalledWith(expect.stringContaining("Firebot channel reward is disabled"));
     });
 
     it("reward redemption with Firebot reward paused should not process effects", async () => {
@@ -234,9 +234,7 @@ describe("channel reward redemption handler (direct)", () => {
         expect(processEffectsMock).not.toHaveBeenCalled();
 
         // Verify warning was logged
-        expect((jest.mocked(require("../main").logger)).warn).toHaveBeenCalledWith(
-            expect.stringContaining("Firebot channel reward is paused")
-        );
+        expect(jest.mocked(require("../main").logger).warn).toHaveBeenCalledWith(expect.stringContaining("Firebot channel reward is paused"));
     });
 
     it("reward redemption with integration override disabled should not process effects", async () => {
@@ -270,9 +268,7 @@ describe("channel reward redemption handler (direct)", () => {
         expect(processEffectsMock).not.toHaveBeenCalled();
 
         // Verify debug log was called (this uses debug level, not warn)
-        expect((jest.mocked(require("../main").logger)).debug).toHaveBeenCalledWith(
-            expect.stringContaining("disabled reward")
-        );
+        expect(jest.mocked(require("../main").logger).debug).toHaveBeenCalledWith(expect.stringContaining("disabled reward"));
     });
 
     it("handles restriction check failures", async () => {
@@ -291,7 +287,6 @@ describe("channel reward redemption handler (direct)", () => {
     });
 
     it("handles empty user input", async () => {
-        /* eslint-disable camelcase */
         const payload = { ...webhookPayload, user_input: "" };
         /* eslint-enable camelcase */
 
@@ -312,7 +307,6 @@ describe("channel reward redemption handler (direct)", () => {
     });
 
     it("handles multi-word user input", async () => {
-        /* eslint-disable camelcase */
         const payload = { ...webhookPayload, user_input: "hello world from kick" };
         /* eslint-enable camelcase */
 
@@ -333,7 +327,6 @@ describe("channel reward redemption handler (direct)", () => {
     });
 
     it("handles user input with special characters", async () => {
-        /* eslint-disable camelcase */
         const payload = { ...webhookPayload, user_input: "test@#$%^&*()" };
         /* eslint-enable camelcase */
 
@@ -398,7 +391,9 @@ describe("channel reward redemption handler (direct)", () => {
                 modules: {
                     effectRunner: { processEffects: processEffectsMock },
                     frontendCommunicator: { send: sendMock },
-                    restrictionManager: { runRestrictionPredicates: runRestrictionPredicatesMock },
+                    restrictionManager: {
+                        runRestrictionPredicates: runRestrictionPredicatesMock
+                    },
                     JsonDb: JsonDbFailMock,
                     path
                 }
@@ -422,7 +417,6 @@ describe("channel reward redemption handler (direct)", () => {
     });
 
     it("handles null user_input", async () => {
-        /* eslint-disable camelcase */
         const payload = { ...webhookPayload, user_input: null } as any;
         /* eslint-enable camelcase */
 

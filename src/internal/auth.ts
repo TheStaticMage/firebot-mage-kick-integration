@@ -2,14 +2,14 @@ import { createHash, randomBytes, randomUUID } from "crypto";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger } from "../main";
-import { HttpCallRequest, httpCallWithTimeout } from "./http";
+import { type HttpCallRequest, httpCallWithTimeout } from "./http";
 
 export class AuthManager {
     private authAborter = new AbortController();
     private streamerAuthRenewer: NodeJS.Timeout | null = null;
     private botAuthRenewer: NodeJS.Timeout | null = null;
     private codeChallenges: Record<string, string> = {};
-    private tokenRequests: Record<string, 'streamer' | 'bot'> = {};
+    private tokenRequests: Record<string, "streamer" | "bot"> = {};
     private streamerAuthToken = "";
     streamerRefreshToken = "";
     private streamerTokenExpiresAt = 0;
@@ -80,7 +80,7 @@ export class AuthManager {
     async getStreamerAuthToken(): Promise<string> {
         if (!this.streamerAuthToken) {
             if (this.streamerRefreshToken) {
-                await this.refreshAuthTokenReal('streamer');
+                await this.refreshAuthTokenReal("streamer");
             } else {
                 integration.sendCriticalErrorNotification("Streamer refresh token is missing. Open the Kick Accounts screen to re-authorize the streamer account.");
                 return "";
@@ -108,7 +108,7 @@ export class AuthManager {
         }
 
         if (!this.botAuthToken) {
-            await this.refreshAuthTokenReal('bot');
+            await this.refreshAuthTokenReal("bot");
         }
 
         if (this.botAuthToken && this.botTokenExpiresAt > Date.now()) {
@@ -125,7 +125,7 @@ export class AuthManager {
         return "";
     }
 
-    getAuthorizationRequestUrl(tokenType: 'streamer' | 'bot'): string {
+    getAuthorizationRequestUrl(tokenType: "streamer" | "bot"): string {
         // Generate a random state value using uuidv4
         const state = randomUUID();
 
@@ -156,16 +156,11 @@ export class AuthManager {
         const tokenType = this.tokenRequests[state];
 
         const params = new URLSearchParams({
-            // eslint-disable-next-line camelcase
             redirect_uri: this.getLocalRedirectUri(),
-            scope: (tokenType === 'streamer' ? IntegrationConstants.STREAMER_SCOPES : IntegrationConstants.BOT_SCOPES).join(" "),
-            // eslint-disable-next-line camelcase
+            scope: (tokenType === "streamer" ? IntegrationConstants.STREAMER_SCOPES : IntegrationConstants.BOT_SCOPES).join(" "),
             code_challenge: codeChallengeSha256,
-            // eslint-disable-next-line camelcase
             code_challenge_method: "S256",
-            // eslint-disable-next-line camelcase
             client_id: integration.getSettings().kickApp.clientId || "",
-            // eslint-disable-next-line camelcase
             response_type: "code",
             state
         });
@@ -177,10 +172,10 @@ export class AuthManager {
     private generatePKCEPair() {
         const NUM_OF_BYTES = 22; // Total of 44 characters (1 Bytes = 2 char) (standard states that: 43 chars <= verifier <= 128 chars)
         const HASH_ALG = "sha256";
-        const randomVerifier = randomBytes(NUM_OF_BYTES).toString('hex'); // Generate a random string for the code verifier
-        const hash = createHash(HASH_ALG).update(randomVerifier).digest('base64');
-        const challenge = hash.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); // Clean base64 to make it URL safe
-        return {verifier: randomVerifier, challenge};
+        const randomVerifier = randomBytes(NUM_OF_BYTES).toString("hex"); // Generate a random string for the code verifier
+        const hash = createHash(HASH_ALG).update(randomVerifier).digest("base64");
+        const challenge = hash.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); // Clean base64 to make it URL safe
+        return { verifier: randomVerifier, challenge };
     }
 
     async handleAuthCallback(req: any, res: any) {
@@ -200,16 +195,11 @@ export class AuthManager {
         }
 
         const payload = {
-            // eslint-disable-next-line camelcase
             grant_type: "authorization_code",
             code: code,
-            // eslint-disable-next-line camelcase
             code_verifier: this.codeChallenges[state],
-            // eslint-disable-next-line camelcase
             client_id: integration.getSettings().kickApp.clientId || "",
-            // eslint-disable-next-line camelcase
             client_secret: integration.getSettings().kickApp.clientSecret || "",
-            // eslint-disable-next-line camelcase
             redirect_uri: this.getLocalRedirectUri()
         };
 
@@ -219,18 +209,20 @@ export class AuthManager {
         try {
             const req: HttpCallRequest = {
                 url,
-                method: 'POST',
+                method: "POST",
                 body: payloadString
             };
             const response = await httpCallWithTimeout(req);
             let missingScopes: string[] = [];
 
-            if (tokenType === 'bot') {
-                missingScopes = this.verifyTokenScopes(response.scope, IntegrationConstants.BOT_SCOPES, 'bot');
+            if (tokenType === "bot") {
+                missingScopes = this.verifyTokenScopes(response.scope, IntegrationConstants.BOT_SCOPES, "bot");
 
                 if (!integration.kick.broadcaster) {
                     logger.warn("Broadcaster info not available when verifying bot account during authorization");
-                    res.status(400).send(`<p>A bot account cannot be authorized until the streamer account has been authorized.</p><p>Please <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/streamer">authorize a streamer account</a> first.</p>`);
+                    res.status(400).send(
+                        `<p>A bot account cannot be authorized until the streamer account has been authorized.</p><p>Please <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/streamer">authorize a streamer account</a> first.</p>`
+                    );
                     return;
                 }
 
@@ -238,7 +230,9 @@ export class AuthManager {
                     const botUserInfo = await this.verifyBotUser(response.access_token);
                     if (botUserInfo.userId === integration.kick.broadcaster.userId) {
                         logger.error(`Same account authorization attempt: Bot user ID ${botUserInfo.userId} matches broadcaster user ID ${integration.kick.broadcaster.userId}`);
-                        res.status(400).send(`<p>Error: Cannot authorize the same account for both streamer and bot. The account "${botUserInfo.name}" is already authorized as the streamer.</p><p>Please <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/bot">authorize a different account</a> for the bot. (Consider opening this link in an incognito window to prevent the same problem from happening again.)</p>`);
+                        res.status(400).send(
+                            `<p>Error: Cannot authorize the same account for both streamer and bot. The account "${botUserInfo.name}" is already authorized as the streamer.</p><p>Please <a href="/integrations/${IntegrationConstants.INTEGRATION_URI}/link/bot">authorize a different account</a> for the bot. (Consider opening this link in an incognito window to prevent the same problem from happening again.)</p>`
+                        );
                         return;
                     }
                     logger.debug(`Bot authorization verified: Bot user ID ${botUserInfo.userId} is different from broadcaster user ID ${integration.kick.broadcaster.userId}`);
@@ -250,18 +244,18 @@ export class AuthManager {
 
                 this.botAuthToken = response.access_token;
                 this.botRefreshToken = response.refresh_token;
-                this.botTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
+                this.botTokenExpiresAt = Date.now() + response.expires_in * 1000; // Convert seconds to milliseconds
                 integration.kick.setBotAuthToken(this.botAuthToken);
                 integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken);
                 logger.info(`Kick integration token for bot refreshed successfully. Valid until: ${new Date(this.botTokenExpiresAt).toISOString()}`);
             }
 
-            if (tokenType === 'streamer') {
-                missingScopes = this.verifyTokenScopes(response.scope, IntegrationConstants.STREAMER_SCOPES, 'streamer');
+            if (tokenType === "streamer") {
+                missingScopes = this.verifyTokenScopes(response.scope, IntegrationConstants.STREAMER_SCOPES, "streamer");
 
                 this.streamerAuthToken = response.access_token;
                 this.streamerRefreshToken = response.refresh_token;
-                this.streamerTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
+                this.streamerTokenExpiresAt = Date.now() + response.expires_in * 1000; // Convert seconds to milliseconds
                 integration.kick.setAuthToken(this.streamerAuthToken);
                 integration.saveIntegrationTokenData(this.streamerRefreshToken, this.botRefreshToken);
                 logger.info(`Kick integration token for streamer refreshed successfully. Valid until: ${new Date(this.streamerTokenExpiresAt).toISOString()}`);
@@ -280,12 +274,12 @@ export class AuthManager {
     }
 
     async handleLinkCallback(req: any, res: any) {
-        let tokenType: 'streamer' | 'bot' = 'streamer';
+        let tokenType: "streamer" | "bot" = "streamer";
 
-        if (req.path.endsWith('/bot')) {
-            tokenType = 'bot';
-        } else if (req.path.endsWith('/streamer')) {
-            tokenType = 'streamer';
+        if (req.path.endsWith("/bot")) {
+            tokenType = "bot";
+        } else if (req.path.endsWith("/streamer")) {
+            tokenType = "streamer";
         } else {
             res.status(400).send(`Invalid token type requested - Make sure you copy the URL exactly from Firebot!`);
             return;
@@ -301,12 +295,13 @@ export class AuthManager {
         }
     }
 
-    private buildAuthResultPage(tokenType: 'streamer' | 'bot', missingScopes: string[]): string {
-        const readableTokenType = tokenType === 'streamer' ? "streamer account" : "bot account";
+    private buildAuthResultPage(tokenType: "streamer" | "bot", missingScopes: string[]): string {
+        const readableTokenType = tokenType === "streamer" ? "streamer account" : "bot account";
         const hasWarnings = missingScopes.length > 0;
-        const missingScopeList = missingScopes.map(scope => `<li><code>${scope}</code></li>`).join("");
+        const missingScopeList = missingScopes.map((scope) => `<li><code>${scope}</code></li>`).join("");
         const reauthorizeUrl = `/integrations/${IntegrationConstants.INTEGRATION_URI}/link/${tokenType}`;
-        const warningBlock = missingScopes.length ? `
+        const warningBlock = missingScopes.length
+            ? `
                 <div class="warning">
                     <div class="warning-title">WARNING: Important permissions were not granted</div>
                     <p>Kick did not give this plugin every permission it needs. This usually means the Kick app is not set up to request the right permissions. Without them, chat tools and channel controls may not work.</p>
@@ -322,14 +317,11 @@ export class AuthManager {
                         <ul>${missingScopeList}</ul>
                     </div>
                 </div>
-            ` : "";
+            `
+            : "";
 
-        const headingText = hasWarnings
-            ? `Kick integration partially authorized for ${readableTokenType}!`
-            : `Kick integration authorized for ${readableTokenType}!`;
-        const subText = hasWarnings
-            ? "Please fix the missing permissions below and authorize again before closing this window."
-            : "You can close this window.";
+        const headingText = hasWarnings ? `Kick integration partially authorized for ${readableTokenType}!` : `Kick integration authorized for ${readableTokenType}!`;
+        const subText = hasWarnings ? "Please fix the missing permissions below and authorize again before closing this window." : "You can close this window.";
 
         return `
 <!doctype html>
@@ -472,7 +464,7 @@ export class AuthManager {
         }
 
         try {
-            await this.refreshAuthTokenReal('streamer');
+            await this.refreshAuthTokenReal("streamer");
             this.scheduleNextStreamerTokenRenewal(this.streamerTokenExpiresAt - Date.now() - 300000); // Refresh 5 minutes before expiration
             return true;
         } catch (error) {
@@ -490,7 +482,7 @@ export class AuthManager {
         }
 
         try {
-            await this.refreshAuthTokenReal('bot');
+            await this.refreshAuthTokenReal("bot");
             this.scheduleNextBotTokenRenewal(this.botTokenExpiresAt - Date.now() - 300000); // Refresh 5 minutes before expiration
             return true;
         } catch (error) {
@@ -500,17 +492,12 @@ export class AuthManager {
         return false;
     }
 
-    private async refreshAuthTokenReal(tokenType: 'streamer' | 'bot') {
+    private async refreshAuthTokenReal(tokenType: "streamer" | "bot") {
         const payload = {
-            // eslint-disable-next-line camelcase
             grant_type: "refresh_token",
-            // eslint-disable-next-line camelcase
-            refresh_token: tokenType === 'streamer' ? this.streamerRefreshToken : this.botRefreshToken,
-            // eslint-disable-next-line camelcase
+            refresh_token: tokenType === "streamer" ? this.streamerRefreshToken : this.botRefreshToken,
             client_id: integration.getSettings().kickApp.clientId || "",
-            // eslint-disable-next-line camelcase
             client_secret: integration.getSettings().kickApp.clientSecret || "",
-            // eslint-disable-next-line camelcase
             redirect_uri: this.getLocalRedirectUri()
         };
 
@@ -520,31 +507,31 @@ export class AuthManager {
         try {
             const req: HttpCallRequest = {
                 url,
-                method: 'POST',
+                method: "POST",
                 body: payloadString
             };
             const response = await httpCallWithTimeout(req);
-            const expectedScopes = tokenType === 'streamer' ? IntegrationConstants.STREAMER_SCOPES : IntegrationConstants.BOT_SCOPES;
+            const expectedScopes = tokenType === "streamer" ? IntegrationConstants.STREAMER_SCOPES : IntegrationConstants.BOT_SCOPES;
             this.verifyTokenScopes(response.scope, expectedScopes, tokenType);
 
-            if (tokenType === 'streamer') {
+            if (tokenType === "streamer") {
                 this.streamerAuthToken = response.access_token;
                 this.streamerRefreshToken = response.refresh_token;
-                this.streamerTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
+                this.streamerTokenExpiresAt = Date.now() + response.expires_in * 1000; // Convert seconds to milliseconds
                 integration.kick.setAuthToken(this.streamerAuthToken);
                 logger.info(`Kick integration token for streamer refreshed successfully. Valid until: ${new Date(this.streamerTokenExpiresAt).toISOString()}`);
             } else {
                 this.botAuthToken = response.access_token;
                 this.botRefreshToken = response.refresh_token;
-                this.botTokenExpiresAt = Date.now() + (response.expires_in * 1000); // Convert seconds to milliseconds
+                this.botTokenExpiresAt = Date.now() + response.expires_in * 1000; // Convert seconds to milliseconds
                 integration.kick.setBotAuthToken(this.botAuthToken);
                 logger.info(`Kick integration token for bot refreshed successfully. Valid until: ${new Date(this.botTokenExpiresAt).toISOString()}`);
             }
         } catch (error: any) {
             // Check if error has a status property and handle 401 specifically
-            if (error && typeof error === 'object' && 'status' in error && error.status === 401) {
+            if (error && typeof error === "object" && "status" in error && error.status === 401) {
                 integration.sendCriticalErrorNotification(`Kick integration ${tokenType} refresh token is invalid. Open the Kick Accounts screen to re-authorize the ${tokenType} account.`);
-                if (tokenType === 'streamer') {
+                if (tokenType === "streamer") {
                     this.streamerRefreshToken = "";
                     this.streamerMissingScopes = [];
                 } else {
@@ -590,30 +577,24 @@ export class AuthManager {
         logger.debug(`Next bot auth token renewal scheduled at ${new Date(Date.now() + delay).toISOString()}.`);
     }
 
-    private verifyTokenScopes(
-        tokenScope: string | string[] | undefined,
-        expectedScopes: readonly string[],
-        tokenType: 'streamer' | 'bot'
-    ): string[] {
-        const scopesFromToken = Array.isArray(tokenScope)
-            ? tokenScope
-            : typeof tokenScope === 'string'
-                ? tokenScope.split(/\s+/).filter(scope => scope.trim().length > 0)
-                : [];
-        const normalizedScopes = scopesFromToken.map(scope => scope.trim()).filter(scope => scope.length > 0);
-        const missingScopes = expectedScopes.filter(expected => !normalizedScopes.includes(expected));
+    private verifyTokenScopes(tokenScope: string | string[] | undefined, expectedScopes: readonly string[], tokenType: "streamer" | "bot"): string[] {
+        const scopesFromToken = Array.isArray(tokenScope) ? tokenScope : typeof tokenScope === "string" ? tokenScope.split(/\s+/).filter((scope) => scope.trim().length > 0) : [];
+        const normalizedScopes = scopesFromToken.map((scope) => scope.trim()).filter((scope) => scope.length > 0);
+        const missingScopes = expectedScopes.filter((expected) => !normalizedScopes.includes(expected));
         this.setMissingScopes(tokenType, missingScopes);
         if (missingScopes.length) {
-            logger.error(`Missing required ${tokenType} token scopes: ${missingScopes.join(', ')}`);
-            integration.sendCriticalErrorNotification(`The Kick ${tokenType} token is missing required scopes (${missingScopes.join(', ')}). This will cause certain functionality to break. To fix this problem, open the Kick Accounts screen and re-authorize the ${tokenType} account.`);
+            logger.error(`Missing required ${tokenType} token scopes: ${missingScopes.join(", ")}`);
+            integration.sendCriticalErrorNotification(
+                `The Kick ${tokenType} token is missing required scopes (${missingScopes.join(", ")}). This will cause certain functionality to break. To fix this problem, open the Kick Accounts screen and re-authorize the ${tokenType} account.`
+            );
         } else {
-            logger.debug(`Scope check for ${tokenType} token passed. All required scopes are present. ${scopesFromToken.join(', ')}`);
+            logger.debug(`Scope check for ${tokenType} token passed. All required scopes are present. ${scopesFromToken.join(", ")}`);
         }
         return missingScopes;
     }
 
-    private setMissingScopes(tokenType: 'streamer' | 'bot', missingScopes: string[]): void {
-        if (tokenType === 'streamer') {
+    private setMissingScopes(tokenType: "streamer" | "bot", missingScopes: string[]): void {
+        if (tokenType === "streamer") {
             this.streamerMissingScopes = missingScopes;
         } else {
             this.botMissingScopes = missingScopes;
@@ -623,7 +604,7 @@ export class AuthManager {
     private async verifyBotUser(botToken: string): Promise<{ userId: number; name: string }> {
         const req: HttpCallRequest = {
             url: `${IntegrationConstants.KICK_API_SERVER}/public/v1/users`,
-            method: 'GET',
+            method: "GET",
             authToken: botToken
         };
         const response = await httpCallWithTimeout(req);
@@ -640,11 +621,15 @@ export class AuthManager {
 
         return {
             userId: userData.user_id,
-            name: userData.name || 'Unknown'
+            name: userData.name || "Unknown"
         };
     }
 
-    getStreamerConnectionStatus(): { ready: boolean; tokenExpiresAt: number; missingScopes: string[] } {
+    getStreamerConnectionStatus(): {
+        ready: boolean;
+        tokenExpiresAt: number;
+        missingScopes: string[];
+    } {
         return {
             ready: !!this.streamerRefreshToken && !!this.streamerAuthToken,
             tokenExpiresAt: this.streamerTokenExpiresAt || 0,
@@ -652,7 +637,11 @@ export class AuthManager {
         };
     }
 
-    getBotConnectionStatus(): { ready: boolean; tokenExpiresAt: number; missingScopes: string[] } {
+    getBotConnectionStatus(): {
+        ready: boolean;
+        tokenExpiresAt: number;
+        missingScopes: string[];
+    } {
         return {
             ready: !!this.botRefreshToken && !!this.botAuthToken,
             tokenExpiresAt: this.botTokenExpiresAt || 0,

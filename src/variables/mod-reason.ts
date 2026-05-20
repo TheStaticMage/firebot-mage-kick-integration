@@ -1,10 +1,10 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { TriggersObject } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
-import { IntegrationConstants } from '../constants';
+import type { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import type { TriggersObject } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { IntegrationConstants } from "../constants";
 
 const triggers: TriggersObject = {};
-triggers["event"] = [`${IntegrationConstants.INTEGRATION_ID}:banned`, `${IntegrationConstants.INTEGRATION_ID}:timeout`];
-triggers["manual"] = true;
+triggers.event = [`${IntegrationConstants.INTEGRATION_ID}:banned`, `${IntegrationConstants.INTEGRATION_ID}:timeout`];
+triggers.manual = true;
 
 export const kickModReason: ReplaceVariable = {
     definition: {

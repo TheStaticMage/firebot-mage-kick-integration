@@ -1,4 +1,4 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
+import type { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
 
 export const kicksGiftTypeVariable: ReplaceVariable = {
     definition: {

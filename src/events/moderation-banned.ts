@@ -1,16 +1,16 @@
+import NodeCache from "node-cache";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { ModerationBannedEvent } from "../shared/types";
-import NodeCache from "node-cache";
+import type { ModerationBannedEvent } from "../shared/types";
 
 export class ModerationBannedEventHandler {
     private banTimeoutCache = new NodeCache({ stdTTL: 5 * 60 });
 
     public async handleModerationBannedEvent(payload: ModerationBannedEvent): Promise<void> {
-    // This event is triggered for bans and timeouts. The difference is that a
-    // ban has no expiration time.
+        // This event is triggered for bans and timeouts. The difference is that a
+        // ban has no expiration time.
         const eventName = payload.metadata.expiresAt ? "timeout" : "banned";
         const metadata = {
             username: kickifyUsername(payload.bannedUser.username),

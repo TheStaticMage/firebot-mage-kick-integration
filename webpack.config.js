@@ -1,34 +1,34 @@
-const path = require('path');
-const TerserPlugin = require('terser-webpack-plugin');
-const packageJson = require('./package.json');
+const path = require("path");
+const TerserPlugin = require("terser-webpack-plugin");
+const packageJson = require("./package.json");
 
 module.exports = {
-    target: 'node',
-    mode: 'production',
+    target: "node",
+    mode: "production",
     devtool: false,
     entry: {
-        main: './src/main.ts',
+        main: "./src/main.ts"
     },
     output: {
-        libraryTarget: 'commonjs2',
-        libraryExport: 'default',
-        path: path.resolve(__dirname, './dist'),
-        filename: `${packageJson.scriptOutputName}.js`,
+        libraryTarget: "commonjs2",
+        libraryExport: "default",
+        path: path.resolve(__dirname, "./dist"),
+        filename: `${packageJson.scriptOutputName}.js`
     },
     resolve: {
-        extensions: ['.ts', '.js'],
+        extensions: [".ts", ".js"]
     },
     module: {
         rules: [
             {
                 test: /\.ts$/,
-                loader: 'ts-loader',
+                loader: "ts-loader"
             },
             {
                 test: /\.(html|css)$/,
-                type: 'asset/source',
-            },
-        ],
+                type: "asset/source"
+            }
+        ]
     },
     optimization: {
         minimize: true,
@@ -39,11 +39,11 @@ module.exports = {
                     keep_fnames: /main/,
                     mangle: false,
                     format: {
-                        comments: false,
-                    },
+                        comments: false
+                    }
                 },
-                extractComments: false,
-            }),
-        ],
-    },
+                extractComments: false
+            })
+        ]
+    }
 };

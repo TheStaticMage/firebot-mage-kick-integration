@@ -1,10 +1,10 @@
-import { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import type { Firebot } from "@crowbartools/firebot-custom-scripts-types";
+import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger } from "../main";
-import { IntegrationConstants } from "../constants";
 
 export const maintenanceEffect: Firebot.EffectType<{
-    action: 'Reset Webhook Subscriptions' | undefined;
+    action: "Reset Webhook Subscriptions" | undefined;
 }> = {
     definition: {
         id: `${IntegrationConstants.INTEGRATION_ID}:maintenance`,
@@ -70,7 +70,7 @@ export const maintenanceEffect: Firebot.EffectType<{
             }
 
             // Pause for 500 ms before proceeding
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise((resolve) => setTimeout(resolve, 500));
 
             // Send API calls to delete webhook subscriptions
             try {

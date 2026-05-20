@@ -1,5 +1,5 @@
 import { firebot, logger } from "../main";
-import { Kick } from "./kick";
+import type { Kick } from "./kick";
 import { unkickifyUsername, userIdToCleanNumber } from "./util";
 
 interface UserBanRequest {
@@ -18,7 +18,7 @@ export class KickUserApi {
         // Listen to user ban request from the UI
         const { frontendCommunicator } = firebot.modules;
         frontendCommunicator.onAsync("update-user-banned-status", async (data: UserBanRequest) => {
-            await this.banUserByUsername(data.username, 0, data.shouldBeBanned, 'Banned via Firebot');
+            await this.banUserByUsername(data.username, 0, data.shouldBeBanned, "Banned via Firebot");
         });
     }
 
@@ -27,10 +27,10 @@ export class KickUserApi {
         logger.debug("User API stopped.");
     }
 
-    async banUserByUsername(usernameIn: string, duration: number, shouldBeBanned: boolean, reason = ''): Promise<boolean> {
+    async banUserByUsername(usernameIn: string, duration: number, shouldBeBanned: boolean, reason = ""): Promise<boolean> {
         const username = unkickifyUsername(usernameIn);
 
-        if (username.trim() === '') {
+        if (username.trim() === "") {
             logger.warn("banUserByUsername: No username provided.");
             return false;
         }
@@ -50,7 +50,7 @@ export class KickUserApi {
         }
     }
 
-    private async banUnbanUser(userId: number | string, duration: number, shouldBeBanned: boolean, reason = ''): Promise<void> {
+    private async banUnbanUser(userId: number | string, duration: number, shouldBeBanned: boolean, reason = ""): Promise<void> {
         const broadcasterUserId = this.kick.broadcaster?.userId || 0;
         if (!broadcasterUserId) {
             throw new Error("banUser: Broadcaster user ID not available.");
@@ -71,9 +71,7 @@ export class KickUserApi {
         }
 
         const payload: Record<string, any> = {
-            // eslint-disable-next-line camelcase
             broadcaster_user_id: broadcasterUserId,
-            // eslint-disable-next-line camelcase
             user_id: realUserId
         };
         if (shouldBeBanned) {
@@ -89,11 +87,11 @@ export class KickUserApi {
             }
 
             logger.debug(`banUser: Sending ${operation} request: ${JSON.stringify(payload)}`);
-            await this.kick.httpCallWithTimeout('/public/v1/moderation/bans', "POST", JSON.stringify(payload));
+            await this.kick.httpCallWithTimeout("/public/v1/moderation/bans", "POST", JSON.stringify(payload));
             logger.info(`banUser: User ${operation} successful (userId=${realUserId}, duration=${duration}).`);
         } else {
             logger.debug(`banUser: Sending unban request: ${JSON.stringify(payload)}`);
-            await this.kick.httpCallWithTimeout('/public/v1/moderation/bans', "DELETE", JSON.stringify(payload));
+            await this.kick.httpCallWithTimeout("/public/v1/moderation/bans", "DELETE", JSON.stringify(payload));
             logger.info(`banUser: User unban successful (userId=${realUserId}).`);
         }
     }

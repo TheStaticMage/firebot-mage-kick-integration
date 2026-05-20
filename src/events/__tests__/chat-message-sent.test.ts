@@ -1,6 +1,6 @@
-import { FirebotChatHelpers, handleChatMessageSentEvent } from "../chat-message-sent";
-import { KickIdentity, ChatMessage } from "../../shared/types";
 import { IntegrationConstants } from "../../constants";
+import type { ChatMessage, KickIdentity } from "../../shared/types";
+import { FirebotChatHelpers, handleChatMessageSentEvent } from "../chat-message-sent";
 
 // Mock logger before importing modules that use it
 jest.mock("../../main", () => ({
@@ -53,99 +53,85 @@ jest.mock("../../internal/command", () => ({
     }
 }));
 
-describe('FirebotChatHelpers', () => {
+describe("FirebotChatHelpers", () => {
     let helpers: FirebotChatHelpers;
 
     beforeEach(() => {
         helpers = new FirebotChatHelpers();
     });
 
-    describe('getTwitchRoles', () => {
-        it('returns broadcaster role for broadcaster badge', () => {
+    describe("getTwitchRoles", () => {
+        it("returns broadcaster role for broadcaster badge", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
-                badges: [
-                    { text: "Broadcaster", type: "broadcaster" }
-                ]
+                badges: [{ text: "Broadcaster", type: "broadcaster" }]
             };
 
             const result = helpers.getTwitchRoles(identity);
             expect(result).toEqual(["broadcaster"]);
         });
 
-        it('returns mod role for moderator badge', () => {
+        it("returns mod role for moderator badge", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
-                badges: [
-                    { text: "Moderator", type: "moderator" }
-                ]
+                badges: [{ text: "Moderator", type: "moderator" }]
             };
 
             const result = helpers.getTwitchRoles(identity);
             expect(result).toEqual(["mod"]);
         });
 
-        it('returns vip role for vip badge', () => {
+        it("returns vip role for vip badge", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
-                badges: [
-                    { text: "VIP", type: "vip" }
-                ]
+                badges: [{ text: "VIP", type: "vip" }]
             };
 
             const result = helpers.getTwitchRoles(identity);
             expect(result).toEqual(["vip"]);
         });
 
-        it('returns sub and tier1 roles for subscriber badge', () => {
+        it("returns sub and tier1 roles for subscriber badge", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
-                badges: [
-                    { text: "Subscriber", type: "subscriber" }
-                ]
+                badges: [{ text: "Subscriber", type: "subscriber" }]
             };
 
             const result = helpers.getTwitchRoles(identity);
             expect(result).toEqual(["sub", "tier1"]);
         });
 
-        it('returns empty array for og badge (no twitch equivalent)', () => {
+        it("returns empty array for og badge (no twitch equivalent)", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
-                badges: [
-                    { text: "OG", type: "og" }
-                ]
+                badges: [{ text: "OG", type: "og" }]
             };
 
             const result = helpers.getTwitchRoles(identity);
             expect(result).toEqual([]);
         });
 
-        it('returns empty array for founder badge (no twitch equivalent)', () => {
+        it("returns empty array for founder badge (no twitch equivalent)", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
-                badges: [
-                    { text: "Founder", type: "founder" }
-                ]
+                badges: [{ text: "Founder", type: "founder" }]
             };
 
             const result = helpers.getTwitchRoles(identity);
             expect(result).toEqual([]);
         });
 
-        it('returns empty array for sub_gifter badge (no twitch equivalent)', () => {
+        it("returns empty array for sub_gifter badge (no twitch equivalent)", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
-                badges: [
-                    { text: "Sub Gifter", type: "sub_gifter" }
-                ]
+                badges: [{ text: "Sub Gifter", type: "sub_gifter" }]
             };
 
             const result = helpers.getTwitchRoles(identity);
             expect(result).toEqual([]);
         });
 
-        it('returns multiple roles for multiple badges', () => {
+        it("returns multiple roles for multiple badges", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
                 badges: [
@@ -159,7 +145,7 @@ describe('FirebotChatHelpers', () => {
             expect(result).toEqual(["broadcaster", "sub", "tier1", "vip"]);
         });
 
-        it('deduplicates roles when multiple badges map to same role', () => {
+        it("deduplicates roles when multiple badges map to same role", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
                 badges: [
@@ -172,19 +158,17 @@ describe('FirebotChatHelpers', () => {
             expect(result).toEqual(["sub", "tier1"]);
         });
 
-        it('returns empty array for unknown badge types', () => {
+        it("returns empty array for unknown badge types", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
-                badges: [
-                    { text: "Unknown", type: "unknown_badge_type" }
-                ]
+                badges: [{ text: "Unknown", type: "unknown_badge_type" }]
             };
 
             const result = helpers.getTwitchRoles(identity);
             expect(result).toEqual([]);
         });
 
-        it('handles mixed known and unknown badge types', () => {
+        it("handles mixed known and unknown badge types", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
                 badges: [
@@ -198,7 +182,7 @@ describe('FirebotChatHelpers', () => {
             expect(result).toEqual(["broadcaster", "vip"]);
         });
 
-        it('returns empty array for empty badges array', () => {
+        it("returns empty array for empty badges array", () => {
             const identity: KickIdentity = {
                 usernameColor: "#000000",
                 badges: []
@@ -208,19 +192,19 @@ describe('FirebotChatHelpers', () => {
             expect(result).toEqual([]);
         });
 
-        it('throws error when identity is null', () => {
+        it("throws error when identity is null", () => {
             expect(() => {
                 helpers.getTwitchRoles(null as any);
             }).toThrow();
         });
 
-        it('throws error when identity is undefined', () => {
+        it("throws error when identity is undefined", () => {
             expect(() => {
                 helpers.getTwitchRoles(undefined as any);
             }).toThrow();
         });
 
-        it('throws error when identity.badges is null', () => {
+        it("throws error when identity.badges is null", () => {
             const identity = {
                 usernameColor: "#000000",
                 badges: null as any
@@ -231,7 +215,7 @@ describe('FirebotChatHelpers', () => {
             }).toThrow();
         });
 
-        it('throws error when identity.badges is undefined', () => {
+        it("throws error when identity.badges is undefined", () => {
             const identity = {
                 usernameColor: "#000000",
                 badges: undefined as any
@@ -243,8 +227,8 @@ describe('FirebotChatHelpers', () => {
         });
     });
 
-    describe('buildFirebotChatMessage', () => {
-        it('uses profile picture URL from message sender', async () => {
+    describe("buildFirebotChatMessage", () => {
+        it("uses profile picture URL from message sender", async () => {
             const msg: ChatMessage = {
                 messageId: "msg-123",
                 content: "Hello world",
@@ -276,7 +260,7 @@ describe('FirebotChatHelpers', () => {
             expect(result.profilePicUrl).toBe("https://example.com/avatar.jpg");
         });
 
-        it('uses empty string when profile picture is missing', async () => {
+        it("uses empty string when profile picture is missing", async () => {
             const msg: ChatMessage = {
                 messageId: "msg-123",
                 content: "Hello world",
@@ -308,7 +292,7 @@ describe('FirebotChatHelpers', () => {
             expect(result.profilePicUrl).toBe(IntegrationConstants.DEFAULT_PROFILE_IMAGE);
         });
 
-        it('uses default profile image when profile picture is undefined', async () => {
+        it("uses default profile image when profile picture is undefined", async () => {
             const msg: ChatMessage = {
                 messageId: "msg-123",
                 content: "Hello world",
@@ -342,7 +326,7 @@ describe('FirebotChatHelpers', () => {
     });
 });
 
-describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
+describe("handleChatMessageSentEvent - webhook delay mechanism", () => {
     beforeAll(() => {
         jest.useFakeTimers();
     });
@@ -410,8 +394,8 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
         repliesTo: undefined
     });
 
-    it('schedules Pusher messages for 5 second delay', async () => {
-        const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+    it("schedules Pusher messages for 5 second delay", async () => {
+        const setTimeoutSpy = jest.spyOn(global, "setTimeout");
         const msg = createPusherMessage("pusher-msg-delay-test");
 
         await handleChatMessageSentEvent(msg, false);
@@ -421,8 +405,8 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
         setTimeoutSpy.mockRestore();
     });
 
-    it('does not schedule delay for webhook messages', async () => {
-        const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+    it("does not schedule delay for webhook messages", async () => {
+        const setTimeoutSpy = jest.spyOn(global, "setTimeout");
         const msg = createWebhookMessage("webhook-msg-nodelay-test");
 
         // This will fail due to missing mocks, but we can catch the error
@@ -438,9 +422,9 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
         setTimeoutSpy.mockRestore();
     });
 
-    it('cancels pending Pusher message when webhook arrives', async () => {
-        const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
-        const clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
+    it("cancels pending Pusher message when webhook arrives", async () => {
+        const setTimeoutSpy = jest.spyOn(global, "setTimeout");
+        const clearTimeoutSpy = jest.spyOn(global, "clearTimeout");
         const pusherMsg = createPusherMessage("msg-cancel-test");
         const webhookMsg = createWebhookMessage("msg-cancel-test");
 
@@ -464,8 +448,8 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
         clearTimeoutSpy.mockRestore();
     });
 
-    it('ignores Pusher message if webhook already processed', async () => {
-        const setTimeoutSpy = jest.spyOn(global, 'setTimeout');
+    it("ignores Pusher message if webhook already processed", async () => {
+        const setTimeoutSpy = jest.spyOn(global, "setTimeout");
         const webhookMsg = createWebhookMessage("msg-ignore-test");
         const pusherMsg = createPusherMessage("msg-ignore-test");
 
@@ -489,7 +473,7 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
         setTimeoutSpy.mockRestore();
     });
 
-    it('deduplicates webhook arriving after Pusher already delivered', async () => {
+    it("deduplicates webhook arriving after Pusher already delivered", async () => {
         const { integration } = require("../../integration");
         const { firebot } = require("../../main");
         const registerMessageMock = integration.kick.chatManager.registerMessage;
@@ -513,9 +497,14 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
 
         // Verify Pusher message was registered and resulted in actual message processing
         expect(registerMessageMock).toHaveBeenCalledTimes(1);
-        expect(registerMessageMock).toHaveBeenNthCalledWith(1, "msg-late-webhook-test", "kick", expect.objectContaining({
-            profilePicUrl: IntegrationConstants.DEFAULT_PROFILE_IMAGE // Pusher message has no profile pic
-        }));
+        expect(registerMessageMock).toHaveBeenNthCalledWith(
+            1,
+            "msg-late-webhook-test",
+            "kick",
+            expect.objectContaining({
+                profilePicUrl: IntegrationConstants.DEFAULT_PROFILE_IMAGE // Pusher message has no profile pic
+            })
+        );
         const initialEventCallCount = eventManagerMock.mock.calls.length;
 
         // Webhook arrives at T=10 (late)
@@ -523,9 +512,14 @@ describe('handleChatMessageSentEvent - webhook delay mechanism', () => {
 
         // Verify webhook attempted to register but was rejected as duplicate
         expect(registerMessageMock).toHaveBeenCalledTimes(2);
-        expect(registerMessageMock).toHaveBeenNthCalledWith(2, "msg-late-webhook-test", "kick", expect.objectContaining({
-            profilePicUrl: "https://example.com/avatar.jpg" // Webhook has profile pic
-        }));
+        expect(registerMessageMock).toHaveBeenNthCalledWith(
+            2,
+            "msg-late-webhook-test",
+            "kick",
+            expect.objectContaining({
+                profilePicUrl: "https://example.com/avatar.jpg" // Webhook has profile pic
+            })
+        );
 
         // Verify NO additional events were triggered for the duplicate webhook
         expect(eventManagerMock).toHaveBeenCalledTimes(initialEventCallCount);

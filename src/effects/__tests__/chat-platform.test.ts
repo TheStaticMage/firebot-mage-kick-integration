@@ -1,10 +1,9 @@
-/* eslint-disable @typescript-eslint/unbound-method */
-import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
-import * as ChatManagerModule from '../../internal/chat-manager';
+import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import * as ChatManagerModule from "../../internal/chat-manager";
 
 type chatPlatformEffectParams = {
-    chatterKick: 'Streamer' | 'Bot';
-    chatterTwitch: 'Streamer' | 'Bot';
+    chatterKick: "Streamer" | "Bot";
+    chatterTwitch: "Streamer" | "Bot";
     message: string;
     messageKick?: string;
     copyMessageKick?: boolean;
@@ -21,7 +20,7 @@ type chatPlatformEffectParams = {
 export const mockSendKickChatMessage = jest.fn().mockResolvedValue(undefined);
 export const mockSendChatMessage = jest.fn().mockResolvedValue(undefined);
 
-jest.mock('../../integration', () => {
+jest.mock("../../integration", () => {
     return {
         integration: {
             kick: {
@@ -38,7 +37,7 @@ jest.mock('../../integration', () => {
     };
 });
 
-jest.mock('../../main', () => ({
+jest.mock("../../main", () => ({
     logger: {
         debug: jest.fn(),
         info: jest.fn(),
@@ -47,291 +46,556 @@ jest.mock('../../main', () => ({
     }
 }));
 
-describe('chatPlatformEffect.onTriggerEvent', () => {
-    let chatPlatformEffect: typeof import('../chat-platform').chatPlatformEffect;
-    let integration: typeof import('../../integration').integration;
+describe("chatPlatformEffect.onTriggerEvent", () => {
+    let chatPlatformEffect: typeof import("../chat-platform").chatPlatformEffect;
+    let integration: typeof import("../../integration").integration;
     beforeEach(() => {
         jest.resetModules();
         mockSendKickChatMessage.mockClear();
         mockSendChatMessage.mockClear();
-        chatPlatformEffect = require('../chat-platform').chatPlatformEffect;
-        integration = require('../../integration').integration;
+        chatPlatformEffect = require("../chat-platform").chatPlatformEffect;
+        integration = require("../../integration").integration;
         jest.restoreAllMocks();
     });
 
-    describe('sendKick/sendTwitch', () => {
-        describe('kick platform', () => {
+    describe("sendKick/sendTwitch", () => {
+        describe("kick platform", () => {
             beforeEach(() => {
-                jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('kick');
+                jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("kick");
                 mockSendKickChatMessage.mockClear();
                 mockSendChatMessage.mockClear();
             });
 
             it('sends to Kick when sendKick is "always"', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'always', sendTwitch: 'never' };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'kick' } } } as any;
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "always",
+                    sendTwitch: "never"
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "kick" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-                expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('msg', 'Streamer', undefined);
+                expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("msg", "Streamer", undefined);
             });
 
             it('does not send to Kick when sendKick is "never"', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'never', sendTwitch: 'never' };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'kick' } } } as any;
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "never",
+                    sendTwitch: "never"
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "kick" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
                 expect(integration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
             });
 
             it('sends to Kick when sendKick is "trigger" and platform is kick', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'trigger', sendTwitch: 'never' };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'kick' } } } as any;
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "trigger",
+                    sendTwitch: "never"
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "kick" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-                expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('msg', 'Streamer', undefined);
+                expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("msg", "Streamer", undefined);
             });
         });
 
-        describe('twitch platform', () => {
+        describe("twitch platform", () => {
             beforeEach(() => {
-                jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('twitch');
+                jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("twitch");
                 mockSendKickChatMessage.mockClear();
                 mockSendChatMessage.mockClear();
             });
 
             it('sends to Twitch when sendTwitch is "always"', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'never', sendTwitch: 'always' };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'twitch' } } } as any;
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "never",
+                    sendTwitch: "always"
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "twitch" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-                expect(mockSendChatMessage).toHaveBeenCalledWith('msg', '', 'bot', undefined);
+                expect(mockSendChatMessage).toHaveBeenCalledWith("msg", "", "bot", undefined);
             });
 
             it('does not send to Twitch when sendTwitch is "never"', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'never', sendTwitch: 'never' };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'twitch' } } } as any;
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "never",
+                    sendTwitch: "never"
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "twitch" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
                 expect(mockSendChatMessage).not.toHaveBeenCalled();
             });
 
             it('sends to Twitch when sendTwitch is "trigger" and platform is twitch', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'never', sendTwitch: 'trigger' };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'twitch' } } } as any;
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "never",
+                    sendTwitch: "trigger"
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "twitch" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-                expect(mockSendChatMessage).toHaveBeenCalledWith('msg', '', 'bot', undefined);
+                expect(mockSendChatMessage).toHaveBeenCalledWith("msg", "", "bot", undefined);
             });
         });
 
-        describe('unknown platform', () => {
+        describe("unknown platform", () => {
             beforeEach(() => {
-                jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('unknown');
+                jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("unknown");
                 mockSendKickChatMessage.mockClear();
                 mockSendChatMessage.mockClear();
             });
 
             it('sends to Kick when sendKick is "always"', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'always', sendTwitch: 'trigger' };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'unknown' } } } as any;
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "always",
+                    sendTwitch: "trigger"
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "unknown" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-                expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('msg', 'Streamer', undefined);
+                expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("msg", "Streamer", undefined);
                 expect(mockSendChatMessage).not.toHaveBeenCalled();
             });
 
             it('does not send to Kick when sendKick is "trigger"', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'trigger', sendTwitch: 'trigger' };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'unknown' } } } as any;
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "trigger",
+                    sendTwitch: "trigger"
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "unknown" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
                 expect(integration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
                 expect(mockSendChatMessage).not.toHaveBeenCalled();
             });
 
-            it('sends to Kick when default trigger option is selected', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'trigger', sendTwitch: 'trigger', defaultSendKick: true };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'unknown' } } } as any;
+            it("sends to Kick when default trigger option is selected", async () => {
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "trigger",
+                    sendTwitch: "trigger",
+                    defaultSendKick: true
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "unknown" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-                expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('msg', 'Streamer', undefined);
+                expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("msg", "Streamer", undefined);
                 expect(mockSendChatMessage).not.toHaveBeenCalled();
             });
 
             it('sends to Twitch when sendTwitch is "always"', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'trigger', sendTwitch: 'always' };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'unknown' } } } as any;
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "trigger",
+                    sendTwitch: "always"
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "unknown" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
                 expect(integration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
-                expect(mockSendChatMessage).toHaveBeenCalledWith('msg', '', 'bot', undefined);
+                expect(mockSendChatMessage).toHaveBeenCalledWith("msg", "", "bot", undefined);
             });
 
             it('does not send to Twitch when sendTwitch is "trigger"', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'trigger', sendTwitch: 'trigger' };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'unknown' } } } as any;
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "trigger",
+                    sendTwitch: "trigger"
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "unknown" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
                 expect(integration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
                 expect(mockSendChatMessage).not.toHaveBeenCalled();
             });
 
-            it('sends to Twitch when default trigger option is selected', async () => {
-                const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendKick: 'trigger', sendTwitch: 'trigger', defaultSendTwitch: true };
-                const trigger = { type: 'command', metadata: { eventSource: { id: 'unknown' } } } as any;
+            it("sends to Twitch when default trigger option is selected", async () => {
+                const effect = {
+                    message: "msg",
+                    chatterKick: "Streamer",
+                    chatterTwitch: "Bot",
+                    sendKick: "trigger",
+                    sendTwitch: "trigger",
+                    defaultSendTwitch: true
+                };
+                const trigger = {
+                    type: "command",
+                    metadata: { eventSource: { id: "unknown" } }
+                } as any;
                 await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
                 expect(integration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
-                expect(mockSendChatMessage).toHaveBeenCalledWith('msg', '', 'bot', undefined);
+                expect(mockSendChatMessage).toHaveBeenCalledWith("msg", "", "bot", undefined);
             });
         });
     });
 
-    describe('backward compatibility with deprecated options', () => {
+    describe("backward compatibility with deprecated options", () => {
         beforeEach(() => {
-            jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('kick');
+            jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("kick");
         });
 
         it('sends to Kick when alwaysSendKick is true (maps to sendKick="always")', async () => {
-            const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', alwaysSendKick: true };
-            const trigger = { type: 'command', metadata: { eventSource: { id: 'kick' } } } as any;
+            const effect = {
+                message: "msg",
+                chatterKick: "Streamer",
+                chatterTwitch: "Bot",
+                alwaysSendKick: true
+            };
+            const trigger = {
+                type: "command",
+                metadata: { eventSource: { id: "kick" } }
+            } as any;
             await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-            expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('msg', 'Streamer', undefined);
+            expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("msg", "Streamer", undefined);
         });
 
         it('does not send to Kick when skipKick is true (maps to sendKick="never")', async () => {
-            const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', skipKick: true };
-            const trigger = { type: 'command', metadata: { eventSource: { id: 'kick' } } } as any;
+            const effect = {
+                message: "msg",
+                chatterKick: "Streamer",
+                chatterTwitch: "Bot",
+                skipKick: true
+            };
+            const trigger = {
+                type: "command",
+                metadata: { eventSource: { id: "kick" } }
+            } as any;
             await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
             expect(integration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
         });
 
         it('sends to Kick when neither alwaysSendKick nor skipKick is set (maps to sendKick="trigger")', async () => {
-            const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot' };
-            const trigger = { type: 'command', metadata: { eventSource: { id: 'kick' } } } as any;
+            const effect = {
+                message: "msg",
+                chatterKick: "Streamer",
+                chatterTwitch: "Bot"
+            };
+            const trigger = {
+                type: "command",
+                metadata: { eventSource: { id: "kick" } }
+            } as any;
             await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-            expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('msg', 'Streamer', undefined);
+            expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("msg", "Streamer", undefined);
         });
 
         it('sends to Twitch when alwaysSendTwitch is true (maps to sendTwitch="always")', async () => {
-            jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('twitch');
-            const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', alwaysSendTwitch: true };
-            const trigger = { type: 'command', metadata: { eventSource: { id: 'twitch' } } } as any;
+            jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("twitch");
+            const effect = {
+                message: "msg",
+                chatterKick: "Streamer",
+                chatterTwitch: "Bot",
+                alwaysSendTwitch: true
+            };
+            const trigger = {
+                type: "command",
+                metadata: { eventSource: { id: "twitch" } }
+            } as any;
             await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-            expect(mockSendChatMessage).toHaveBeenCalledWith('msg', '', 'bot', undefined);
+            expect(mockSendChatMessage).toHaveBeenCalledWith("msg", "", "bot", undefined);
         });
 
         it('does not send to Twitch when skipTwitch is true (maps to sendTwitch="never")', async () => {
-            jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('twitch');
-            const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot', skipTwitch: true };
-            const trigger = { type: 'command', metadata: { eventSource: { id: 'twitch' } } } as any;
+            jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("twitch");
+            const effect = {
+                message: "msg",
+                chatterKick: "Streamer",
+                chatterTwitch: "Bot",
+                skipTwitch: true
+            };
+            const trigger = {
+                type: "command",
+                metadata: { eventSource: { id: "twitch" } }
+            } as any;
             await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
             expect(mockSendChatMessage).not.toHaveBeenCalled();
         });
 
         it('sends to Twitch when neither alwaysSendTwitch nor skipTwitch is set (maps to sendTwitch="trigger")', async () => {
-            jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('twitch');
-            const effect = { message: 'msg', chatterKick: 'Streamer', chatterTwitch: 'Bot' };
-            const trigger = { type: 'command', metadata: { eventSource: { id: 'twitch' } } } as any;
+            jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("twitch");
+            const effect = {
+                message: "msg",
+                chatterKick: "Streamer",
+                chatterTwitch: "Bot"
+            };
+            const trigger = {
+                type: "command",
+                metadata: { eventSource: { id: "twitch" } }
+            } as any;
             await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-            expect(mockSendChatMessage).toHaveBeenCalledWith('msg', '', 'bot', undefined);
+            expect(mockSendChatMessage).toHaveBeenCalledWith("msg", "", "bot", undefined);
         });
     });
 
-    it('sends to Kick with correct params (no reply)', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('kick');
-        const effect: chatPlatformEffectParams = { message: 'hello', chatterKick: 'Streamer', chatterTwitch: 'Bot', copyMessageKick: true, defaultSendKick: true };
-        const trigger: Trigger = { type: 'command', metadata: { eventSource: { id: 'kick' }} } as any;
+    it("sends to Kick with correct params (no reply)", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("kick");
+        const effect: chatPlatformEffectParams = {
+            message: "hello",
+            chatterKick: "Streamer",
+            chatterTwitch: "Bot",
+            copyMessageKick: true,
+            defaultSendKick: true
+        };
+        const trigger: Trigger = {
+            type: "command",
+            metadata: { eventSource: { id: "kick" } }
+        } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-        expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('hello', 'Streamer', undefined);
+        expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("hello", "Streamer", undefined);
     });
 
-    it('sends to Kick with reply id for command', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('kick');
-        const effect: chatPlatformEffectParams = { message: 'hi', chatterKick: 'Bot', chatterTwitch: 'Bot', sendAsReplyKick: true, copyMessageKick: true, defaultSendKick: true };
-        const trigger: Trigger = { type: 'command', metadata: { chatMessage: { id: 'msg123' }, eventSource: { id: 'kick' }} } as any;
+    it("sends to Kick with reply id for command", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("kick");
+        const effect: chatPlatformEffectParams = {
+            message: "hi",
+            chatterKick: "Bot",
+            chatterTwitch: "Bot",
+            sendAsReplyKick: true,
+            copyMessageKick: true,
+            defaultSendKick: true
+        };
+        const trigger: Trigger = {
+            type: "command",
+            metadata: { chatMessage: { id: "msg123" }, eventSource: { id: "kick" } }
+        } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-        expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('hi', 'Bot', 'msg123');
+        expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("hi", "Bot", "msg123");
     });
 
-    it('sends to Kick with reply id for event', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('kick');
-        const effect: chatPlatformEffectParams = { message: 'yo', chatterKick: 'Streamer', chatterTwitch: 'Bot', sendAsReplyKick: true, copyMessageKick: true, defaultSendKick: true };
-        const trigger: Trigger = { type: 'event', metadata: { eventData: { chatMessage: { id: 'evt456' } }, eventSource: { id: 'kick' }} } as any;
+    it("sends to Kick with reply id for event", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("kick");
+        const effect: chatPlatformEffectParams = {
+            message: "yo",
+            chatterKick: "Streamer",
+            chatterTwitch: "Bot",
+            sendAsReplyKick: true,
+            copyMessageKick: true,
+            defaultSendKick: true
+        };
+        const trigger: Trigger = {
+            type: "event",
+            metadata: {
+                eventData: { chatMessage: { id: "evt456" } },
+                eventSource: { id: "kick" }
+            }
+        } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-        expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('yo', 'Streamer', 'evt456');
+        expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("yo", "Streamer", "evt456");
     });
 
-    it('skips sending to Kick if skipKick is true', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('kick');
-        const effect: chatPlatformEffectParams = { message: 'skip', chatterKick: 'Streamer', chatterTwitch: 'Bot', skipKick: true, copyMessageKick: true };
-        const trigger: Trigger = { type: 'command', metadata: { eventSource: { id: 'kick' }} } as any;
+    it("skips sending to Kick if skipKick is true", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("kick");
+        const effect: chatPlatformEffectParams = {
+            message: "skip",
+            chatterKick: "Streamer",
+            chatterTwitch: "Bot",
+            skipKick: true,
+            copyMessageKick: true
+        };
+        const trigger: Trigger = {
+            type: "command",
+            metadata: { eventSource: { id: "kick" } }
+        } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
         expect(integration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
     });
 
-    it('sends to Twitch with correct params (no reply)', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('twitch');
-        const effect: chatPlatformEffectParams = { message: 'tmsg', chatterKick: 'Streamer', chatterTwitch: 'Bot', alwaysSendTwitch: false };
-        const trigger: Trigger = { type: 'command', metadata: { eventSource: { id: 'twitch' }} } as any;
+    it("sends to Twitch with correct params (no reply)", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("twitch");
+        const effect: chatPlatformEffectParams = {
+            message: "tmsg",
+            chatterKick: "Streamer",
+            chatterTwitch: "Bot",
+            alwaysSendTwitch: false
+        };
+        const trigger: Trigger = {
+            type: "command",
+            metadata: { eventSource: { id: "twitch" } }
+        } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-        expect(mockSendChatMessage).toHaveBeenCalledWith('tmsg', '', 'bot', undefined);
+        expect(mockSendChatMessage).toHaveBeenCalledWith("tmsg", "", "bot", undefined);
     });
 
-    it('sends to Twitch with reply id for command', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('twitch');
-        const effect: chatPlatformEffectParams = { message: 'tmsg2', chatterKick: 'Streamer', chatterTwitch: 'Streamer', alwaysSendTwitch: false, sendAsReply: true };
-        const trigger: Trigger = { type: 'command', metadata: { chatMessage: { id: 'tmsgid' }, eventSource: { id: 'twitch' }} } as any;
+    it("sends to Twitch with reply id for command", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("twitch");
+        const effect: chatPlatformEffectParams = {
+            message: "tmsg2",
+            chatterKick: "Streamer",
+            chatterTwitch: "Streamer",
+            alwaysSendTwitch: false,
+            sendAsReply: true
+        };
+        const trigger: Trigger = {
+            type: "command",
+            metadata: {
+                chatMessage: { id: "tmsgid" },
+                eventSource: { id: "twitch" }
+            }
+        } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-        expect(mockSendChatMessage).toHaveBeenCalledWith('tmsg2', '', 'streamer', 'tmsgid');
+        expect(mockSendChatMessage).toHaveBeenCalledWith("tmsg2", "", "streamer", "tmsgid");
     });
 
-    it('sends to Twitch with reply id for event', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('twitch');
-        const effect: chatPlatformEffectParams = { message: 'tmsg2', chatterKick: 'Streamer', chatterTwitch: 'Streamer', alwaysSendTwitch: false, sendAsReply: true };
-        const trigger: Trigger = { type: 'event', metadata: { eventData: { chatMessage: { id: 'evt456' } }, eventSource: { id: 'twitch' }} } as any;
+    it("sends to Twitch with reply id for event", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("twitch");
+        const effect: chatPlatformEffectParams = {
+            message: "tmsg2",
+            chatterKick: "Streamer",
+            chatterTwitch: "Streamer",
+            alwaysSendTwitch: false,
+            sendAsReply: true
+        };
+        const trigger: Trigger = {
+            type: "event",
+            metadata: {
+                eventData: { chatMessage: { id: "evt456" } },
+                eventSource: { id: "twitch" }
+            }
+        } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-        expect(mockSendChatMessage).toHaveBeenCalledWith('tmsg2', '', 'streamer', 'evt456');
+        expect(mockSendChatMessage).toHaveBeenCalledWith("tmsg2", "", "streamer", "evt456");
     });
 
-    it('skips sending to Twitch if skipTwitch is true', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('twitch');
-        const effect: chatPlatformEffectParams = { message: 'skipT', chatterKick: 'Streamer', chatterTwitch: 'Bot', alwaysSendTwitch: false, skipTwitch: true };
-        const trigger: Trigger = { type: 'command', metadata: { eventSource: { id: 'twitch' }} } as any;
+    it("skips sending to Twitch if skipTwitch is true", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("twitch");
+        const effect: chatPlatformEffectParams = {
+            message: "skipT",
+            chatterKick: "Streamer",
+            chatterTwitch: "Bot",
+            alwaysSendTwitch: false,
+            skipTwitch: true
+        };
+        const trigger: Trigger = {
+            type: "command",
+            metadata: { eventSource: { id: "twitch" } }
+        } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
         expect(mockSendChatMessage).not.toHaveBeenCalled();
     });
 
-    it('does not send to either platform if platform cannot be determined', async() => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('');
-        const effect: chatPlatformEffectParams = { message: 'unknown', chatterKick: 'Streamer', chatterTwitch: 'Bot' };
-        const trigger: Trigger = { type: 'command', metadata: { eventSource: { id: 'unknown' }} } as any;
+    it("does not send to either platform if platform cannot be determined", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("");
+        const effect: chatPlatformEffectParams = {
+            message: "unknown",
+            chatterKick: "Streamer",
+            chatterTwitch: "Bot"
+        };
+        const trigger: Trigger = {
+            type: "command",
+            metadata: { eventSource: { id: "unknown" } }
+        } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
         expect(integration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
         expect(mockSendChatMessage).not.toHaveBeenCalled();
     });
 
-    it('sends to kick when trigger cannot be determined but default kick is enabled', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('');
-        const effect: chatPlatformEffectParams = { message: 'unknown', chatterKick: 'Streamer', chatterTwitch: 'Bot', defaultSendKick: true };
-        const trigger: Trigger = { type: 'command', metadata: {} } as any;
+    it("sends to kick when trigger cannot be determined but default kick is enabled", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("");
+        const effect: chatPlatformEffectParams = {
+            message: "unknown",
+            chatterKick: "Streamer",
+            chatterTwitch: "Bot",
+            defaultSendKick: true
+        };
+        const trigger: Trigger = { type: "command", metadata: {} } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-        expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('unknown', 'Streamer', undefined);
+        expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("unknown", "Streamer", undefined);
         expect(mockSendChatMessage).not.toHaveBeenCalled();
     });
 
-    it('sends to twitch when trigger cannot be determined but default twitch is enabled', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('');
-        const effect: chatPlatformEffectParams = { message: 'unknown', chatterKick: 'Streamer', chatterTwitch: 'Bot', defaultSendTwitch: true };
-        const trigger: Trigger = { type: 'command', metadata: {} } as any;
+    it("sends to twitch when trigger cannot be determined but default twitch is enabled", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("");
+        const effect: chatPlatformEffectParams = {
+            message: "unknown",
+            chatterKick: "Streamer",
+            chatterTwitch: "Bot",
+            defaultSendTwitch: true
+        };
+        const trigger: Trigger = { type: "command", metadata: {} } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
         expect(integration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
-        expect(mockSendChatMessage).toHaveBeenCalledWith('unknown', '', 'bot', undefined);
+        expect(mockSendChatMessage).toHaveBeenCalledWith("unknown", "", "bot", undefined);
     });
 
-    it('sends to kick when alwaysSendKick is enabled', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('');
-        const effect: chatPlatformEffectParams = { message: 'unknown', chatterKick: 'Streamer', chatterTwitch: 'Bot', alwaysSendKick: true };
-        const trigger: Trigger = { type: 'command', metadata: {} } as any;
+    it("sends to kick when alwaysSendKick is enabled", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("");
+        const effect: chatPlatformEffectParams = {
+            message: "unknown",
+            chatterKick: "Streamer",
+            chatterTwitch: "Bot",
+            alwaysSendKick: true
+        };
+        const trigger: Trigger = { type: "command", metadata: {} } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
-        expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith('unknown', 'Streamer', undefined);
+        expect(integration.kick.chatManager.sendKickChatMessage).toHaveBeenCalledWith("unknown", "Streamer", undefined);
         expect(mockSendChatMessage).not.toHaveBeenCalled();
     });
 
-    it('sends to twitch when alwaysSendTwitch is enabled', async () => {
-        jest.spyOn(ChatManagerModule.ChatManager, 'getPlatformFromTrigger').mockReturnValue('');
-        const effect: chatPlatformEffectParams = { message: 'unknown', chatterKick: 'Streamer', chatterTwitch: 'Bot', alwaysSendTwitch: true };
-        const trigger: Trigger = { type: 'command', metadata: {} } as any;
+    it("sends to twitch when alwaysSendTwitch is enabled", async () => {
+        jest.spyOn(ChatManagerModule.ChatManager, "getPlatformFromTrigger").mockReturnValue("");
+        const effect: chatPlatformEffectParams = {
+            message: "unknown",
+            chatterKick: "Streamer",
+            chatterTwitch: "Bot",
+            alwaysSendTwitch: true
+        };
+        const trigger: Trigger = { type: "command", metadata: {} } as any;
         await chatPlatformEffect.onTriggerEvent({ trigger, effect } as any);
         expect(integration.kick.chatManager.sendKickChatMessage).not.toHaveBeenCalled();
-        expect(mockSendChatMessage).toHaveBeenCalledWith('unknown', '', 'bot', undefined);
+        expect(mockSendChatMessage).toHaveBeenCalledWith("unknown", "", "bot", undefined);
     });
 });

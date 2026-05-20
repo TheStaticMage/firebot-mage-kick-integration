@@ -1,6 +1,6 @@
-import { EventSource } from '@crowbartools/firebot-custom-scripts-types/types/modules/event-manager';
-import { unkickifyUsername } from './internal/util';
-import { getNumberFromUnknown } from './util/util';
+import type { EventSource } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-manager";
+import { unkickifyUsername } from "./internal/util";
+import { getNumberFromUnknown } from "./util/util";
 
 export const eventSource: EventSource = {
     id: "mage-kick-integration",

@@ -1,16 +1,16 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
-import { IntegrationConstants } from '../../constants';
-import { kickifyUsername, unkickifyUsername } from '../../internal/util';
-import { logger } from '../../main';
+import type { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import { detectPlatform } from "@thestaticmage/mage-platform-lib-client";
+import { IntegrationConstants } from "../../constants";
+import { kickifyUsername, unkickifyUsername } from "../../internal/util";
+import { logger } from "../../main";
 
 export const kickGiftReceiverUsernameVariable: ReplaceVariable = {
     definition: {
         handle: "kickGiftReceiverUsername",
         description: "[DEPRECATED] The name of the user who received a gifted sub. (Compatible with Kick and Twitch subs gifted events.)",
         triggers: {
-            "event": ["twitch:subs-gifted", `${IntegrationConstants.INTEGRATION_ID}:subs-gifted`],
-            "manual": true
+            event: ["twitch:subs-gifted", `${IntegrationConstants.INTEGRATION_ID}:subs-gifted`],
+            manual: true
         },
         categories: ["common"],
         possibleDataOutput: ["number"]

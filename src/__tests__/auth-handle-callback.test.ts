@@ -1,13 +1,12 @@
-/* eslint-disable camelcase, @typescript-eslint/unbound-method */
-import { AuthManager } from '../internal/auth';
-import { integration } from '../integration';
-import { httpCallWithTimeout } from '../internal/http';
-import { IntegrationConstants } from '../constants';
+import { IntegrationConstants } from "../constants";
+import { integration } from "../integration";
+import { AuthManager } from "../internal/auth";
+import { httpCallWithTimeout } from "../internal/http";
 
 // Mock dependencies
-jest.mock('../integration');
-jest.mock('../internal/http');
-jest.mock('../main', () => ({
+jest.mock("../integration");
+jest.mock("../internal/http");
+jest.mock("../main", () => ({
     logger: {
         debug: jest.fn(),
         info: jest.fn(),
@@ -19,7 +18,7 @@ jest.mock('../main', () => ({
 const mockIntegration = integration as jest.Mocked<typeof integration>;
 const mockHttpCallWithTimeout = httpCallWithTimeout as jest.MockedFunction<typeof httpCallWithTimeout>;
 
-describe('AuthManager.handleAuthCallback', () => {
+describe("AuthManager.handleAuthCallback", () => {
     let authManager: AuthManager;
     let mockReq: any;
     let mockRes: any;
@@ -30,8 +29,8 @@ describe('AuthManager.handleAuthCallback', () => {
         // Setup mock request
         mockReq = {
             query: {
-                code: 'test-auth-code',
-                state: 'test-state-uuid'
+                code: "test-auth-code",
+                state: "test-state-uuid"
             }
         };
 
@@ -47,11 +46,11 @@ describe('AuthManager.handleAuthCallback', () => {
         // Setup default integration settings mock
         mockIntegration.getSettings.mockReturnValue({
             connectivity: {
-                firebotUrl: 'http://localhost:7472'
+                firebotUrl: "http://localhost:7472"
             },
             kickApp: {
-                clientId: 'test-client-id',
-                clientSecret: 'test-client-secret'
+                clientId: "test-client-id",
+                clientSecret: "test-client-secret"
             }
         } as any);
 
@@ -69,15 +68,15 @@ describe('AuthManager.handleAuthCallback', () => {
 
         // Setup default token request and code challenge
         (authManager as any).tokenRequests = {
-            'test-state-uuid': 'streamer'
+            "test-state-uuid": "streamer"
         };
         (authManager as any).codeChallenges = {
-            'test-state-uuid': 'test-code-verifier'
+            "test-state-uuid": "test-code-verifier"
         };
     });
 
-    describe('Error cases', () => {
-        it('should return 400 when code is missing', async () => {
+    describe("Error cases", () => {
+        it("should return 400 when code is missing", async () => {
             mockReq.query.code = undefined;
 
             await authManager.handleAuthCallback(mockReq, mockRes);
@@ -86,7 +85,7 @@ describe('AuthManager.handleAuthCallback', () => {
             expect(mockRes.send).toHaveBeenCalledWith("Missing 'code' or 'state' in callback.");
         });
 
-        it('should return 400 when state is missing', async () => {
+        it("should return 400 when state is missing", async () => {
             mockReq.query.state = undefined;
 
             await authManager.handleAuthCallback(mockReq, mockRes);
@@ -95,7 +94,7 @@ describe('AuthManager.handleAuthCallback', () => {
             expect(mockRes.send).toHaveBeenCalledWith("Missing 'code' or 'state' in callback.");
         });
 
-        it('should return 400 when token type is unknown', async () => {
+        it("should return 400 when token type is unknown", async () => {
             (authManager as any).tokenRequests = {}; // Empty token requests
 
             await authManager.handleAuthCallback(mockReq, mockRes);
@@ -105,138 +104,138 @@ describe('AuthManager.handleAuthCallback', () => {
         });
     });
 
-    describe('Streamer authorization - Direct', () => {
+    describe("Streamer authorization - Direct", () => {
         beforeEach(() => {
             mockIntegration.getSettings.mockReturnValue({
                 connectivity: {
-                    firebotUrl: 'http://localhost:7472'
+                    firebotUrl: "http://localhost:7472"
                 },
                 kickApp: {
-                    clientId: 'test-client-id',
-                    clientSecret: 'test-client-secret'
+                    clientId: "test-client-id",
+                    clientSecret: "test-client-secret"
                 }
             } as any);
 
             (authManager as any).tokenRequests = {
-                'test-state-uuid': 'streamer'
+                "test-state-uuid": "streamer"
             };
         });
 
-        it('should return 200 on successful streamer authorization with direct auth', async () => {
+        it("should return 200 on successful streamer authorization with direct auth", async () => {
             const mockResponse = {
-                access_token: 'streamer-access-token',
-                refresh_token: 'streamer-refresh-token',
+                access_token: "streamer-access-token",
+                refresh_token: "streamer-refresh-token",
                 expires_in: 3600,
-                scope: IntegrationConstants.STREAMER_SCOPES.join(' ')
+                scope: IntegrationConstants.STREAMER_SCOPES.join(" ")
             };
             mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
 
             await authManager.handleAuthCallback(mockReq, mockRes);
 
             expect(mockHttpCallWithTimeout).toHaveBeenCalledWith({
-                url: expect.stringContaining('/oauth/token'),
-                method: 'POST',
-                body: expect.stringContaining('grant_type=authorization_code')
+                url: expect.stringContaining("/oauth/token"),
+                method: "POST",
+                body: expect.stringContaining("grant_type=authorization_code")
             });
 
-            expect(mockIntegration.kick.setAuthToken).toHaveBeenCalledWith('streamer-access-token');
+            expect(mockIntegration.kick.setAuthToken).toHaveBeenCalledWith("streamer-access-token");
             expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalled();
             expect(mockIntegration.disconnect).toHaveBeenCalled();
             expect(mockIntegration.connect).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for streamer account!'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining("Kick integration authorized for streamer account!"));
         });
 
-        it('shows a prominent warning and troubleshooting link when permissions are missing', async () => {
+        it("shows a prominent warning and troubleshooting link when permissions are missing", async () => {
             const mockResponse = {
-                access_token: 'streamer-access-token',
-                refresh_token: 'streamer-refresh-token',
+                access_token: "streamer-access-token",
+                refresh_token: "streamer-refresh-token",
                 expires_in: 3600,
-                scope: 'user:read'
+                scope: "user:read"
             };
-            const verifySpy = jest.spyOn(authManager as any, 'verifyTokenScopes').mockReturnValue(['channel:write', 'chat:write']);
+            const verifySpy = jest.spyOn(authManager as any, "verifyTokenScopes").mockReturnValue(["channel:write", "chat:write"]);
             mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
 
             await authManager.handleAuthCallback(mockReq, mockRes);
 
             expect(verifySpy).toHaveBeenCalled();
             const sentHtml = (mockRes.send as jest.Mock).mock.calls[0][0];
-            expect(sentHtml).toContain('Kick integration partially authorized for streamer account!');
-            expect(sentHtml).toContain('WARNING: Important permissions were not granted');
-            expect(sentHtml).toContain('Kick app is not set up to request the right permissions');
-            expect(sentHtml).toContain('https://github.com/TheStaticMage/firebot-mage-kick-integration/blob/main/doc/troubleshooting.md');
-            expect(sentHtml).toContain('/integrations/firebot-mage-kick-integration/link/streamer');
-            expect(sentHtml).toContain('Try Again');
-            expect(sentHtml).toContain('channel:write');
+            expect(sentHtml).toContain("Kick integration partially authorized for streamer account!");
+            expect(sentHtml).toContain("WARNING: Important permissions were not granted");
+            expect(sentHtml).toContain("Kick app is not set up to request the right permissions");
+            expect(sentHtml).toContain("https://github.com/TheStaticMage/firebot-mage-kick-integration/blob/main/doc/troubleshooting.md");
+            expect(sentHtml).toContain("/integrations/firebot-mage-kick-integration/link/streamer");
+            expect(sentHtml).toContain("Try Again");
+            expect(sentHtml).toContain("channel:write");
             expect(mockRes.status).toHaveBeenCalledWith(200);
         });
 
-        it('should return 500 on HTTP call failure with direct auth', async () => {
-            const error = new Error('API error');
+        it("should return 500 on HTTP call failure with direct auth", async () => {
+            const error = new Error("API error");
             mockHttpCallWithTimeout.mockRejectedValue(error);
 
             await authManager.handleAuthCallback(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(500);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Failed to exchange code for tokens: Error: API error'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining("Failed to exchange code for tokens: Error: API error"));
         });
     });
 
-    describe('Bot authorization - Direct', () => {
+    describe("Bot authorization - Direct", () => {
         beforeEach(() => {
             mockIntegration.getSettings.mockReturnValue({
                 connectivity: {
-                    firebotUrl: 'http://localhost:7472'
+                    firebotUrl: "http://localhost:7472"
                 },
                 kickApp: {
-                    clientId: 'test-client-id',
-                    clientSecret: 'test-client-secret'
+                    clientId: "test-client-id",
+                    clientSecret: "test-client-secret"
                 }
             } as any);
 
             (authManager as any).tokenRequests = {
-                'test-state-uuid': 'bot'
+                "test-state-uuid": "bot"
             };
 
             // Mock verifyBotUser method
             (authManager as any).verifyBotUser = jest.fn().mockResolvedValue({
                 userId: 67890,
-                name: 'TestBot'
+                name: "TestBot"
             });
         });
 
-        it('should return 200 on successful bot authorization with direct auth', async () => {
+        it("should return 200 on successful bot authorization with direct auth", async () => {
             const mockResponse = {
-                access_token: 'bot-access-token',
-                refresh_token: 'bot-refresh-token',
+                access_token: "bot-access-token",
+                refresh_token: "bot-refresh-token",
                 expires_in: 3600,
-                scope: IntegrationConstants.BOT_SCOPES.join(' ')
+                scope: IntegrationConstants.BOT_SCOPES.join(" ")
             };
             mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
 
             await authManager.handleAuthCallback(mockReq, mockRes);
 
             expect(mockHttpCallWithTimeout).toHaveBeenCalledWith({
-                url: expect.stringContaining('/oauth/token'),
-                method: 'POST',
-                body: expect.stringContaining('grant_type=authorization_code')
+                url: expect.stringContaining("/oauth/token"),
+                method: "POST",
+                body: expect.stringContaining("grant_type=authorization_code")
             });
 
-            expect((authManager as any).verifyBotUser).toHaveBeenCalledWith('bot-access-token');
-            expect(mockIntegration.kick.setBotAuthToken).toHaveBeenCalledWith('bot-access-token');
+            expect((authManager as any).verifyBotUser).toHaveBeenCalledWith("bot-access-token");
+            expect(mockIntegration.kick.setBotAuthToken).toHaveBeenCalledWith("bot-access-token");
             expect(mockIntegration.saveIntegrationTokenData).toHaveBeenCalled();
             expect(mockIntegration.disconnect).toHaveBeenCalled();
             expect(mockIntegration.connect).toHaveBeenCalled();
             expect(mockRes.status).toHaveBeenCalledWith(200);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Kick integration authorized for bot account!'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining("Kick integration authorized for bot account!"));
         });
 
-        it('should return 400 when broadcaster is not available for bot authorization', async () => {
+        it("should return 400 when broadcaster is not available for bot authorization", async () => {
             mockIntegration.kick.broadcaster = null;
 
             const mockResponse = {
-                access_token: 'bot-access-token',
-                refresh_token: 'bot-refresh-token',
+                access_token: "bot-access-token",
+                refresh_token: "bot-refresh-token",
                 expires_in: 3600
             };
             mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
@@ -244,18 +243,18 @@ describe('AuthManager.handleAuthCallback', () => {
             await authManager.handleAuthCallback(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(400);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('A bot account cannot be authorized until the streamer account has been authorized'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining("A bot account cannot be authorized until the streamer account has been authorized"));
         });
 
-        it('should return 400 when bot user ID matches broadcaster user ID', async () => {
+        it("should return 400 when bot user ID matches broadcaster user ID", async () => {
             (authManager as any).verifyBotUser = jest.fn().mockResolvedValue({
                 userId: 12345, // Same as broadcaster
-                name: 'SameUser'
+                name: "SameUser"
             });
 
             const mockResponse = {
-                access_token: 'bot-access-token',
-                refresh_token: 'bot-refresh-token',
+                access_token: "bot-access-token",
+                refresh_token: "bot-refresh-token",
                 expires_in: 3600
             };
             mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
@@ -263,15 +262,15 @@ describe('AuthManager.handleAuthCallback', () => {
             await authManager.handleAuthCallback(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(400);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Cannot authorize the same account for both streamer and bot'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining("Cannot authorize the same account for both streamer and bot"));
         });
 
-        it('should return 500 when bot user verification fails', async () => {
-            (authManager as any).verifyBotUser = jest.fn().mockRejectedValue(new Error('Verification failed'));
+        it("should return 500 when bot user verification fails", async () => {
+            (authManager as any).verifyBotUser = jest.fn().mockRejectedValue(new Error("Verification failed"));
 
             const mockResponse = {
-                access_token: 'bot-access-token',
-                refresh_token: 'bot-refresh-token',
+                access_token: "bot-access-token",
+                refresh_token: "bot-refresh-token",
                 expires_in: 3600
             };
             mockHttpCallWithTimeout.mockResolvedValue(mockResponse);
@@ -279,17 +278,17 @@ describe('AuthManager.handleAuthCallback', () => {
             await authManager.handleAuthCallback(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(500);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Failed to verify bot account'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining("Failed to verify bot account"));
         });
 
-        it('should return 500 on HTTP call failure with direct auth', async () => {
-            const error = new Error('API error');
+        it("should return 500 on HTTP call failure with direct auth", async () => {
+            const error = new Error("API error");
             mockHttpCallWithTimeout.mockRejectedValue(error);
 
             await authManager.handleAuthCallback(mockReq, mockRes);
 
             expect(mockRes.status).toHaveBeenCalledWith(500);
-            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining('Failed to exchange code for tokens: Error: API error'));
+            expect(mockRes.send).toHaveBeenCalledWith(expect.stringContaining("Failed to exchange code for tokens: Error: API error"));
         });
     });
 });

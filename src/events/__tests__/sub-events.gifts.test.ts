@@ -1,6 +1,6 @@
-import { IntegrationConstants } from '../../constants';
-import { ChannelGiftSubscription } from '../../shared/types';
-import { handleChannelSubscriptionGiftsEvent, giftSubCache } from '../sub-events';
+import { IntegrationConstants } from "../../constants";
+import type { ChannelGiftSubscription } from "../../shared/types";
+import { giftSubCache, handleChannelSubscriptionGiftsEvent } from "../sub-events";
 
 const mockTriggerEvent = jest.fn();
 const mockLoggerDebug = jest.fn();
@@ -9,9 +9,11 @@ const mockGetOrCreateViewer = jest.fn().mockResolvedValue(undefined);
 const mockRecordSubscription = jest.fn();
 const mockRecordGift = jest.fn();
 const mockUpdateLastSeen = jest.fn();
-const mockGetSettings = jest.fn(() => ({ triggerTwitchEvents: { subGift: false } }));
+const mockGetSettings = jest.fn(() => ({
+    triggerTwitchEvents: { subGift: false }
+}));
 
-jest.mock('../../integration', () => ({
+jest.mock("../../integration", () => ({
     integration: {
         kick: {
             userManager: {
@@ -25,7 +27,7 @@ jest.mock('../../integration', () => ({
     }
 }));
 
-jest.mock('../../main', () => ({
+jest.mock("../../main", () => ({
     firebot: {
         modules: {
             eventManager: {
@@ -44,206 +46,196 @@ jest.mock('../../main', () => ({
     }
 }));
 
-const { firebot } = require('../../main');
+const { firebot } = require("../../main");
 
-describe('handleChannelSubscriptionGiftsEvent', () => {
+describe("handleChannelSubscriptionGiftsEvent", () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockGetSettings.mockReturnValue({ triggerTwitchEvents: { subGift: false } });
+        mockGetSettings.mockReturnValue({
+            triggerTwitchEvents: { subGift: false }
+        });
         giftSubCache.flushAll(); // Clear the deduplication cache between tests
     });
 
-    it('handles anonymous gifter', async () => {
+    it("handles anonymous gifter", async () => {
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'anon', isAnonymous: true },
-            giftees: [{ userId: '3', username: 'giftee' }],
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "anon", isAnonymous: true },
+            giftees: [{ userId: "3", username: "giftee" }],
             createdAt: new Date()
         } as any;
         await handleChannelSubscriptionGiftsEvent(payload);
-        expect(mockTriggerEvent).toHaveBeenCalledWith(
-            IntegrationConstants.INTEGRATION_ID,
-            'subs-gifted',
-            {
-                gifterUsername: 'Anonymous@kick',
-                gifterUserId: '',
-                gifterUserDisplayName: 'Anonymous',
-                isAnonymous: true,
-                subPlan: 'kickDefault',
-                giftSubMonths: 1,
-                giftSubDuration: 1,
-                gifteeUsername: 'giftee@kick',
-                gifteeUserId: 'k3',
-                gifteeUserDisplayName: 'giftee',
-                platform: 'kick'
-            }
-        );
+        expect(mockTriggerEvent).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "subs-gifted", {
+            gifterUsername: "Anonymous@kick",
+            gifterUserId: "",
+            gifterUserDisplayName: "Anonymous",
+            isAnonymous: true,
+            subPlan: "kickDefault",
+            giftSubMonths: 1,
+            giftSubDuration: 1,
+            gifteeUsername: "giftee@kick",
+            gifteeUserId: "k3",
+            gifteeUserDisplayName: "giftee",
+            platform: "kick"
+        });
     });
 
-    it('handles single giftee, IgnoreSubsequentSubEventsAfterCommunitySub false', async () => {
+    it("handles single giftee, IgnoreSubsequentSubEventsAfterCommunitySub false", async () => {
         firebot.firebot.settings.getSetting.mockReturnValue(false);
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
-            giftees: [{ userId: '3', username: 'giftee' }],
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
+            giftees: [{ userId: "3", username: "giftee" }],
             createdAt: new Date()
         } as any;
         await handleChannelSubscriptionGiftsEvent(payload);
-        expect(mockTriggerEvent).toHaveBeenCalledWith(
-            IntegrationConstants.INTEGRATION_ID,
-            'subs-gifted',
-            {
-                gifterUsername: 'gifter@kick',
-                gifterUserId: 'k2',
-                gifterUserDisplayName: 'gifter',
-                isAnonymous: false,
-                subPlan: 'kickDefault',
-                giftSubMonths: 1,
-                giftSubDuration: 1,
-                gifteeUsername: 'giftee@kick',
-                gifteeUserId: 'k3',
-                gifteeUserDisplayName: 'giftee',
-                platform: 'kick'
-            }
-        );
+        expect(mockTriggerEvent).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "subs-gifted", {
+            gifterUsername: "gifter@kick",
+            gifterUserId: "k2",
+            gifterUserDisplayName: "gifter",
+            isAnonymous: false,
+            subPlan: "kickDefault",
+            giftSubMonths: 1,
+            giftSubDuration: 1,
+            gifteeUsername: "giftee@kick",
+            gifteeUserId: "k3",
+            gifteeUserDisplayName: "giftee",
+            platform: "kick"
+        });
     });
 
-    it('handles multiple giftees, IgnoreSubsequentSubEventsAfterCommunitySub false', async () => {
+    it("handles multiple giftees, IgnoreSubsequentSubEventsAfterCommunitySub false", async () => {
         firebot.firebot.settings.getSetting.mockReturnValue(false);
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
             giftees: [
-                { userId: '3', username: 'giftee1' },
-                { userId: '4', username: 'giftee2' }
+                { userId: "3", username: "giftee1" },
+                { userId: "4", username: "giftee2" }
             ],
             createdAt: new Date()
         } as any;
         await handleChannelSubscriptionGiftsEvent(payload);
-        expect(mockTriggerEvent).toHaveBeenCalledWith(
-            IntegrationConstants.INTEGRATION_ID,
-            'community-subs-gifted',
-            {
-                gifterUsername: 'gifter@kick',
-                gifterUserId: 'k2',
-                gifterUserDisplayName: 'gifter',
-                isAnonymous: false,
-                subCount: 2,
-                subPlan: 'kickDefault',
-                giftReceivers: [
-                    { gifteeUsername: 'giftee1@kick', gifteeUserId: 'k3', gifteeUserDisplayName: 'giftee1', giftSubMonths: 1 },
-                    { gifteeUsername: 'giftee2@kick', gifteeUserId: 'k4', gifteeUserDisplayName: 'giftee2', giftSubMonths: 1 }
-                ],
-                platform: 'kick'
-            }
-        );
-        expect(mockTriggerEvent).toHaveBeenCalledWith(
-            IntegrationConstants.INTEGRATION_ID,
-            'subs-gifted',
-            {
-                gifterUsername: 'gifter@kick',
-                gifterUserId: 'k2',
-                gifterUserDisplayName: 'gifter',
-                isAnonymous: false,
-                subPlan: 'kickDefault',
-                giftSubMonths: 1,
-                giftSubDuration: 1,
-                gifteeUsername: 'giftee1@kick',
-                gifteeUserId: 'k3',
-                gifteeUserDisplayName: 'giftee1',
-                platform: 'kick'
-            }
-        );
-        expect(mockTriggerEvent).toHaveBeenCalledWith(
-            IntegrationConstants.INTEGRATION_ID,
-            'subs-gifted',
-            {
-                gifterUsername: 'gifter@kick',
-                gifterUserId: 'k2',
-                gifterUserDisplayName: 'gifter',
-                isAnonymous: false,
-                subPlan: 'kickDefault',
-                giftSubMonths: 1,
-                giftSubDuration: 1,
-                gifteeUsername: 'giftee2@kick',
-                gifteeUserId: 'k4',
-                gifteeUserDisplayName: 'giftee2',
-                platform: 'kick'
-            }
-        );
+        expect(mockTriggerEvent).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "community-subs-gifted", {
+            gifterUsername: "gifter@kick",
+            gifterUserId: "k2",
+            gifterUserDisplayName: "gifter",
+            isAnonymous: false,
+            subCount: 2,
+            subPlan: "kickDefault",
+            giftReceivers: [
+                {
+                    gifteeUsername: "giftee1@kick",
+                    gifteeUserId: "k3",
+                    gifteeUserDisplayName: "giftee1",
+                    giftSubMonths: 1
+                },
+                {
+                    gifteeUsername: "giftee2@kick",
+                    gifteeUserId: "k4",
+                    gifteeUserDisplayName: "giftee2",
+                    giftSubMonths: 1
+                }
+            ],
+            platform: "kick"
+        });
+        expect(mockTriggerEvent).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "subs-gifted", {
+            gifterUsername: "gifter@kick",
+            gifterUserId: "k2",
+            gifterUserDisplayName: "gifter",
+            isAnonymous: false,
+            subPlan: "kickDefault",
+            giftSubMonths: 1,
+            giftSubDuration: 1,
+            gifteeUsername: "giftee1@kick",
+            gifteeUserId: "k3",
+            gifteeUserDisplayName: "giftee1",
+            platform: "kick"
+        });
+        expect(mockTriggerEvent).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "subs-gifted", {
+            gifterUsername: "gifter@kick",
+            gifterUserId: "k2",
+            gifterUserDisplayName: "gifter",
+            isAnonymous: false,
+            subPlan: "kickDefault",
+            giftSubMonths: 1,
+            giftSubDuration: 1,
+            gifteeUsername: "giftee2@kick",
+            gifteeUserId: "k4",
+            gifteeUserDisplayName: "giftee2",
+            platform: "kick"
+        });
     });
 
-    it('handles multiple giftees, IgnoreSubsequentSubEventsAfterCommunitySub true', async () => {
+    it("handles multiple giftees, IgnoreSubsequentSubEventsAfterCommunitySub true", async () => {
         firebot.firebot.settings.getSetting.mockReturnValue(true);
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
             giftees: [
-                { userId: '3', username: 'giftee1' },
-                { userId: '4', username: 'giftee2' }
+                { userId: "3", username: "giftee1" },
+                { userId: "4", username: "giftee2" }
             ],
             createdAt: new Date()
         } as any;
         await handleChannelSubscriptionGiftsEvent(payload);
-        expect(mockTriggerEvent).toHaveBeenCalledWith(
-            IntegrationConstants.INTEGRATION_ID,
-            'community-subs-gifted',
-            {
-                gifterUsername: 'gifter@kick',
-                gifterUserId: 'k2',
-                gifterUserDisplayName: 'gifter',
-                isAnonymous: false,
-                subCount: 2,
-                subPlan: 'kickDefault',
-                giftReceivers: [
-                    { gifteeUsername: 'giftee1@kick', gifteeUserId: 'k3', gifteeUserDisplayName: 'giftee1', giftSubMonths: 1 },
-                    { gifteeUsername: 'giftee2@kick', gifteeUserId: 'k4', gifteeUserDisplayName: 'giftee2', giftSubMonths: 1 }
-                ],
-                platform: 'kick'
-            }
-        );
+        expect(mockTriggerEvent).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "community-subs-gifted", {
+            gifterUsername: "gifter@kick",
+            gifterUserId: "k2",
+            gifterUserDisplayName: "gifter",
+            isAnonymous: false,
+            subCount: 2,
+            subPlan: "kickDefault",
+            giftReceivers: [
+                {
+                    gifteeUsername: "giftee1@kick",
+                    gifteeUserId: "k3",
+                    gifteeUserDisplayName: "giftee1",
+                    giftSubMonths: 1
+                },
+                {
+                    gifteeUsername: "giftee2@kick",
+                    gifteeUserId: "k4",
+                    gifteeUserDisplayName: "giftee2",
+                    giftSubMonths: 1
+                }
+            ],
+            platform: "kick"
+        });
         // Should NOT trigger individual subs-gifted events
-        expect(mockTriggerEvent).not.toHaveBeenCalledWith(
-            IntegrationConstants.INTEGRATION_ID,
-            'subs-gifted',
-            {
-                gifterUsername: 'gifter@kick',
-                gifterUserId: 'k2',
-                gifterUserDisplayName: 'gifter@kick',
-                isAnonymous: false,
-                subPlan: 'kickDefault',
-                giftSubMonths: 1,
-                giftSubDuration: 1,
-                gifteeUsername: 'giftee1@kick',
-                gifteeUserId: 'k3',
-                gifteeUserDisplayName: 'giftee1@kick',
-                platform: 'kick'
-            }
-        );
-        expect(mockTriggerEvent).not.toHaveBeenCalledWith(
-            IntegrationConstants.INTEGRATION_ID,
-            'subs-gifted',
-            {
-                gifterUsername: 'gifter@kick',
-                gifterUserId: 'k2',
-                gifterUserDisplayName: 'gifter@kick',
-                isAnonymous: false,
-                subPlan: 'kickDefault',
-                giftSubMonths: 1,
-                giftSubDuration: 1,
-                gifteeUsername: 'giftee2@kick',
-                gifteeUserId: 'k4',
-                gifteeUserDisplayName: 'giftee2@kick',
-                platform: 'kick'
-            }
-        );
+        expect(mockTriggerEvent).not.toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "subs-gifted", {
+            gifterUsername: "gifter@kick",
+            gifterUserId: "k2",
+            gifterUserDisplayName: "gifter@kick",
+            isAnonymous: false,
+            subPlan: "kickDefault",
+            giftSubMonths: 1,
+            giftSubDuration: 1,
+            gifteeUsername: "giftee1@kick",
+            gifteeUserId: "k3",
+            gifteeUserDisplayName: "giftee1@kick",
+            platform: "kick"
+        });
+        expect(mockTriggerEvent).not.toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "subs-gifted", {
+            gifterUsername: "gifter@kick",
+            gifterUserId: "k2",
+            gifterUserDisplayName: "gifter@kick",
+            isAnonymous: false,
+            subPlan: "kickDefault",
+            giftSubMonths: 1,
+            giftSubDuration: 1,
+            gifteeUsername: "giftee2@kick",
+            gifteeUserId: "k4",
+            gifteeUserDisplayName: "giftee2@kick",
+            platform: "kick"
+        });
     });
 
-    it('handles gifter with empty userId', async () => {
+    it("handles gifter with empty userId", async () => {
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: 'k1', username: 'broadcaster' },
-            gifter: { userId: '', username: 'emptyuser', isAnonymous: false },
-            giftees: [{ userId: 'k3', username: 'giftee' }],
+            broadcaster: { userId: "k1", username: "broadcaster" },
+            gifter: { userId: "", username: "emptyuser", isAnonymous: false },
+            giftees: [{ userId: "k3", username: "giftee" }],
             createdAt: new Date()
         } as any;
 
@@ -253,13 +245,13 @@ describe('handleChannelSubscriptionGiftsEvent', () => {
         expect(mockGetOrCreateViewer).toHaveBeenCalledTimes(1); // Only for giftee
     });
 
-    it('handles giftees with empty userIds', async () => {
+    it("handles giftees with empty userIds", async () => {
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
             giftees: [
-                { userId: '', username: 'emptygiftee' },
-                { userId: '4', username: 'validgiftee' }
+                { userId: "", username: "emptygiftee" },
+                { userId: "4", username: "validgiftee" }
             ],
             createdAt: new Date()
         } as any;
@@ -272,92 +264,66 @@ describe('handleChannelSubscriptionGiftsEvent', () => {
         expect(mockRecordGift).toHaveBeenCalledTimes(2); // called for each giftee (including empty userId)
     });
 
-    it('triggers Twitch events when enabled', async () => {
+    it("triggers Twitch events when enabled", async () => {
         mockGetSettings.mockReturnValue({ triggerTwitchEvents: { subGift: true } });
         firebot.firebot.settings.getSetting.mockReturnValue(false);
 
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
-            giftees: [{ userId: '3', username: 'giftee' }],
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
+            giftees: [{ userId: "3", username: "giftee" }],
             createdAt: new Date()
         } as any;
 
         await handleChannelSubscriptionGiftsEvent(payload);
 
         // Should trigger both Kick and Twitch events
-        expect(mockTriggerEvent).toHaveBeenCalledWith(
-            IntegrationConstants.INTEGRATION_ID,
-            'subs-gifted',
-            expect.any(Object)
-        );
-        expect(mockTriggerEvent).toHaveBeenCalledWith(
-            'twitch',
-            'subs-gifted',
-            expect.any(Object)
-        );
+        expect(mockTriggerEvent).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_ID, "subs-gifted", expect.any(Object));
+        expect(mockTriggerEvent).toHaveBeenCalledWith("twitch", "subs-gifted", expect.any(Object));
     });
 
-    it('uses expiresAt when provided', async () => {
-        const createdAt = new Date('2023-01-01');
-        const expiresAt = new Date('2023-02-01');
+    it("uses expiresAt when provided", async () => {
+        const createdAt = new Date("2023-01-01");
+        const expiresAt = new Date("2023-02-01");
 
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
-            giftees: [{ userId: '3', username: 'giftee' }],
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
+            giftees: [{ userId: "3", username: "giftee" }],
             createdAt,
             expiresAt
         } as any;
 
         await handleChannelSubscriptionGiftsEvent(payload);
 
-        expect(mockRecordSubscription).toHaveBeenCalledWith(
-            '3',
-            createdAt,
-            expiresAt
-        );
-        expect(mockRecordGift).toHaveBeenCalledWith(
-            '2',
-            '3',
-            createdAt,
-            expiresAt
-        );
+        expect(mockRecordSubscription).toHaveBeenCalledWith("3", createdAt, expiresAt);
+        expect(mockRecordGift).toHaveBeenCalledWith("2", "3", createdAt, expiresAt);
     });
 
-    it('calculates plusThirtyDays when expiresAt not provided', async () => {
-        const createdAt = new Date('2023-01-01');
-        const expectedExpiresAt = new Date('2023-01-31'); // 30 days later
+    it("calculates plusThirtyDays when expiresAt not provided", async () => {
+        const createdAt = new Date("2023-01-01");
+        const expectedExpiresAt = new Date("2023-01-31"); // 30 days later
 
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
-            giftees: [{ userId: '3', username: 'giftee' }],
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
+            giftees: [{ userId: "3", username: "giftee" }],
             createdAt
         } as any;
 
         await handleChannelSubscriptionGiftsEvent(payload);
 
-        expect(mockRecordSubscription).toHaveBeenCalledWith(
-            '3',
-            createdAt,
-            expectedExpiresAt
-        );
-        expect(mockRecordGift).toHaveBeenCalledWith(
-            '2',
-            '3',
-            createdAt,
-            expectedExpiresAt
-        );
+        expect(mockRecordSubscription).toHaveBeenCalledWith("3", createdAt, expectedExpiresAt);
+        expect(mockRecordGift).toHaveBeenCalledWith("2", "3", createdAt, expectedExpiresAt);
     });
 
-    it('handles mixed anonymous and non-anonymous scenarios', async () => {
+    it("handles mixed anonymous and non-anonymous scenarios", async () => {
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: true },
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: true },
             giftees: [
-                { userId: '3', username: 'giftee1' },
-                { userId: '', username: 'emptygiftee' }
+                { userId: "3", username: "giftee1" },
+                { userId: "", username: "emptygiftee" }
             ],
             createdAt: new Date()
         } as any;
@@ -370,47 +336,30 @@ describe('handleChannelSubscriptionGiftsEvent', () => {
         expect(mockRecordGift).toHaveBeenCalledTimes(0); // no gifts recorded for anonymous gifter
     });
 
-    it('verifies userManager method calls with correct parameters', async () => {
-        const createdAt = new Date('2023-01-01');
+    it("verifies userManager method calls with correct parameters", async () => {
+        const createdAt = new Date("2023-01-01");
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
-            giftees: [{ userId: '3', username: 'giftee' }],
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
+            giftees: [{ userId: "3", username: "giftee" }],
             createdAt
         } as any;
 
         await handleChannelSubscriptionGiftsEvent(payload);
 
         // Verify all userManager calls
-        expect(mockGetOrCreateViewer).toHaveBeenCalledWith(
-            payload.gifter,
-            [],
-            true
-        );
-        expect(mockGetOrCreateViewer).toHaveBeenCalledWith(
-            payload.giftees[0],
-            [],
-            true
-        );
-        expect(mockRecordSubscription).toHaveBeenCalledWith(
-            '3',
-            createdAt,
-            expect.any(Date)
-        );
-        expect(mockRecordGift).toHaveBeenCalledWith(
-            '2',
-            '3',
-            createdAt,
-            expect.any(Date)
-        );
+        expect(mockGetOrCreateViewer).toHaveBeenCalledWith(payload.gifter, [], true);
+        expect(mockGetOrCreateViewer).toHaveBeenCalledWith(payload.giftees[0], [], true);
+        expect(mockRecordSubscription).toHaveBeenCalledWith("3", createdAt, expect.any(Date));
+        expect(mockRecordGift).toHaveBeenCalledWith("2", "3", createdAt, expect.any(Date));
     });
 
-    it('deduplicates identical gift subscription events', async () => {
+    it("deduplicates identical gift subscription events", async () => {
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
-            giftees: [{ userId: '3', username: 'giftee' }],
-            createdAt: new Date('2023-01-01')
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
+            giftees: [{ userId: "3", username: "giftee" }],
+            createdAt: new Date("2023-01-01")
         } as any;
 
         // Process the same event twice
@@ -424,27 +373,27 @@ describe('handleChannelSubscriptionGiftsEvent', () => {
         expect(mockRecordGift).toHaveBeenCalledTimes(1);
     });
 
-    it('handles partial deduplication in multi-giftee events', async () => {
+    it("handles partial deduplication in multi-giftee events", async () => {
         // First event: gifter -> [giftee1, giftee2]
         const firstPayload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
             giftees: [
-                { userId: '3', username: 'giftee1' },
-                { userId: '4', username: 'giftee2' }
+                { userId: "3", username: "giftee1" },
+                { userId: "4", username: "giftee2" }
             ],
-            createdAt: new Date('2023-01-01')
+            createdAt: new Date("2023-01-01")
         } as any;
 
         // Second event: same gifter -> [giftee1 (duplicate), giftee3 (new)]
         const secondPayload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
             giftees: [
-                { userId: '3', username: 'giftee1' }, // duplicate
-                { userId: '5', username: 'giftee3' } // new
+                { userId: "3", username: "giftee1" }, // duplicate
+                { userId: "5", username: "giftee3" } // new
             ],
-            createdAt: new Date('2023-01-01')
+            createdAt: new Date("2023-01-01")
         } as any;
 
         firebot.firebot.settings.getSetting.mockReturnValue(false);
@@ -461,20 +410,20 @@ describe('handleChannelSubscriptionGiftsEvent', () => {
         // Should trigger event for giftee3 only
         expect(mockTriggerEvent).toHaveBeenCalledWith(
             IntegrationConstants.INTEGRATION_ID,
-            'subs-gifted',
+            "subs-gifted",
             expect.objectContaining({
-                gifteeUsername: 'giftee3@kick',
-                gifteeUserId: 'k5'
+                gifteeUsername: "giftee3@kick",
+                gifteeUserId: "k5"
             })
         );
     });
 
-    it('handles anonymous gifter deduplication', async () => {
+    it("handles anonymous gifter deduplication", async () => {
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'anon', isAnonymous: true },
-            giftees: [{ userId: '3', username: 'giftee' }],
-            createdAt: new Date('2023-01-01')
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "anon", isAnonymous: true },
+            giftees: [{ userId: "3", username: "giftee" }],
+            createdAt: new Date("2023-01-01")
         } as any;
 
         // Process the same anonymous gift twice
@@ -488,15 +437,15 @@ describe('handleChannelSubscriptionGiftsEvent', () => {
         expect(mockRecordGift).toHaveBeenCalledTimes(0); // no gift records for anonymous
     });
 
-    it('skips entire event when all giftees are duplicates', async () => {
+    it("skips entire event when all giftees are duplicates", async () => {
         const payload: ChannelGiftSubscription = {
-            broadcaster: { userId: '1', username: 'broadcaster' },
-            gifter: { userId: '2', username: 'gifter', isAnonymous: false },
+            broadcaster: { userId: "1", username: "broadcaster" },
+            gifter: { userId: "2", username: "gifter", isAnonymous: false },
             giftees: [
-                { userId: '3', username: 'giftee1' },
-                { userId: '4', username: 'giftee2' }
+                { userId: "3", username: "giftee1" },
+                { userId: "4", username: "giftee2" }
             ],
-            createdAt: new Date('2023-01-01')
+            createdAt: new Date("2023-01-01")
         } as any;
 
         // Process the exact same event twice

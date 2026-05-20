@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/unbound-method */
-jest.mock('../../main', () => ({
+jest.mock("../../main", () => ({
     firebot: {
         firebot: {
-            version: '5.65.0'
+            version: "5.65.0"
         },
         modules: {
             frontendCommunicator: {
@@ -18,11 +17,11 @@ jest.mock('../../main', () => ({
     }
 }));
 
-import { reflectEvent } from '../reflector';
-import { firebot, logger } from '../../main';
-import { IntegrationConstants } from '../../constants';
+import { IntegrationConstants } from "../../constants";
+import { firebot, logger } from "../../main";
+import { reflectEvent } from "../reflector";
 
-describe('reflectEvent', () => {
+describe("reflectEvent", () => {
     let mockFrontendCommunicator: jest.Mocked<typeof firebot.modules.frontendCommunicator>;
     let mockLogger: jest.Mocked<typeof logger>;
 
@@ -38,152 +37,144 @@ describe('reflectEvent', () => {
         jest.useRealTimers();
     });
 
-    describe('successful event reflection', () => {
+    describe("successful event reflection", () => {
         beforeEach(() => {
-            (firebot.firebot as any).version = '5.65.0';
+            (firebot.firebot as any).version = "5.65.0";
         });
 
-        it('should reflect async event successfully', async () => {
-            const eventData = { userId: '123', message: 'Hello World' };
-            const expectedResponse = { success: true, eventId: 'abc123' };
+        it("should reflect async event successfully", async () => {
+            const eventData = { userId: "123", message: "Hello World" };
+            const expectedResponse = { success: true, eventId: "abc123" };
 
             mockFrontendCommunicator.fireEventAsync.mockResolvedValue(expectedResponse);
 
-            const result = await reflectEvent('chat-message', eventData, true);
+            const result = await reflectEvent("chat-message", eventData, true);
 
             expect(result).toEqual(expectedResponse);
-            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(
-                `${IntegrationConstants.INTEGRATION_ID}:reflect-async`,
-                {
-                    async: true,
-                    eventName: 'chat-message',
-                    eventData
-                }
-            );
-            expect(mockLogger.debug).toHaveBeenCalledWith(
-                'Sending reflect event to frontend: eventName=chat-message, isAsync=true'
-            );
+            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(`${IntegrationConstants.INTEGRATION_ID}:reflect-async`, {
+                async: true,
+                eventName: "chat-message",
+                eventData
+            });
+            expect(mockLogger.debug).toHaveBeenCalledWith("Sending reflect event to frontend: eventName=chat-message, isAsync=true");
         });
 
-        it('should reflect sync event successfully', async () => {
-            const eventData = { action: 'ban', userId: '456' };
+        it("should reflect sync event successfully", async () => {
+            const eventData = { action: "ban", userId: "456" };
             const expectedResponse = { acknowledged: true };
 
             mockFrontendCommunicator.fireEventAsync.mockResolvedValue(expectedResponse);
 
-            const result = await reflectEvent('moderation-action', eventData, false);
+            const result = await reflectEvent("moderation-action", eventData, false);
 
             expect(result).toEqual(expectedResponse);
-            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(
-                `${IntegrationConstants.INTEGRATION_ID}:reflect-async`,
-                {
-                    async: false,
-                    eventName: 'moderation-action',
-                    eventData
-                }
-            );
-            expect(mockLogger.debug).toHaveBeenCalledWith(
-                'Sending reflect event to frontend: eventName=moderation-action, isAsync=false'
-            );
+            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(`${IntegrationConstants.INTEGRATION_ID}:reflect-async`, {
+                async: false,
+                eventName: "moderation-action",
+                eventData
+            });
+            expect(mockLogger.debug).toHaveBeenCalledWith("Sending reflect event to frontend: eventName=moderation-action, isAsync=false");
         });
 
-        it('should default to async=true when not specified', async () => {
-            const eventData = { type: 'subscription' };
+        it("should default to async=true when not specified", async () => {
+            const eventData = { type: "subscription" };
             mockFrontendCommunicator.fireEventAsync.mockResolvedValue({ ok: true });
 
-            await reflectEvent('sub-event', eventData);
+            await reflectEvent("sub-event", eventData);
 
-            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(
-                `${IntegrationConstants.INTEGRATION_ID}:reflect-async`,
-                {
-                    async: true,
-                    eventName: 'sub-event',
-                    eventData
-                }
-            );
+            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(`${IntegrationConstants.INTEGRATION_ID}:reflect-async`, {
+                async: true,
+                eventName: "sub-event",
+                eventData
+            });
         });
 
-        it('should handle null event data', async () => {
-            mockFrontendCommunicator.fireEventAsync.mockResolvedValue({ received: true });
+        it("should handle null event data", async () => {
+            mockFrontendCommunicator.fireEventAsync.mockResolvedValue({
+                received: true
+            });
 
-            const result = await reflectEvent('null-data-event', null);
+            const result = await reflectEvent("null-data-event", null);
 
             expect(result).toEqual({ received: true });
-            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(
-                `${IntegrationConstants.INTEGRATION_ID}:reflect-async`,
-                {
-                    async: true,
-                    eventName: 'null-data-event',
-                    eventData: null
-                }
-            );
+            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(`${IntegrationConstants.INTEGRATION_ID}:reflect-async`, {
+                async: true,
+                eventName: "null-data-event",
+                eventData: null
+            });
         });
 
-        it('should handle complex event data structures', async () => {
+        it("should handle complex event data structures", async () => {
             const complexEventData = {
-                user: { id: '789', name: 'TestUser', roles: ['mod', 'vip'] },
-                message: { text: 'Complex message', timestamp: new Date().toISOString() },
-                metadata: { platform: 'kick', channel: 'test-channel' }
+                user: { id: "789", name: "TestUser", roles: ["mod", "vip"] },
+                message: {
+                    text: "Complex message",
+                    timestamp: new Date().toISOString()
+                },
+                metadata: { platform: "kick", channel: "test-channel" }
             };
 
-            mockFrontendCommunicator.fireEventAsync.mockResolvedValue({ processed: true });
+            mockFrontendCommunicator.fireEventAsync.mockResolvedValue({
+                processed: true
+            });
 
-            await reflectEvent('complex-event', complexEventData);
+            await reflectEvent("complex-event", complexEventData);
 
-            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(
-                `${IntegrationConstants.INTEGRATION_ID}:reflect-async`,
-                {
-                    async: true,
-                    eventName: 'complex-event',
-                    eventData: complexEventData
-                }
-            );
+            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(`${IntegrationConstants.INTEGRATION_ID}:reflect-async`, {
+                async: true,
+                eventName: "complex-event",
+                eventData: complexEventData
+            });
         });
     });
 
-    describe('timeout handling', () => {
+    describe("timeout handling", () => {
         beforeEach(() => {
-            (firebot.firebot as any).version = '5.65.0';
+            (firebot.firebot as any).version = "5.65.0";
         });
 
-        it('should timeout after 1000ms when frontend does not respond', async () => {
+        it("should timeout after 1000ms when frontend does not respond", async () => {
             // Mock a promise that never resolves
             mockFrontendCommunicator.fireEventAsync.mockImplementation(
-                () => new Promise(() => {
-                    // Intentionally never resolves
-                })
+                () =>
+                    new Promise(() => {
+                        // Intentionally never resolves
+                    })
             );
 
-            const reflectPromise = reflectEvent('slow-event', { data: 'test' });
+            const reflectPromise = reflectEvent("slow-event", { data: "test" });
 
             // Advance timers by 1000ms
             jest.advanceTimersByTime(1000);
 
-            await expect(reflectPromise).rejects.toThrow('Reflect event timeout');
+            await expect(reflectPromise).rejects.toThrow("Reflect event timeout");
         });
 
-        it('should not timeout when frontend responds quickly', async () => {
+        it("should not timeout when frontend responds quickly", async () => {
             const quickResponse = { fast: true };
             mockFrontendCommunicator.fireEventAsync.mockResolvedValue(quickResponse);
 
-            const result = await reflectEvent('fast-event', { data: 'test' });
+            const result = await reflectEvent("fast-event", { data: "test" });
 
             expect(result).toEqual(quickResponse);
         });
 
-        it('should not timeout when frontend responds just before timeout', async () => {
+        it("should not timeout when frontend responds just before timeout", async () => {
             const responseData = { justInTime: true };
 
             // Mock a promise that resolves after 999ms
             mockFrontendCommunicator.fireEventAsync.mockImplementation(
-                () => new Promise((resolve) => {
-                    setTimeout(() => {
-                        resolve(responseData);
-                    }, 999);
-                })
+                () =>
+                    new Promise((resolve) => {
+                        setTimeout(() => {
+                            resolve(responseData);
+                        }, 999);
+                    })
             );
 
-            const reflectPromise = reflectEvent('just-in-time-event', { data: 'test' });
+            const reflectPromise = reflectEvent("just-in-time-event", {
+                data: "test"
+            });
 
             // Advance timers by 999ms (just before timeout)
             jest.advanceTimersByTime(999);
@@ -193,75 +184,69 @@ describe('reflectEvent', () => {
         });
     });
 
-    describe('error handling', () => {
+    describe("error handling", () => {
         beforeEach(() => {
-            (firebot.firebot as any).version = '5.65.0';
+            (firebot.firebot as any).version = "5.65.0";
         });
 
-        it('should propagate frontend communicator errors', async () => {
-            const frontendError = new Error('Frontend communication failed');
+        it("should propagate frontend communicator errors", async () => {
+            const frontendError = new Error("Frontend communication failed");
             mockFrontendCommunicator.fireEventAsync.mockRejectedValue(frontendError);
 
-            await expect(reflectEvent('error-event', { data: 'test' }))
-                .rejects
-                .toThrow('Frontend communication failed');
+            await expect(reflectEvent("error-event", { data: "test" })).rejects.toThrow("Frontend communication failed");
         });
 
-        it('should handle empty event name', async () => {
+        it("should handle empty event name", async () => {
             mockFrontendCommunicator.fireEventAsync.mockResolvedValue({ ok: true });
 
-            await reflectEvent('', { data: 'test' });
+            await reflectEvent("", { data: "test" });
 
-            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(
-                `${IntegrationConstants.INTEGRATION_ID}:reflect-async`,
-                {
-                    async: true,
-                    eventName: '',
-                    eventData: { data: 'test' }
-                }
-            );
+            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(`${IntegrationConstants.INTEGRATION_ID}:reflect-async`, {
+                async: true,
+                eventName: "",
+                eventData: { data: "test" }
+            });
         });
     });
 
-    describe('type safety', () => {
+    describe("type safety", () => {
         beforeEach(() => {
-            (firebot.firebot as any).version = '5.65.0';
+            (firebot.firebot as any).version = "5.65.0";
         });
 
-        it('should preserve return type through generic parameter', async () => {
+        it("should preserve return type through generic parameter", async () => {
             interface CustomResponse {
-                status: 'success' | 'error';
+                status: "success" | "error";
                 data: string[];
             }
 
             const typedResponse: CustomResponse = {
-                status: 'success',
-                data: ['item1', 'item2']
+                status: "success",
+                data: ["item1", "item2"]
             };
 
             mockFrontendCommunicator.fireEventAsync.mockResolvedValue(typedResponse);
 
-            const result = await reflectEvent<CustomResponse>('typed-event', { input: 'test' });
+            const result = await reflectEvent<CustomResponse>("typed-event", {
+                input: "test"
+            });
 
-            expect(result.status).toBe('success');
-            expect(result.data).toEqual(['item1', 'item2']);
+            expect(result.status).toBe("success");
+            expect(result.data).toEqual(["item1", "item2"]);
         });
     });
 
-    describe('integration with constants', () => {
+    describe("integration with constants", () => {
         beforeEach(() => {
-            (firebot.firebot as any).version = '5.65.0';
+            (firebot.firebot as any).version = "5.65.0";
         });
 
-        it('should use correct integration ID in event name', async () => {
+        it("should use correct integration ID in event name", async () => {
             mockFrontendCommunicator.fireEventAsync.mockResolvedValue({ ok: true });
 
-            await reflectEvent('test-event', { data: 'test' });
+            await reflectEvent("test-event", { data: "test" });
 
-            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith(
-                'mage-kick-integration:reflect-async',
-                expect.any(Object)
-            );
+            expect(mockFrontendCommunicator.fireEventAsync).toHaveBeenCalledWith("mage-kick-integration:reflect-async", expect.any(Object));
         });
     });
 });

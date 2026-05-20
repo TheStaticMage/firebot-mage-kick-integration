@@ -2,11 +2,11 @@ import crypto from "crypto";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { logger } from "../main";
-import { BasicKickUser } from "../shared/types";
+import type { BasicKickUser } from "../shared/types";
 import { KickChannelManager } from "./channel-manager";
 import { ChatManager } from "./chat-manager";
-import { HttpCallRequest, httpCallWithTimeout } from "./http";
-import { IKick } from "./kick-interface";
+import { type HttpCallRequest, httpCallWithTimeout } from "./http";
+import type { IKick } from "./kick-interface";
 import { RewardsManager } from "./rewards-manager";
 import { RoleManager } from "./role-manager";
 import { KickUserApi } from "./user-api";
@@ -56,7 +56,7 @@ export class Kick implements IKick {
             if (botToken) {
                 try {
                     const uri = `/public/v1/users`;
-                    const response = await this.httpCallWithTimeout(uri, "GET", '', null, 10000, botToken);
+                    const response = await this.httpCallWithTimeout(uri, "GET", "", null, 10000, botToken);
 
                     if (!response || !response.data || response.data.length !== 1) {
                         logger.debug(`Failed to retrieve user from Kick API response. ${JSON.stringify(response)}`);
@@ -84,7 +84,9 @@ export class Kick implements IKick {
             if (this.broadcaster && this.bot && this.broadcaster.userId === this.bot.userId) {
                 logger.warn(`Same account detected: User ID ${this.broadcaster.userId} (${this.broadcaster.name}) is authorized for both streamer and bot. Bot functionality will be disabled.`);
                 this.bot = null;
-                integration.sendCriticalErrorNotification(`Bot account is the same as streamer account (${this.broadcaster.name}). Bot functionality has been disabled. Please authorize a different account for the bot in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`);
+                integration.sendCriticalErrorNotification(
+                    `Bot account is the same as streamer account (${this.broadcaster.name}). Bot functionality has been disabled. Please authorize a different account for the bot in Settings > Integrations > ${IntegrationConstants.INTEGRATION_NAME}.`
+                );
             }
 
             try {
@@ -144,10 +146,10 @@ export class Kick implements IKick {
         }
     }
 
-    async httpCallWithTimeout(uri: string, method: string, body = '', signal: AbortSignal | null = null, timeout = 10000, authToken = this.authToken): Promise<any> {
+    async httpCallWithTimeout(uri: string, method: string, body = "", signal: AbortSignal | null = null, timeout = 10000, authToken = this.authToken): Promise<any> {
         const requestId = crypto.randomUUID();
         if (integration.getSettings().logging.logApiResponses) {
-            const asUser = authToken === this.botAuthToken ? 'bot' : (this.authToken === this.authToken ? 'streamer' : (this.authToken === '' ? 'unauthenticated' : 'unknown'));
+            const asUser = authToken === this.botAuthToken ? "bot" : authToken === this.authToken ? "streamer" : this.authToken === "" ? "unauthenticated" : "unknown";
             logger.debug(`[${requestId}] Making API call as ${asUser} to ${uri} with method ${method} and body: ${JSON.stringify(body)}`);
         }
 

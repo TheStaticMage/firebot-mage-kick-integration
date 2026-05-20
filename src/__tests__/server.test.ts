@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 jest.mock("../main", () => ({
     firebot: {
         modules: {
@@ -20,8 +19,8 @@ jest.mock("../main", () => ({
 }));
 
 import { IntegrationConstants } from "../constants";
-import { registerRoutes, unregisterRoutes } from "../server/server";
 import { firebot } from "../main";
+import { registerRoutes, unregisterRoutes } from "../server/server";
 
 type RouteHandler = (req: any, res: any) => void | Promise<void>;
 
@@ -49,12 +48,10 @@ describe("server routes", () => {
         jest.clearAllMocks();
 
         const httpServer = firebot.modules.httpServer as jest.Mocked<typeof firebot.modules.httpServer>;
-        httpServer.registerCustomRoute.mockImplementation(
-            (_integrationUri: string, path: string, method: string, handler: RouteHandler) => {
-                routeHandlers.set(`${path}:${method}`, handler);
-                return true;
-            }
-        );
+        httpServer.registerCustomRoute.mockImplementation((_integrationUri: string, path: string, method: string, handler: RouteHandler) => {
+            routeHandlers.set(`${path}:${method}`, handler);
+            return true;
+        });
 
         kickIntegration = {
             kick: {
@@ -84,7 +81,10 @@ describe("server routes", () => {
             await handler(req, res);
 
             expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.json).toHaveBeenCalledWith({ success: false, error: "Missing message" });
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                error: "Missing message"
+            });
         });
 
         it("rejects invalid chatter", async () => {
@@ -95,7 +95,10 @@ describe("server routes", () => {
             await handler(req, res);
 
             expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.json).toHaveBeenCalledWith({ success: false, error: "Invalid chatter value" });
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                error: "Invalid chatter value"
+            });
         });
 
         it("rejects when broadcaster is not connected", async () => {
@@ -108,14 +111,25 @@ describe("server routes", () => {
             await handler(req, res);
 
             expect(res.status).toHaveBeenCalledWith(503);
-            expect(res.json).toHaveBeenCalledWith({ success: false, error: "Broadcaster not connected" });
+            expect(res.json).toHaveBeenCalledWith({
+                success: false,
+                error: "Broadcaster not connected"
+            });
         });
 
         it("sends chat message when offlineSendMode is send-anyway", async () => {
             const handler = getRouteHandler("operations/send-chat-message", "POST");
-            kickIntegration.kick.channelManager.getChannel.mockResolvedValue({ stream: { isLive: false } });
+            kickIntegration.kick.channelManager.getChannel.mockResolvedValue({
+                stream: { isLive: false }
+            });
 
-            const req = { body: { message: "Hello", chatter: "Streamer", offlineSendMode: "send-anyway" } };
+            const req = {
+                body: {
+                    message: "Hello",
+                    chatter: "Streamer",
+                    offlineSendMode: "send-anyway"
+                }
+            };
             const res = buildRes();
 
             await handler(req, res);
@@ -126,9 +140,17 @@ describe("server routes", () => {
 
         it("posts a chat feed alert when offlineSendMode is chat-feed-only and stream is offline", async () => {
             const handler = getRouteHandler("operations/send-chat-message", "POST");
-            kickIntegration.kick.channelManager.getChannel.mockResolvedValue({ stream: { isLive: false } });
+            kickIntegration.kick.channelManager.getChannel.mockResolvedValue({
+                stream: { isLive: false }
+            });
 
-            const req = { body: { message: "Hello", chatter: "Streamer", offlineSendMode: "chat-feed-only" } };
+            const req = {
+                body: {
+                    message: "Hello",
+                    chatter: "Streamer",
+                    offlineSendMode: "chat-feed-only"
+                }
+            };
             const res = buildRes();
 
             await handler(req, res);
@@ -144,9 +166,17 @@ describe("server routes", () => {
 
         it("skips sending when offlineSendMode is do-not-send and stream is offline", async () => {
             const handler = getRouteHandler("operations/send-chat-message", "POST");
-            kickIntegration.kick.channelManager.getChannel.mockResolvedValue({ stream: { isLive: false } });
+            kickIntegration.kick.channelManager.getChannel.mockResolvedValue({
+                stream: { isLive: false }
+            });
 
-            const req = { body: { message: "Hello", chatter: "Streamer", offlineSendMode: "do-not-send" } };
+            const req = {
+                body: {
+                    message: "Hello",
+                    chatter: "Streamer",
+                    offlineSendMode: "do-not-send"
+                }
+            };
             const res = buildRes();
 
             await handler(req, res);
@@ -157,9 +187,17 @@ describe("server routes", () => {
 
         it("sends chat message when offlineSendMode is chat-feed-only and stream is live", async () => {
             const handler = getRouteHandler("operations/send-chat-message", "POST");
-            kickIntegration.kick.channelManager.getChannel.mockResolvedValue({ stream: { isLive: true } });
+            kickIntegration.kick.channelManager.getChannel.mockResolvedValue({
+                stream: { isLive: true }
+            });
 
-            const req = { body: { message: "Hello", chatter: "Streamer", offlineSendMode: "chat-feed-only" } };
+            const req = {
+                body: {
+                    message: "Hello",
+                    chatter: "Streamer",
+                    offlineSendMode: "chat-feed-only"
+                }
+            };
             const res = buildRes();
 
             await handler(req, res);
@@ -178,7 +216,10 @@ describe("server routes", () => {
             await handler(req, res);
 
             expect(res.status).toHaveBeenCalledWith(400);
-            expect(res.json).toHaveBeenCalledWith({ displayName: null, error: "Missing or invalid username query parameter" });
+            expect(res.json).toHaveBeenCalledWith({
+                displayName: null,
+                error: "Missing or invalid username query parameter"
+            });
         });
 
         it("returns display name for existing user", async () => {
@@ -210,16 +251,8 @@ describe("server routes", () => {
             unregisterRoutes();
 
             const httpServer = firebot.modules.httpServer as jest.Mocked<typeof firebot.modules.httpServer>;
-            expect(httpServer.unregisterCustomRoute).toHaveBeenCalledWith(
-                IntegrationConstants.INTEGRATION_URI,
-                "operations/send-chat-message",
-                "POST"
-            );
-            expect(httpServer.unregisterCustomRoute).toHaveBeenCalledWith(
-                IntegrationConstants.INTEGRATION_URI,
-                "operations/get-user-display-name",
-                "GET"
-            );
+            expect(httpServer.unregisterCustomRoute).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_URI, "operations/send-chat-message", "POST");
+            expect(httpServer.unregisterCustomRoute).toHaveBeenCalledWith(IntegrationConstants.INTEGRATION_URI, "operations/get-user-display-name", "GET");
         });
     });
 });

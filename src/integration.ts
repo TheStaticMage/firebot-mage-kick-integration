@@ -1,7 +1,7 @@
-import { IntegrationDefinition } from "@crowbartools/firebot-custom-scripts-types";
+import type { IntegrationDefinition } from "@crowbartools/firebot-custom-scripts-types";
 import { IntegrationConstants } from "./constants";
 
-export { integration } from './integration-singleton';
+export { integration } from "./integration-singleton";
 
 export const definition: IntegrationDefinition = {
     id: IntegrationConstants.INTEGRATION_ID,

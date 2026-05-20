@@ -1,9 +1,9 @@
+import NodeCache from "node-cache";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { kickifyUserId, kickifyUsername, unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
-import { ChannelGiftSubscription, ChannelSubscription } from "../shared/types";
-import NodeCache from "node-cache";
+import type { ChannelGiftSubscription, ChannelSubscription } from "../shared/types";
 
 // Cache for deduplicating gift subscription events (12 hour TTL)
 export const giftSubCache = new NodeCache({ stdTTL: 12 * 60 * 60 });
@@ -14,11 +14,7 @@ export async function handleChannelSubscriptionEvent(payload: ChannelSubscriptio
 
     await integration.kick.userManager.getOrCreateViewer(payload.subscriber, [], true);
     await integration.kick.userManager.updateLastSeen(payload.subscriber.userId);
-    await integration.kick.userManager.recordSubscription(
-        userId,
-        payload.createdAt,
-        payload.expiresAt ?? plusThirtyDays(payload.createdAt)
-    );
+    await integration.kick.userManager.recordSubscription(userId, payload.createdAt, payload.expiresAt ?? plusThirtyDays(payload.createdAt));
 
     // Trigger the subscriber event
     const { eventManager } = firebot.modules;
@@ -71,7 +67,7 @@ export async function handleChannelSubscriptionGiftsEvent(payload: ChannelGiftSu
     // normal gifted subscriptions, so we'll treat any gift of multiple
     // subscriptions as a community gift, and any gift of a single subscription
     // as a normal gift.
-    if (processedPayload.gifter.isAnonymous || processedPayload.gifter.userId === '') {
+    if (processedPayload.gifter.isAnonymous || processedPayload.gifter.userId === "") {
         logger.debug("Skipping anonymous gifter for Kick gift subscription event.");
     } else {
         await integration.kick.userManager.getOrCreateViewer(processedPayload.gifter, [], true);
@@ -79,22 +75,13 @@ export async function handleChannelSubscriptionGiftsEvent(payload: ChannelGiftSu
     }
 
     for (const giftee of processedPayload.giftees) {
-        if (giftee.userId !== '') {
+        if (giftee.userId !== "") {
             await integration.kick.userManager.getOrCreateViewer(giftee, [], true);
             await integration.kick.userManager.updateLastSeen(giftee.userId);
-            await integration.kick.userManager.recordSubscription(
-                giftee.userId,
-                processedPayload.createdAt,
-                processedPayload.expiresAt ?? plusThirtyDays(processedPayload.createdAt)
-            );
+            await integration.kick.userManager.recordSubscription(giftee.userId, processedPayload.createdAt, processedPayload.expiresAt ?? plusThirtyDays(processedPayload.createdAt));
         }
-        if (!processedPayload.gifter.isAnonymous && processedPayload.gifter.userId !== '') {
-            await integration.kick.userManager.recordGift(
-                processedPayload.gifter.userId,
-                giftee.userId,
-                processedPayload.createdAt,
-                processedPayload.expiresAt ?? plusThirtyDays(processedPayload.createdAt)
-            );
+        if (!processedPayload.gifter.isAnonymous && processedPayload.gifter.userId !== "") {
+            await integration.kick.userManager.recordGift(processedPayload.gifter.userId, giftee.userId, processedPayload.createdAt, processedPayload.expiresAt ?? plusThirtyDays(processedPayload.createdAt));
         }
     }
 
@@ -109,7 +96,7 @@ export async function handleChannelSubscriptionGiftsEvent(payload: ChannelGiftSu
             isAnonymous: processedPayload.gifter.isAnonymous,
             subCount: processedPayload.giftees.length,
             subPlan: "kickDefault", // Not a thing on Kick, so invent our own metadata consistent with Twitch
-            giftReceivers: processedPayload.giftees.map(giftee => ({
+            giftReceivers: processedPayload.giftees.map((giftee) => ({
                 gifteeUsername: kickifyUsername(giftee.username),
                 gifteeUserId: kickifyUserId(giftee.userId.toString()),
                 gifteeUserDisplayName: giftee.displayName || unkickifyUsername(giftee.username),

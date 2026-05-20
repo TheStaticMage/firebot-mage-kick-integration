@@ -1,5 +1,5 @@
-import { ReplaceVariable } from '@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager';
-import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import type { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 import { IntegrationConstants } from "../constants";
 
 export const webhookReceivedEventTypeVariable: ReplaceVariable = {
@@ -15,8 +15,8 @@ export const webhookReceivedEventTypeVariable: ReplaceVariable = {
         categories: ["common"],
         possibleDataOutput: ["text"],
         triggers: {
-            "manual": true,
-            "event": [`${IntegrationConstants.INTEGRATION_ID}:webhook-received`]
+            manual: true,
+            event: [`${IntegrationConstants.INTEGRATION_ID}:webhook-received`]
         }
     },
     evaluator: (trigger: Trigger) => {
@@ -37,8 +37,8 @@ export const webhookReceivedEventVersionVariable: ReplaceVariable = {
         categories: ["common"],
         possibleDataOutput: ["text"],
         triggers: {
-            "manual": true,
-            "event": [`${IntegrationConstants.INTEGRATION_ID}:webhook-received`]
+            manual: true,
+            event: [`${IntegrationConstants.INTEGRATION_ID}:webhook-received`]
         }
     },
     evaluator: (trigger: Trigger) => {
@@ -59,8 +59,8 @@ export const webhookReceivedLatencyVariable: ReplaceVariable = {
         categories: ["common"],
         possibleDataOutput: ["number"],
         triggers: {
-            "manual": true,
-            "event": [`${IntegrationConstants.INTEGRATION_ID}:webhook-received`]
+            manual: true,
+            event: [`${IntegrationConstants.INTEGRATION_ID}:webhook-received`]
         }
     },
     evaluator: (trigger: Trigger) => {

@@ -1,28 +1,20 @@
-import { EventData, EventFilter, FilterEvent, FilterSettings, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
-import { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
-import { detectPlatform } from '@thestaticmage/mage-platform-lib-client';
+import type { EventData, EventFilter, FilterEvent, FilterSettings, PresetValue } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
+import type { Trigger } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import { detectPlatform } from "@thestaticmage/mage-platform-lib-client";
 import { IntegrationConstants } from "../constants";
 import { integration } from "../integration";
 import { unkickifyUsername } from "../internal/util";
 import { firebot, logger } from "../main";
 import { ComparisonType } from "./common";
 
-const events: string[] = [
-    "chat-message",
-    "chat-message-deleted",
-    "follow",
-    "viewer-arrived",
-    "banned",
-    "timeout",
-    "raid"
-];
+const events: string[] = ["chat-message", "chat-message-deleted", "follow", "viewer-arrived", "banned", "timeout", "raid"];
 
 const applicableEvents: FilterEvent[] = [
-    ...events.map(eventId => ({
+    ...events.map((eventId) => ({
         eventSourceId: "twitch",
         eventId
     })),
-    ...events.map(eventId => ({
+    ...events.map((eventId) => ({
         eventSourceId: IntegrationConstants.INTEGRATION_ID,
         eventId
     }))
@@ -33,10 +25,7 @@ export const streamerOrBotFilter: EventFilter = {
     name: "[Deprecated] Trigger User",
     description: "Checks if the user triggering the event is the streamer and/or stream bot. (Works on both Twitch and Kick events.)",
     events: applicableEvents,
-    comparisonTypes: [
-        ComparisonType.IS,
-        ComparisonType.IS_NOT
-    ],
+    comparisonTypes: [ComparisonType.IS, ComparisonType.IS_NOT],
     valueType: "preset",
     getSelectedValueDisplay: (filterSettings: FilterSettings): string => {
         const presetValues: PresetValue[] = [
@@ -44,7 +33,7 @@ export const streamerOrBotFilter: EventFilter = {
             { value: "bot", display: "Stream Bot" },
             { value: "either", display: "Streamer or Stream Bot" }
         ];
-        return presetValues.find(pv => pv.value === String(filterSettings.value))?.display ?? `??? (${String(filterSettings.value)})`;
+        return presetValues.find((pv) => pv.value === String(filterSettings.value))?.display ?? `??? (${String(filterSettings.value)})`;
     },
     valueIsStillValid: (filterSettings: FilterSettings): boolean => {
         return ["streamer", "bot", "either"].includes(String(filterSettings.value));
@@ -56,15 +45,15 @@ export const streamerOrBotFilter: EventFilter = {
             { value: "either", display: "Streamer or Stream Bot" }
         ];
     },
-    predicate: async (
-        filterSettings,
-        eventData: EventData
-    ): Promise<boolean> => {
+    predicate: async (filterSettings, eventData: EventData): Promise<boolean> => {
         const { comparisonType, value } = filterSettings;
         const trigger: Trigger = {
             type: "event",
             metadata: {
-                eventSource: { id: eventData.eventSourceId, name: eventData.eventSourceId },
+                eventSource: {
+                    id: eventData.eventSourceId,
+                    name: eventData.eventSourceId
+                },
                 eventData: eventData.eventMeta,
                 username: typeof eventData.eventMeta.username === "string" ? eventData.eventMeta.username : ""
             }
@@ -89,6 +78,8 @@ export const streamerOrBotFilter: EventFilter = {
                     checkName.push(unkickifyUsername(kickStreamer).toLowerCase());
                     checkName.push(unkickifyUsername(kickBot).toLowerCase());
                     break;
+                default:
+                    break;
             }
         } else if (platform === "twitch") {
             const twitchStreamer = firebot.firebot.accounts.streamer.username;
@@ -105,15 +96,17 @@ export const streamerOrBotFilter: EventFilter = {
                     checkName.push(twitchStreamer.toLowerCase());
                     checkName.push(twitchBot.toLowerCase());
                     break;
+                default:
+                    break;
             }
         } else {
             logger.debug(`streamerOrBotFilter: Unknown platform: ${JSON.stringify(trigger)}`);
-            return (comparisonType === ComparisonType.IS as any) ? false : true;
+            return comparisonType !== (ComparisonType.IS as any);
         }
 
-        if (username === '') {
+        if (username === "") {
             logger.debug(`streamerOrBotFilter: No username found in trigger metadata: ${JSON.stringify(trigger)}`);
-            return (comparisonType === ComparisonType.IS as any) ? false : true;
+            return comparisonType !== (ComparisonType.IS as any);
         }
 
         let match = false;
@@ -122,6 +115,6 @@ export const streamerOrBotFilter: EventFilter = {
         }
 
         logger.debug(`streamerOrBotFilter: ${match ? "match" : "no match"} found for username=${username} value=${value}`);
-        return (comparisonType === ComparisonType.IS as any) ? match : !match;
+        return comparisonType === (ComparisonType.IS as any) ? match : !match;
     }
 };

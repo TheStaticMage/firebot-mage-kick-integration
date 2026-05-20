@@ -30,8 +30,7 @@ export class RewardsManager {
      */
     async getAllRewards(): Promise<ChannelReward[] | null> {
         const now = Date.now();
-        const hasRecentResult = this.lastGetAllRewardsResultAt !== null &&
-            now - this.lastGetAllRewardsResultAt < 1000;
+        const hasRecentResult = this.lastGetAllRewardsResultAt !== null && now - this.lastGetAllRewardsResultAt < 1000;
 
         if (this.isGetAllRewardsPending) {
             if (hasRecentResult) {
@@ -44,11 +43,7 @@ export class RewardsManager {
             }
         }
 
-        if (
-            this.lastGetAllRewardsRequestedAt !== null &&
-            now - this.lastGetAllRewardsRequestedAt < 1000 &&
-            hasRecentResult
-        ) {
+        if (this.lastGetAllRewardsRequestedAt !== null && now - this.lastGetAllRewardsRequestedAt < 1000 && hasRecentResult) {
             logger.debug("Returning cached get all rewards result.");
             return this.lastGetAllRewardsResult;
         }
@@ -59,10 +54,7 @@ export class RewardsManager {
         const pendingRequest = (async () => {
             let result: ChannelReward[] | null = null;
             try {
-                const response = await this.kick.httpCallWithTimeout(
-                    `/public/v1/channels/rewards`,
-                    "GET"
-                );
+                const response = await this.kick.httpCallWithTimeout(`/public/v1/channels/rewards`, "GET");
 
                 if (!response || !response.data || !Array.isArray(response.data)) {
                     logger.debug(`Failed to retrieve rewards from Kick API. ${JSON.stringify(response)}`);
@@ -95,21 +87,20 @@ export class RewardsManager {
     /**
      * Create a new reward on Kick from a Firebot CustomReward.
      */
-    async createReward(reward: FirebotCustomReward, overrides?: {
-        cost?: number;
-        skipQueue?: boolean;
-        enabled?: boolean;
-    }): Promise<ChannelReward | null> {
+    async createReward(
+        reward: FirebotCustomReward,
+        overrides?: {
+            cost?: number;
+            skipQueue?: boolean;
+            enabled?: boolean;
+        }
+    ): Promise<ChannelReward | null> {
         try {
             const createRequest = this.mapCustomRewardToCreateRequest(reward, overrides);
 
             logger.debug(`Creating reward on Kick: ${JSON.stringify(createRequest)}`);
 
-            const response = await this.kick.httpCallWithTimeout(
-                `/public/v1/channels/rewards`,
-                "POST",
-                JSON.stringify(createRequest)
-            );
+            const response = await this.kick.httpCallWithTimeout(`/public/v1/channels/rewards`, "POST", JSON.stringify(createRequest));
 
             if (!response || !response.data) {
                 logger.error(`Failed to create reward on Kick. Response: ${JSON.stringify(response)}`);
@@ -128,22 +119,22 @@ export class RewardsManager {
      * Update an existing reward on Kick.
      * Only rewards created by this app can be updated.
      */
-    async updateReward(rewardId: string, reward: FirebotCustomReward, overrides?: {
-        cost?: number;
-        skipQueue?: boolean;
-        enabled?: boolean;
-        paused?: boolean;
-    }): Promise<boolean> {
+    async updateReward(
+        rewardId: string,
+        reward: FirebotCustomReward,
+        overrides?: {
+            cost?: number;
+            skipQueue?: boolean;
+            enabled?: boolean;
+            paused?: boolean;
+        }
+    ): Promise<boolean> {
         try {
             const updateRequest = this.mapCustomRewardToUpdateRequest(reward, overrides);
 
             logger.debug(`Updating reward on Kick (${rewardId}): ${JSON.stringify(updateRequest)}`);
 
-            await this.kick.httpCallWithTimeout(
-                `/public/v1/channels/rewards/${rewardId}`,
-                "PATCH",
-                JSON.stringify(updateRequest)
-            );
+            await this.kick.httpCallWithTimeout(`/public/v1/channels/rewards/${rewardId}`, "PATCH", JSON.stringify(updateRequest));
 
             logger.debug(`Successfully updated reward on Kick: ${rewardId}`);
             return true;
@@ -161,10 +152,7 @@ export class RewardsManager {
         try {
             logger.debug(`Deleting reward from Kick: ${rewardId}`);
 
-            await this.kick.httpCallWithTimeout(
-                `/public/v1/channels/rewards/${rewardId}`,
-                "DELETE"
-            );
+            await this.kick.httpCallWithTimeout(`/public/v1/channels/rewards/${rewardId}`, "DELETE");
 
             logger.debug(`Successfully deleted reward from Kick: ${rewardId}`);
             return true;
@@ -189,13 +177,9 @@ export class RewardsManager {
             title: reward.title,
             cost: overrides?.cost ?? reward.cost,
             description: reward.prompt || "",
-            // eslint-disable-next-line camelcase
             background_color: reward.backgroundColor,
-            // eslint-disable-next-line camelcase
             is_enabled: overrides?.enabled ?? reward.isEnabled,
-            // eslint-disable-next-line camelcase
             is_user_input_required: reward.isUserInputRequired,
-            // eslint-disable-next-line camelcase
             should_redemptions_skip_request_queue: overrides?.skipQueue ?? reward.shouldRedemptionsSkipRequestQueue
         };
     }
@@ -216,15 +200,10 @@ export class RewardsManager {
             title: reward.title,
             cost: overrides?.cost ?? reward.cost,
             description: reward.prompt || "",
-            // eslint-disable-next-line camelcase
             background_color: reward.backgroundColor,
-            // eslint-disable-next-line camelcase
             is_enabled: overrides?.enabled ?? reward.isEnabled,
-            // eslint-disable-next-line camelcase
             is_user_input_required: reward.isUserInputRequired,
-            // eslint-disable-next-line camelcase
             should_redemptions_skip_request_queue: overrides?.skipQueue ?? reward.shouldRedemptionsSkipRequestQueue,
-            // eslint-disable-next-line camelcase
             is_paused: overrides?.paused ?? reward.isPaused
         };
     }

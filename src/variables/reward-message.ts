@@ -1,8 +1,7 @@
-import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
-import { TriggersObject } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
+import type { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import type { TriggersObject } from "@crowbartools/firebot-custom-scripts-types/types/triggers";
 
 const triggers: TriggersObject = {
-    // eslint-disable-next-line camelcase -- Firebot trigger id is snake_case
     channel_reward: true,
     manual: true
 };

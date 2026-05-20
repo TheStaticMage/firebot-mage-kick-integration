@@ -1,13 +1,14 @@
-import { firebot, logger } from "../main";
-import { KickRewardManagementData, KickRewardsManagementState } from "../shared/types";
+import fs from "fs";
+
+import { logger } from "../main";
+import type { KickRewardManagementData, KickRewardsManagementState } from "../shared/types";
 import { getDataFilePath } from "../util/datafile";
 
 export class KickRewardsState {
-    private managementState: KickRewardsManagementState = {};
+    public managementState: KickRewardsManagementState = {};
     private readonly filename = "kick-rewards-management.json";
 
     loadManagementState(): void {
-        const { fs } = firebot.modules;
         const filePath = getDataFilePath(this.filename);
 
         if (!fs.existsSync(filePath)) {
@@ -27,7 +28,6 @@ export class KickRewardsState {
     }
 
     saveManagementState(): void {
-        const { fs } = firebot.modules;
         const filePath = getDataFilePath(this.filename);
 
         try {
@@ -48,14 +48,13 @@ export class KickRewardsState {
 
     removeManagementData(firebotRewardId: string): void {
         if (this.managementState[firebotRewardId]) {
-            // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
             delete this.managementState[firebotRewardId];
             this.saveManagementState();
         }
     }
 
     getManagedCount(): number {
-        return Object.values(this.managementState).filter(data => data.managedOnKick).length;
+        return Object.values(this.managementState).filter((data) => data.managedOnKick).length;
     }
 
     async canManageMore(getTotalKickRewards: () => Promise<number>): Promise<boolean> {

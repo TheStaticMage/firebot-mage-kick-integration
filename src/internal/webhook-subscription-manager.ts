@@ -1,6 +1,6 @@
-import { IKick } from "./kick-interface";
-import { logger } from "../main";
 import { integration } from "../integration";
+import { logger } from "../main";
+import type { IKick } from "./kick-interface";
 
 const subscriptionsToRequest = [
     {
@@ -87,7 +87,7 @@ export class WebhookSubscriptionManager {
         logger.debug("Resetting webhook subscriptions...");
         const subscriptions = await this.getSubscriptions();
         const req: WebhookSubscriptionReconcileResponse = {
-            delete: subscriptions.map(sub => sub.id).filter((id): id is string => !!id),
+            delete: subscriptions.map((sub) => sub.id).filter((id): id is string => !!id),
             create: [] // We are just deleting, not creating. That can get done upon reconnection.
         };
         await this.subscribeToEvents(req);
@@ -102,9 +102,7 @@ export class WebhookSubscriptionManager {
         let mismatch = false;
         const currentSubs = await this.getSubscriptions();
         for (const subToRequest of subscriptionsToRequest) {
-            const exists = currentSubs.some(
-                sub => sub.event === subToRequest.name && sub.version === subToRequest.version
-            );
+            const exists = currentSubs.some((sub) => sub.event === subToRequest.name && sub.version === subToRequest.version);
             if (!exists) {
                 mismatch = true;
                 logger.warn(`Missing subscription for event "${subToRequest.name}" (v${subToRequest.version})`);
@@ -114,7 +112,9 @@ export class WebhookSubscriptionManager {
         if (currentSubs.length !== subscriptionsToRequest.length || mismatch) {
             this.kickIsBroken = true;
             logger.warn(`Post-reconciliation webhook subscription mismatch: ${currentSubs.length} found, expected ${subscriptionsToRequest.length}`);
-            integration.sendChatFeedErrorNotification(`Webhook subscriptions are not being created or updated correctly on Kick. This can happen when Kick is under heavy load or having problems, and unfortunately there's not anything you can do about it. Parts of the integration will remain functional, but events that depend on webhooks may be delayed or unreliable until this is resolved. Sometimes this will clear up on its own. You can also try disconnecting and reconnecting the integration in a few minutes to see if that clears things up.`);
+            integration.sendChatFeedErrorNotification(
+                `Webhook subscriptions are not being created or updated correctly on Kick. This can happen when Kick is under heavy load or having problems, and unfortunately there's not anything you can do about it. Parts of the integration will remain functional, but events that depend on webhooks may be delayed or unreliable until this is resolved. Sometimes this will clear up on its own. You can also try disconnecting and reconnecting the integration in a few minutes to see if that clears things up.`
+            );
             return;
         }
 
@@ -122,7 +122,7 @@ export class WebhookSubscriptionManager {
         logger.debug("Webhook subscriptions verified as correct.");
     }
 
-    private isKickBroken(subscriptions: WebhookSubscription[], referenceSubscriptions: { name: string; version: number; }[]): boolean {
+    private isKickBroken(subscriptions: WebhookSubscription[], referenceSubscriptions: { name: string; version: number }[]): boolean {
         // Check for duplicates
         const eventVersionMap = new Map<string, number>();
         for (const sub of subscriptions) {
@@ -137,7 +137,7 @@ export class WebhookSubscriptionManager {
         }
 
         // Check for unknown subscriptions
-        const validEvents = new Set(referenceSubscriptions.map(s => `${s.name}|${s.version}`));
+        const validEvents = new Set(referenceSubscriptions.map((s) => `${s.name}|${s.version}`));
         for (const sub of subscriptions) {
             const key = `${sub.event}|${sub.version}`;
             if (!validEvents.has(key)) {
@@ -156,18 +156,18 @@ export class WebhookSubscriptionManager {
             if (reconciliation.delete.length > 0) {
                 const params = new URLSearchParams();
                 for (const id of reconciliation.delete) {
-                    params.append('id', id);
+                    params.append("id", id);
                 }
                 try {
                     await this.kick.httpCallWithTimeout(`/public/v1/events/subscriptions?${params.toString()}`, "DELETE");
                 } catch (error) {
-                    logger.warn(`Failed to unsubscribe from event subscription with ID: ${reconciliation.delete.join(', ')}. Error: ${error}`);
+                    logger.warn(`Failed to unsubscribe from event subscription with ID: ${reconciliation.delete.join(", ")}. Error: ${error}`);
                 }
             }
 
             // Pause between calls
             if (reconciliation.delete.length > 0 && reconciliation.create.length > 0) {
-                await new Promise(res => setTimeout(res, 100));
+                await new Promise((res) => setTimeout(res, 100));
             }
 
             // Create subscriptions
@@ -177,12 +177,11 @@ export class WebhookSubscriptionManager {
                 }
 
                 const createPayload: WebhookSubscriptionCreatePayload = {
-                    // eslint-disable-next-line camelcase
                     broadcaster_user_id: this.kick.broadcaster.userId,
                     events: reconciliation.create,
                     method: "webhook"
                 };
-                await this.kick.httpCallWithTimeout('/public/v1/events/subscriptions', "POST", JSON.stringify(createPayload));
+                await this.kick.httpCallWithTimeout("/public/v1/events/subscriptions", "POST", JSON.stringify(createPayload));
             }
             logger.info("Event subscription reconciliation complete.");
         } catch (error) {
@@ -193,7 +192,7 @@ export class WebhookSubscriptionManager {
 
     private async getSubscriptions(): Promise<WebhookSubscription[]> {
         try {
-            const response = await this.kick.httpCallWithTimeout('/public/v1/events/subscriptions', "GET");
+            const response = await this.kick.httpCallWithTimeout("/public/v1/events/subscriptions", "GET");
             return response.data;
         } catch (error) {
             logger.error(`Failed to retrieve event subscriptions: ${error}`);
@@ -208,15 +207,16 @@ export class WebhookSubscriptionManager {
         if (this.kickIsBroken) {
             logger.warn(`Kick is broken, not reconciling subscriptions.`);
             return {
-                create: subscriptionsToRequest.map(sub => ({ name: sub.name, version: sub.version })),
-                delete: current.map(sub => sub.id).filter((id): id is string => !!id)
+                create: subscriptionsToRequest.map((sub) => ({
+                    name: sub.name,
+                    version: sub.version
+                })),
+                delete: current.map((sub) => sub.id).filter((id): id is string => !!id)
             };
         }
 
         for (const subToRequest of subscriptionsToRequest) {
-            const matching = current.filter(
-                cur => cur.event === subToRequest.name && cur.version === subToRequest.version
-            );
+            const matching = current.filter((cur) => cur.event === subToRequest.name && cur.version === subToRequest.version);
             if (matching.length === 0) {
                 create.push(subToRequest);
             } else if (matching.length > 1) {
@@ -224,27 +224,21 @@ export class WebhookSubscriptionManager {
                 deleteSubs.push(
                     ...matching
                         .slice(1)
-                        .map(sub => sub.id)
+                        .map((sub) => sub.id)
                         .filter((id): id is string => typeof id === "string" && !!id)
                 );
             }
         }
 
         for (const cur of current) {
-            const found = subscriptionsToRequest.some(
-                req => req.name === cur.event && req.version === cur.version
-            );
+            const found = subscriptionsToRequest.some((req) => req.name === cur.event && req.version === cur.version);
             if (!found && cur.id) {
                 deleteSubs.push(cur.id);
             }
         }
 
         if (create.length > 0) {
-            logger.debug(
-                `Subscriptions to create: ${create
-                    .map(sub => `${sub.name} (v${sub.version})`)
-                    .join(", ")}`
-            );
+            logger.debug(`Subscriptions to create: ${create.map((sub) => `${sub.name} (v${sub.version})`).join(", ")}`);
         } else {
             logger.debug("No subscriptions to create.");
         }
@@ -252,25 +246,18 @@ export class WebhookSubscriptionManager {
         if (deleteSubs.length > 0) {
             logger.debug(
                 `Subscriptions to delete: ${current
-                    .filter(sub => deleteSubs.includes(sub.id ?? ""))
-                    .map(sub => `${sub.id ?? "unknown-id"}: ${sub.event} (v${sub.version})`)
+                    .filter((sub) => deleteSubs.includes(sub.id ?? ""))
+                    .map((sub) => `${sub.id ?? "unknown-id"}: ${sub.event} (v${sub.version})`)
                     .join(", ")}`
             );
         } else {
             logger.debug("No subscriptions to delete.");
         }
 
-        const preserved = current.filter(cur =>
-            !deleteSubs.includes(cur.id ?? "") &&
-            subscriptionsToRequest.some(req => req.name === cur.event && req.version === cur.version)
-        );
+        const preserved = current.filter((cur) => !deleteSubs.includes(cur.id ?? "") && subscriptionsToRequest.some((req) => req.name === cur.event && req.version === cur.version));
 
         if (preserved.length > 0) {
-            logger.debug(
-                `Subscriptions preserved: ${preserved
-                    .map(sub => `${sub.id ?? "unknown-id"}: ${sub.event} (v${sub.version})`)
-                    .join(", ")}`
-            );
+            logger.debug(`Subscriptions preserved: ${preserved.map((sub) => `${sub.id ?? "unknown-id"}: ${sub.event} (v${sub.version})`).join(", ")}`);
         } else {
             logger.debug("No subscriptions preserved.");
         }
@@ -280,28 +267,28 @@ export class WebhookSubscriptionManager {
 }
 
 interface WebhookSubscription {
-    app_id: string,
-    broadcaster_user_id: string,
-    created_at: string,
-    event: string,
-    id: string,
-    method: string,
-    updated_at: string,
-    version: number
+    app_id: string;
+    broadcaster_user_id: string;
+    created_at: string;
+    event: string;
+    id: string;
+    method: string;
+    updated_at: string;
+    version: number;
 }
 
 interface WebhookSubscriptionCreatePayload {
-    broadcaster_user_id: number,
-    events: WebhookSubscriptionToCreate[],
-    method: string
+    broadcaster_user_id: number;
+    events: WebhookSubscriptionToCreate[];
+    method: string;
 }
 
 interface WebhookSubscriptionToCreate {
-    name: string,
-    version: number
+    name: string;
+    version: number;
 }
 
 interface WebhookSubscriptionReconcileResponse {
-    create: WebhookSubscriptionToCreate[],
-    delete: string[]
+    create: WebhookSubscriptionToCreate[];
+    delete: string[];
 }

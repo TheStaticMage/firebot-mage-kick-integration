@@ -7,7 +7,7 @@ jest.mock("../../main", () => ({
     }
 }));
 
-import { isRateLimiterEvent, getEffectiveMetadata } from "../rate-limiter-compat";
+import { getEffectiveMetadata, isRateLimiterEvent } from "../rate-limiter-compat";
 
 describe("rate-limiter-compat", () => {
     describe("isRateLimiterEvent", () => {
@@ -115,7 +115,10 @@ describe("rate-limiter-compat", () => {
             });
             expect(result.chatMessage).toEqual({ id: "msg123", text: "hello" });
             expect(result.username).toBe("user@kick");
-            expect(result.eventSource).toEqual({ id: "rate-limiter", name: "Rate Limiter" });
+            expect(result.eventSource).toEqual({
+                id: "rate-limiter",
+                name: "Rate Limiter"
+            });
         });
 
         it("passes through normal event metadata unchanged", () => {
@@ -131,7 +134,10 @@ describe("rate-limiter-compat", () => {
 
             const result = getEffectiveMetadata(trigger);
 
-            expect(result.eventData).toEqual({ username: "twitchuser", userId: "123" });
+            expect(result.eventData).toEqual({
+                username: "twitchuser",
+                userId: "123"
+            });
             expect(result.chatMessage).toEqual({ id: "msg456", text: "world" });
             expect(result.username).toBe("twitchuser");
             expect(result.eventSource).toEqual({ id: "twitch", name: "Twitch" });

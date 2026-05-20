@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 
-import { createPrivateKey, sign } from 'crypto';
-import { execSync } from 'child_process';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import { exit } from 'process';
+import { execSync } from "child_process";
+import { createPrivateKey, sign } from "crypto";
+import { readFileSync } from "fs";
+import { join } from "path";
+import { exit } from "process";
 
-const gitRoot = execSync('git rev-parse --show-toplevel').toString().trim();
-const privateKeyPath = join(gitRoot, 'private_key.pem');
+const gitRoot = execSync("git rev-parse --show-toplevel").toString().trim();
+const privateKeyPath = join(gitRoot, "private_key.pem");
 
 async function main() {
     const args = process.argv.slice(2);
     if (args.length < 2) {
-        console.error('Usage: ./send-test-webhook.mjs <webhook-url> <payload-file>');
+        console.error("Usage: ./send-test-webhook.mjs <webhook-url> <payload-file>");
         exit(1);
     }
 
@@ -21,8 +21,8 @@ async function main() {
 
     let privateKey;
     try {
-        privateKey = readFileSync(privateKeyPath, 'utf-8');
-    } catch (e) {
+        privateKey = readFileSync(privateKeyPath, "utf-8");
+    } catch (_e) {
         console.error(`Could not read private key file: ${privateKeyPath}`);
         exit(1);
     }
@@ -31,7 +31,7 @@ async function main() {
     let payloadJson;
     let eventType;
     try {
-        const rawPayload = readFileSync(payloadFile, 'utf-8');
+        const rawPayload = readFileSync(payloadFile, "utf-8");
         payloadJson = JSON.parse(rawPayload);
 
         // Support both kick_event_type (webhook format) and eventType (test payload format)
@@ -61,28 +61,28 @@ async function main() {
     }
 
     const key = createPrivateKey(privateKey);
-    const signature = sign(null, Buffer.from(payload), key).toString('hex');
+    const signature = sign(null, Buffer.from(payload), key).toString("hex");
 
     const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer test', // This can be any non-empty string
-        'Kick-Event-Type': eventType,
-        'Kick-Event-Signature': signature,
-        'Kick-Event-Version': '1',
-        'Kick-Event-Message-ID': `msg_${Date.now()}`,
-        'Kick-Event-Subscription-ID': `sub_${Date.now()}`,
-        'Kick-Event-Message-Timestamp': new Date().toISOString(),
+        "Content-Type": "application/json",
+        Authorization: "Bearer test", // This can be any non-empty string
+        "Kick-Event-Type": eventType,
+        "Kick-Event-Signature": signature,
+        "Kick-Event-Version": "1",
+        "Kick-Event-Message-ID": `msg_${Date.now()}`,
+        "Kick-Event-Subscription-ID": `sub_${Date.now()}`,
+        "Kick-Event-Message-Timestamp": new Date().toISOString()
     };
 
     try {
         const response = await fetch(webhookUrl, {
-            method: 'POST',
+            method: "POST",
             headers,
-            body: payload,
+            body: payload
         });
 
         if (response.ok) {
-            console.log('Webhook sent successfully!');
+            console.log("Webhook sent successfully!");
         } else {
             console.error(`Failed to send webhook: ${response.status} ${response.statusText}`);
             const body = await response.text();

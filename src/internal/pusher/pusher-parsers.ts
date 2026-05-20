@@ -1,4 +1,4 @@
-import { ChatMessage, KickUser, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, StreamHostedEvent } from "../../shared/types";
+import type { ChatMessage, KickUser, ModerationBannedEvent, ModerationUnbannedEvent, RaidSentOffEvent, StreamHostedEvent } from "../../shared/types";
 import { parseDate } from "../util";
 
 export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMessage {
@@ -10,12 +10,12 @@ export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMes
             userId: d.sender.id.toString(),
             username: d.sender.username,
             displayName: d.sender.username,
-            profilePicture: '', // Not provided in event
+            profilePicture: "", // Not provided in event
             isVerified: false, // Worth checking?
             channelSlug: d.sender.slug,
             identity: {
                 usernameColor: d.sender.identity.color,
-                badges: d.sender.identity.badges.map(b => ({
+                badges: d.sender.identity.badges.map((b) => ({
                     text: b.text,
                     type: b.type,
                     count: b.count
@@ -24,18 +24,21 @@ export function parseChatMessageEvent(data: any, broadcaster: KickUser): ChatMes
         },
         content: d.content,
         createdAt: parseDate(d.created_at),
-        repliesTo: d.metadata && d.metadata.original_message && d.metadata.original_sender ? {
-            messageId: d.metadata.original_message.id,
-            content: d.metadata.original_message.content,
-            sender: {
-                userId: d.metadata.original_sender.id.toString(),
-                username: d.metadata.original_sender.username,
-                displayName: d.metadata.original_sender.username,
-                profilePicture: '', // Not provided in event
-                isVerified: false, // Worth checking?
-                channelSlug: '' // Not provided in event, maybe should calculate from username?
-            }
-        } : undefined
+        repliesTo:
+            d.metadata && d.metadata.original_message && d.metadata.original_sender
+                ? {
+                      messageId: d.metadata.original_message.id,
+                      content: d.metadata.original_message.content,
+                      sender: {
+                          userId: d.metadata.original_sender.id.toString(),
+                          username: d.metadata.original_sender.username,
+                          displayName: d.metadata.original_sender.username,
+                          profilePicture: "", // Not provided in event
+                          isVerified: false, // Worth checking?
+                          channelSlug: "" // Not provided in event, maybe should calculate from username?
+                      }
+                  }
+                : undefined
     };
 }
 
@@ -46,9 +49,9 @@ export function parseStreamHostedEvent(data: any): StreamHostedEvent {
             userId: d.user.id.toString(),
             username: d.user.username,
             displayName: d.user.username,
-            profilePicture: '', // Not provided in event
-            isVerified: d.user.verified ? true : false,
-            channelSlug: '' // Not provided in event
+            profilePicture: "", // Not provided in event
+            isVerified: !!d.user.verified,
+            channelSlug: "" // Not provided in event
         },
         numberOfViewers: d.message.numberOfViewers,
         optionalMessage: d.message.optionalMessage,
@@ -79,17 +82,17 @@ export function parseViewerUnbannedEvent(data: any): ModerationUnbannedEvent {
             userId: String(d.user.id),
             username: d.user.username,
             displayName: d.user.username,
-            profilePicture: '', // Not provided in event
+            profilePicture: "", // Not provided in event
             isVerified: false, // Not provided in event
-            channelSlug: '' // Not provided in event
+            channelSlug: "" // Not provided in event
         },
         moderator: {
             userId: String(d.unbanned_by.id),
             username: d.unbanned_by.username,
             displayName: d.unbanned_by.username,
-            profilePicture: '', // Not provided in event
+            profilePicture: "", // Not provided in event
             isVerified: false, // Not provided in event
-            channelSlug: '' // Not provided in event
+            channelSlug: "" // Not provided in event
         },
         banType: d.permanent ? "permanent" : "timeout"
     };
@@ -102,7 +105,7 @@ export function parseViewerBannedOrTimedOutEvent(data: any): ModerationBannedEve
             userId: String(d.user.id),
             username: d.user.username,
             displayName: d.user.username,
-            profilePicture: '', // Not provided in event
+            profilePicture: "", // Not provided in event
             isVerified: false, // Not provided in event
             channelSlug: d.user.slug
         },
@@ -110,12 +113,12 @@ export function parseViewerBannedOrTimedOutEvent(data: any): ModerationBannedEve
             userId: String(d.banned_by.id),
             username: d.banned_by.username,
             displayName: d.banned_by.username,
-            profilePicture: '', // Not provided in event
+            profilePicture: "", // Not provided in event
             isVerified: false, // Not provided in event
             channelSlug: d.banned_by.slug
         },
         metadata: {
-            reason: 'No reason provided', // Not provided in event
+            reason: "No reason provided", // Not provided in event
             createdAt: new Date(),
             expiresAt: parseDate(d.expires_at) || undefined
         }

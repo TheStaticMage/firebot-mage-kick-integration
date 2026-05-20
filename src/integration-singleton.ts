@@ -1,6 +1,7 @@
-import { IntegrationData, ScriptModules } from "@crowbartools/firebot-custom-scripts-types";
+import type { IntegrationData, ScriptModules } from "@crowbartools/firebot-custom-scripts-types";
 import { checkPlatformLibPing } from "@thestaticmage/mage-platform-lib-client";
 import { EventEmitter } from "events";
+import fs from "fs";
 import { platformCondition } from "./conditions/platform";
 import { viewerRolesCondition } from "./conditions/viewer-roles";
 import { IntegrationConstants } from "./constants";
@@ -13,7 +14,7 @@ import { moderatorTimeoutEffect } from "./effects/moderator-timeout";
 import { rewardManageEffect } from "./effects/reward-manage";
 import { streamGameEffect } from "./effects/stream-game";
 import { streamTitleEffect } from "./effects/stream-title";
-import { eventSource } from './event-source';
+import { eventSource } from "./event-source";
 import { hostViewerCountFilter } from "./filters/host-viewer-count";
 import { platformFilter } from "./filters/platform";
 import { streamerOrBotFilter } from "./filters/streamer-or-bot";
@@ -27,13 +28,13 @@ import { kickRewardsBackend } from "./internal/kick-rewards-backend";
 import { KickRewardsState } from "./internal/kick-rewards-state";
 import { KickPusher } from "./internal/pusher/pusher";
 import { reflectorExtension } from "./internal/reflector";
-import { InboundWebhook } from './internal/webhook-handler/webhook';
-import { webhookHandler } from './internal/webhook-handler/webhook-handler';
+import type { InboundWebhook } from "./internal/webhook-handler/webhook";
+import { webhookHandler } from "./internal/webhook-handler/webhook-handler";
 import { verifyWebhookSignature, WebhookSignatureVerificationError } from "./internal/webhook-handler/webhook-signature-verifier";
 import { firebot, logger } from "./main";
 import { platformRestriction } from "./restrictions/platform";
 import { registerRoutes, unregisterRoutes } from "./server/server";
-import { ConnectionStateUpdate, ConnectionUpdateData, KickConnection } from "./shared/types";
+import type { ConnectionStateUpdate, ConnectionUpdateData, KickConnection } from "./shared/types";
 import { kickExtension } from "./ui-extensions/kick";
 import { getDataFilePath } from "./util/datafile";
 import { kickCategoryVariable } from "./variables/category";
@@ -485,18 +486,18 @@ export class KickIntegration extends EventEmitter {
             this.settings = JSON.parse(JSON.stringify(integrationData.userSettings));
             let mustReconnect = false;
 
-            if (integrationData.userSettings.kickApp.clientId !== oldSettings.kickApp.clientId
-                || integrationData.userSettings.kickApp.clientSecret !== oldSettings.kickApp.clientSecret
-            ) {
+            if (integrationData.userSettings.kickApp.clientId !== oldSettings.kickApp.clientId || integrationData.userSettings.kickApp.clientSecret !== oldSettings.kickApp.clientSecret) {
                 logger.info("Kick integration client credentials have changed. You may need to re-link the integration.");
-                this.kick.setAuthToken('');
-                this.kick.setBotAuthToken('');
+                this.kick.setAuthToken("");
+                this.kick.setBotAuthToken("");
                 mustReconnect = true;
             }
 
-            if (integrationData.userSettings.connectivity.pusherAppKey !== oldSettings.connectivity.pusherAppKey ||
+            if (
+                integrationData.userSettings.connectivity.pusherAppKey !== oldSettings.connectivity.pusherAppKey ||
                 integrationData.userSettings.connectivity.chatroomId !== oldSettings.connectivity.chatroomId ||
-                integrationData.userSettings.connectivity.channelId !== oldSettings.connectivity.channelId) {
+                integrationData.userSettings.connectivity.channelId !== oldSettings.connectivity.channelId
+            ) {
                 logger.info("Pusher settings have changed. The Kick integration will reconnect.");
                 mustReconnect = true;
             }
@@ -548,7 +549,7 @@ export class KickIntegration extends EventEmitter {
 
     private getPlatformLibPingPort(): number {
         const { settings } = firebot.firebot;
-        return settings.getSetting("WebServerPort") as number || 7472;
+        return (settings.getSetting("WebServerPort") as number) || 7472;
     }
 
     private async handleCrowbarWebhook(payload: any, rawPayload: string | undefined, headers: any): Promise<void> {
@@ -567,9 +568,9 @@ export class KickIntegration extends EventEmitter {
                     payload,
                     rawPayload,
                     headers: {
-                        'kick-event-signature': headers['kick-event-signature'],
-                        'kick-event-message-id': headers['kick-event-message-id'],
-                        'kick-event-message-timestamp': headers['kick-event-message-timestamp']
+                        "kick-event-signature": headers["kick-event-signature"],
+                        "kick-event-message-id": headers["kick-event-message-id"],
+                        "kick-event-message-timestamp": headers["kick-event-message-timestamp"]
                     },
                     allowTestWebhooks: this.settings.advanced.allowTestWebhooks,
                     testWebhookPublicKey: IntegrationConstants.TEST_WEBHOOK_PUBLIC_KEY,
@@ -585,16 +586,16 @@ export class KickIntegration extends EventEmitter {
             }
 
             const isTestEvent = payload.is_test_event === true;
-            const messageId = headers['kick-event-message-id'];
-            const timestamp = headers['kick-event-message-timestamp'];
+            const messageId = headers["kick-event-message-id"];
+            const timestamp = headers["kick-event-message-timestamp"];
 
             // Transform Crowbar format to InboundWebhook format
             const webhook: InboundWebhook = {
-                kickEventMessageId: messageId || '',
-                kickEventSubscriptionId: headers['kick-event-subscription-id'] || '',
-                kickEventMessageTimestamp: timestamp || '',
-                kickEventType: headers['kick-event-type'] || '',
-                kickEventVersion: headers['kick-event-version'] || '',
+                kickEventMessageId: messageId || "",
+                kickEventSubscriptionId: headers["kick-event-subscription-id"] || "",
+                kickEventMessageTimestamp: timestamp || "",
+                kickEventType: headers["kick-event-type"] || "",
+                kickEventVersion: headers["kick-event-version"] || "",
                 rawData: JSON.stringify(payload),
                 isTestEvent
             };
@@ -606,7 +607,6 @@ export class KickIntegration extends EventEmitter {
     }
 
     private loadIntegrationData(): integrationFileData | null {
-        const { fs } = firebot.modules;
         if (!fs.existsSync(this.dataFilePath)) {
             logger.warn("Kick integration data file not found. Please link the integration.");
             return null;
@@ -627,7 +627,6 @@ export class KickIntegration extends EventEmitter {
             botRefreshToken: botRefreshToken
         };
 
-        const { fs } = firebot.modules;
         fs.writeFileSync(this.dataFilePath, JSON.stringify(data, null, 2));
         logger.debug("Kick integration token data saved.");
     }
