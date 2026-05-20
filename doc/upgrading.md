@@ -15,6 +15,8 @@
 
 ## Upgrade Procedure
 
+:warning: Firebot 5.66 requires **version 0.11.0** or higher.
+
 :warning: **Versions 0.10.0 and higher require a compatible version of firebot-mage-platform-lib**: See version compatibility in the version notes (or just grab the latest version of all components). Download from [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/).
 
 :boom: **Version 0.9.0 has major architectural changes**: Users will need to reconfigure their Kick connectivity and channel rewards. See [Breaking Changes](/doc/breaking-changes.md) for details.
@@ -31,7 +33,7 @@
 
 ### Version 0.11.0
 
-- Install version 0.0.4 or higher of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/).
+- Install version 0.0.5 or higher of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/).
 - The "Kick Reward Enable/Disable" effect has been removed. The built-in Firebot "Update Channel Reward" effect now syncs enabled/disabled and paused/unpaused configuration from the built in Channel Rewards manager to Kick. (Having the removed effect configured somewhere won't hurt anything though, but we suggest removing them for cleanliness.)
 
 ### Version 0.10.1

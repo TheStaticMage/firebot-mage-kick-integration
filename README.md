@@ -24,6 +24,7 @@ This [Firebot](https://firebot.app) integration provides chat feed integration, 
 
 ## Version Requirements
 
+- **Versions 0.11.0 and higher** require Firebot 5.65 or 5.66 and version 0.0.5 or higher of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
 - **Versions 0.10.0 and higher** require Firebot 5.65 and a compatible version of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
 - **Version 0.7.0 and higher** require Firebot 5.65
 
