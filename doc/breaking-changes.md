@@ -1,5 +1,9 @@
 # Breaking Changes
 
+## Firebot 5.67+
+
+:boom: **Firebot 5.67+ is incompatible**: This plugin is incompatible with Firebot 5.67 and higher and will not be updated.
+
 ## 0.10.0
 
 You must install version 0.0.1 (or higher) of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/) for the Kick integration to function correctly. Going forward, you will need to update the Kick integration and firebot-mage-platform-lib at the same time.

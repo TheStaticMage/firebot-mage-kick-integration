@@ -1,5 +1,7 @@
 # Firebot Kick Integration
 
+> :warning: **Archive Notice**: This plugin is not compatible with backend infrastructure changes in Firebot 5.67 and higher. The plugin will no longer be updated.
+
 ## Disclaimer and Warning
 
 **THIS PROJECT IS NOT ASSOCIATED WITH FIREBOT OR KICK.COM AND IS NOT ENDORSED OR SUPPORTED BY THEIR DEVELOPERS OR ANYONE ELSE.**
@@ -25,8 +27,8 @@ This [Firebot](https://firebot.app) integration provides chat feed integration, 
 ## Version Requirements
 
 - **Versions 0.11.0 and higher** require Firebot 5.65 or 5.66 and version 0.0.5 or higher of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
-- **Versions 0.10.0 and higher** require Firebot 5.65 and a compatible version of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
-- **Version 0.7.0 and higher** require Firebot 5.65
+- **Versions 0.10.0 and higher** require Firebot 5.65 or 5.66 and a compatible version of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
+- **Version 0.7.0 and higher** require Firebot 5.65 or 5.66
 
 ### Effects
 
@@ -80,7 +82,7 @@ Note: The integration currently has effects for all of the operations available 
 | Viewer timed out | :white_check_mark: | | |
 | Viewer unbanned | :white_check_mark: | | Uses "pusher" due to no public API support; also handles un-timeout |
 
-"Possible" indicates that based on documentation and/or actual testing, the Kick API or Pusher websocket sends a webhook or websocket message that the author believes can be used to trigger a Firebot event. However, since the author is unlikely to use this event himself, it is not currently prioritized for implementation. Feel free to reach out in Discord or a GitHub issue if you need something.
+"Possible" indicates that based on documentation and/or actual testing, the Kick API or Pusher websocket sends a webhook or websocket message that the author believes can be used to trigger a Firebot event. However, since the author is unlikely to use this event himself, it is not currently prioritized for implementation.
 
 ### Firebot features
 
@@ -143,24 +145,22 @@ This integration is experimental and aimed at users comfortable with technical s
 
 ## Support
 
-**Again: This project is not associated with or supported by Firebot or Kick.com.**
-
-There is no official support available. Using this may jeopardize Firebot's stability or future upgrades. Always maintain reliable backups.
-
-[Troubleshooting guide](/doc/troubleshooting.md)
+This plugin is no longer being updated or supported.
 
 ## Contributions
 
-Contributions are welcome via [Pull Requests](https://github.com/TheStaticMage/firebot-mage-kick-integration/pulls). I _strongly suggest_ that you contact me before making significant changes, because I'd feel really bad if you spent a lot of time working on something that is not consistent with my vision for the project. Please refer to the [Contribution Guidelines](/.github/contributing.md) for specifics.
+This plugin is no longer being developed. Contributions are not being accepted.
 
-Join our Discord community in [The Static Family](https://discord.gg/hzDYKzG9Zp) and head to the `#firebot-mage-kick-integration` channel to discuss.
+## Archive Notice
 
-Please note:
+This plugin is not compatible with Firebot 5.67 and higher due to backend infrastructure changes. The plugin will no longer be updated.
 
-- I will not accept contributions relying on Kick's "private API." I'd rather just encourage you to stream on Twitch than provide fragile workarounds if you depend on certain functionality.
-- I will not accept contributions requiring Firebot modifications that haven't been upstream-approved. I run a customized version of Firebot based on the `v5` branch, so changes that are merged there (or are in developer-approved pull requests) are acceptable.
-- At this point Firebot 5.65 is a minimum version for all new development.
-- If you don't agree with this approach, feel free to fork the project and develop it your way.
+If you are running Firebot 5.67 or higher, this plugin may not work correctly. Your options are:
+
+1. Downgrade to Firebot 5.66. Be sure to disable automatic upgrades and manually install the latest Firebot 5.66 release. Note that you will not get new Firebot features and will no longer receive support from official Firebot channels.
+2. Uninstall this plugin.
+
+Thank you for your interest and support.
 
 ## License
 

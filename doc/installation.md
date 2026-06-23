@@ -8,10 +8,11 @@
 
 ## Version Requirements
 
+- **INCOMPATIBLE with Firebot 5.67+** -- This plugin will not be updated for Firebot 5.67 and higher.
 - **Versions 0.11.0 and higher** require Firebot 5.65 or 5.66 and [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/) 0.0.5 or higher
-- **Versions 0.10.1 and higher** require Firebot 5.65 and [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/) 0.0.2 or higher
-- **Versions 0.10.0 and higher** require Firebot 5.65 and a compatible version of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
-- **Version 0.7.0 and higher** require Firebot 5.65
+- **Versions 0.10.1 and higher** require Firebot 5.65 or 5.66 and [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/) 0.0.2 or higher
+- **Versions 0.10.0 and higher** require Firebot 5.65 or 5.66 and a compatible version of [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
+- **Version 0.7.0 and higher** require Firebot 5.65 or 5.66
 
 ## Installation
 

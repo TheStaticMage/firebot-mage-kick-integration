@@ -2,8 +2,9 @@
 
 ## Version Requirements
 
-- **Versions 0.10.0 and higher** require Firebot 5.65 and [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
-- **Versions 0.7.0 and higher** require Firebot 5.65
+- **INCOMPATIBLE with Firebot 5.67+** -- This plugin will not be updated for Firebot 5.67 and higher.
+- **Versions 0.10.0 and higher** require Firebot 5.65 or 5.66 and [firebot-mage-platform-lib](https://github.com/TheStaticMage/firebot-mage-platform-lib/)
+- **Versions 0.7.0 and higher** require Firebot 5.65 or 5.66
 
 ## Versioning Philosophy
 
@@ -30,6 +31,10 @@
 4. Restart Firebot.
 
 ## Upgrade Notes
+
+### Firebot 5.67+
+
+:boom: **Firebot 5.67+ is incompatible**: This plugin is incompatible with Firebot 5.67 and higher and will not be updated.
 
 ### Version 0.11.0
 

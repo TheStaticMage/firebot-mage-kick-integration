@@ -31,6 +31,10 @@ const script: Firebot.CustomScript = {
         // Check Firebot version compatibility
         const fbVersion = firebot.firebot.version;
         logger.debug(`Detected Firebot version: ${fbVersion}`);
+        if (satisfies(fbVersion, ">= 5.67.0-0", { includePrerelease: true })) {
+            logger.error(`This plugin is incompatible with Firebot 5.67 and higher and will not be updated. You are running Firebot ${fbVersion}. Please downgrade to Firebot 5.66 or uninstall this plugin.`);
+            return;
+        }
         if (!satisfies(fbVersion, ">= 5.65.3-0", { includePrerelease: true })) {
             logger.error(`${IntegrationConstants.INTEGRATION_ID} requires Firebot version 5.65.3 or higher (including prereleases). Detected version: ${fbVersion}. Please update Firebot to use this plugin.`);
             return;
